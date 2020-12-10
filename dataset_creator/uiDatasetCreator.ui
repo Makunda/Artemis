@@ -1,0 +1,478 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface version="1.0">
+  <object class="ttk.Frame" id="mainFrame">
+    <property name="borderwidth">2</property>
+    <property name="height">500</property>
+    <property name="relief">raised</property>
+    <property name="width">600</property>
+    <bind sequence="&lt;Control-a&gt;" handler="launch_auto_mode" add="" />
+    <bind sequence="&lt;Control-s&gt;" handler="save_current_file_call" add="" />
+    <layout manager="pack">
+      <property name="expand">true</property>
+      <property name="fill">y</property>
+      <property name="propagate">True</property>
+      <property name="side">top</property>
+    </layout>
+    <child>
+      <object class="ttk.Frame" id="menuFrame">
+        <property name="height">20</property>
+        <property name="relief">ridge</property>
+        <property name="width">700</property>
+        <layout manager="pack">
+          <property name="anchor">w</property>
+          <property name="expand">false</property>
+          <property name="fill">y</property>
+          <property name="propagate">True</property>
+          <property name="side">top</property>
+        </layout>
+        <child>
+          <object class="ttk.Menubutton" id="menuButton">
+            <property name="direction">below</property>
+            <property name="text" translatable="yes">File</property>
+            <layout manager="pack">
+              <property name="anchor">w</property>
+              <property name="propagate">True</property>
+              <property name="side">left</property>
+            </layout>
+            <child>
+              <object class="tk.Menu" id="menu_1">
+                <child>
+                  <object class="tk.Menuitem.Command" id="commandOpenFile">
+                    <property name="command">open_file</property>
+                    <property name="command_id_arg">false</property>
+                    <property name="font">TkTextFont</property>
+                    <property name="label" translatable="yes">Open file</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="tk.Menuitem.Command" id="commandSaveDti">
+                    <property name="command">save_dti</property>
+                    <property name="command_id_arg">false</property>
+                    <property name="font">TkTextFont</property>
+                    <property name="label" translatable="yes">Save .dti</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="tk.Menuitem.Command" id="commandExit">
+                    <property name="command">exit_program</property>
+                    <property name="command_id_arg">false</property>
+                    <property name="label" translatable="yes">Exit</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Menubutton" id="menubutton_edit">
+            <property name="text" translatable="yes">Edit</property>
+            <layout manager="pack">
+              <property name="anchor">w</property>
+              <property name="expand">false</property>
+              <property name="propagate">True</property>
+              <property name="side">left</property>
+            </layout>
+            <child>
+              <object class="tk.Menu" id="menu_3">
+                <child>
+                  <object class="tk.Menuitem.Command" id="command_add_entry">
+                    <property name="command">add_dti_entry</property>
+                    <property name="command_id_arg">false</property>
+                    <property name="label" translatable="yes">Add entry</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="tk.Menuitem.Command" id="command_reportDataset">
+                    <property name="command">generate_opennlp_file</property>
+                    <property name="command_id_arg">false</property>
+                    <property name="label" translatable="yes">Generate NLP..</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Frame" id="frame_2">
+        <property name="height">200</property>
+        <property name="width">200</property>
+        <layout manager="pack">
+          <property name="anchor">s</property>
+          <property name="expand">true</property>
+          <property name="fill">both</property>
+          <property name="propagate">True</property>
+          <property name="side">left</property>
+        </layout>
+        <child>
+          <object class="ttk.Frame" id="frame_3">
+            <property name="height">20</property>
+            <property name="width">200</property>
+            <layout manager="pack">
+              <property name="expand">false</property>
+              <property name="fill">x</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+            <child>
+              <object class="ttk.Label" id="label_1_2">
+                <property name="text" translatable="yes">To treat :</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Label" id="label_3">
+                <property name="text" translatable="yes">10 / 30</property>
+                <property name="textvariable">string:toTreateLabel</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Checkbutton" id="checkbutton_1">
+                <property name="command">filter_file_pressed</property>
+                <property name="text" translatable="yes">filter</property>
+                <property name="variable">boolean:filterFile</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">top</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Treeview" id="treeviewFileView">
+            <property name="selectmode">extended</property>
+            <layout manager="pack">
+              <property name="anchor">n</property>
+              <property name="expand">true</property>
+              <property name="fill">both</property>
+              <property name="propagate">True</property>
+              <property name="side">left</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Scrollbar" id="scrollbar_1">
+            <property name="orient">vertical</property>
+            <layout manager="pack">
+              <property name="expand">true</property>
+              <property name="fill">y</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Labelframe" id="actionFrame">
+        <property name="height">200</property>
+        <property name="text" translatable="yes">Actions</property>
+        <property name="width">700</property>
+        <layout manager="pack">
+          <property name="expand">false</property>
+          <property name="fill">both</property>
+          <property name="propagate">True</property>
+          <property name="side">top</property>
+        </layout>
+        <child>
+          <object class="ttk.Frame" id="frame_5">
+            <property name="height">20</property>
+            <property name="width">700</property>
+            <layout manager="pack">
+              <property name="expand">true</property>
+              <property name="fill">x</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+            <child>
+              <object class="ttk.Checkbutton" id="checkbutton_keywords">
+                <property name="text" translatable="yes">Request with keywords</property>
+                <property name="variable">boolean:keywords_bool</property>
+                <layout manager="pack">
+                  <property name="anchor">w</property>
+                  <property name="propagate">True</property>
+                  <property name="side">bottom</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Button" id="buttonPreviousFile">
+                <property name="command">get_previous_file</property>
+                <property name="text" translatable="yes">Previous</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Button" id="buttonNextFile">
+                <property name="command">get_next_file</property>
+                <property name="text" translatable="yes">Next</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Button" id="buttonToggleFramework">
+                <property name="command">toggle_framework_value</property>
+                <property name="text" translatable="yes">Is Framework</property>
+                <layout manager="pack">
+                  <property name="anchor">n</property>
+                  <property name="expand">false</property>
+                  <property name="propagate">True</property>
+                  <property name="side">right</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Button" id="buttonAuto">
+                <property name="command">launch_auto_mode</property>
+                <property name="state">normal</property>
+                <property name="text" translatable="yes">Auto Mode</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Button" id="stopAutoButton">
+                <property name="command">stop_auto_mode</property>
+                <property name="state">normal</property>
+                <property name="text" translatable="yes">Stop Auto</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Labelframe" id="Information Gathering">
+                <property name="height">200</property>
+                <property name="text" translatable="yes">Information Gathering</property>
+                <property name="width">200</property>
+                <layout manager="pack">
+                  <property name="expand">true</property>
+                  <property name="propagate">True</property>
+                  <property name="side">top</property>
+                </layout>
+                <child>
+                  <object class="ttk.Button" id="buttonQueryGoogle">
+                    <property name="command">query_google</property>
+                    <property name="text" translatable="yes">Google</property>
+                    <layout manager="pack">
+                      <property name="propagate">True</property>
+                      <property name="side">left</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="ttk.Button" id="buttonQueryDuckDuck">
+                    <property name="command">query_duck_duck</property>
+                    <property name="text" translatable="yes">Duck Duck Go</property>
+                    <layout manager="pack">
+                      <property name="anchor">ne</property>
+                      <property name="propagate">True</property>
+                      <property name="side">left</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="ttk.Button" id="buttonBulk">
+                    <property name="command">bulk_request</property>
+                    <property name="text" translatable="yes">BULK</property>
+                    <layout manager="pack">
+                      <property name="propagate">True</property>
+                      <property name="side">left</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="ttk.Button" id="button_open_browser">
+                    <property name="command">open_web</property>
+                    <property name="text" translatable="yes">Open Browser</property>
+                    <layout manager="pack">
+                      <property name="propagate">True</property>
+                      <property name="side">left</property>
+                    </layout>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Frame" id="frameHeaderInfo">
+            <property name="borderwidth">5</property>
+            <property name="height">50</property>
+            <property name="width">700</property>
+            <layout manager="pack">
+              <property name="expand">true</property>
+              <property name="fill">x</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+            <child>
+              <object class="ttk.Label" id="label_1">
+                <property name="justify">center</property>
+                <property name="text" translatable="yes">Filename : </property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Label" id="filenameLabel">
+                <property name="text" translatable="yes">google.req</property>
+                <property name="textvariable">string:filenameLabelValue</property>
+                <bind sequence="&lt;1&gt;" handler="callback" add="True" />
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">left</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Label" id="labelsFramework">
+                <property name="foreground">RED</property>
+                <property name="text" translatable="yes">True</property>
+                <property name="textvariable">string:labelsFrameworkValue</property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">right</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="ttk.Label" id="label_4">
+                <property name="font">TkTooltipFont</property>
+                <property name="text" translatable="yes">Is a framework : </property>
+                <layout manager="pack">
+                  <property name="propagate">True</property>
+                  <property name="side">right</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Labelframe" id="fileViewerFrame">
+        <property name="height">200</property>
+        <property name="text" translatable="yes">File viewer</property>
+        <property name="width">700</property>
+        <layout manager="pack">
+          <property name="expand">true</property>
+          <property name="fill">both</property>
+          <property name="propagate">True</property>
+          <property name="side">top</property>
+        </layout>
+        <child>
+          <object class="tk.Text" id="textFileEditor">
+            <property name="autoseparators">false</property>
+            <property name="blockcursor">false</property>
+            <property name="cursor">arrow</property>
+            <property name="font">TkMenuFont</property>
+            <property name="height">30</property>
+            <property name="relief">raised</property>
+            <property name="setgrid">true</property>
+            <property name="state">normal</property>
+            <property name="width">150</property>
+            <bind sequence="&lt;1&gt;" handler="textChange" add="True" />
+            <layout manager="pack">
+              <property name="expand">true</property>
+              <property name="fill">both</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Frame" id="frame_8">
+        <property name="borderwidth">5</property>
+        <property name="height">20</property>
+        <property name="width">700</property>
+        <layout manager="pack">
+          <property name="expand">false</property>
+          <property name="fill">x</property>
+          <property name="propagate">True</property>
+          <property name="side">top</property>
+        </layout>
+        <child>
+          <object class="ttk.Label" id="labelFileCounterStatic">
+            <property name="text" translatable="yes">File : </property>
+            <layout manager="pack">
+              <property name="propagate">True</property>
+              <property name="side">left</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Label" id="labelFileCounter">
+            <property name="text" translatable="yes">1 / 30</property>
+            <property name="textvariable">string:fileCounter</property>
+            <layout manager="pack">
+              <property name="propagate">True</property>
+              <property name="side">left</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Button" id="buttonOkButton">
+            <property name="command">save_file</property>
+            <property name="text" translatable="yes">Update</property>
+            <layout manager="pack">
+              <property name="propagate">True</property>
+              <property name="side">right</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Labelframe" id="labelframe_2">
+        <property name="height">200</property>
+        <property name="text" translatable="yes">Console Output
+</property>
+        <property name="width">200</property>
+        <layout manager="pack">
+          <property name="expand">true</property>
+          <property name="fill">both</property>
+          <property name="propagate">True</property>
+          <property name="side">top</property>
+        </layout>
+        <child>
+          <object class="tk.Text" id="consoleOutput">
+            <property name="font">TkDefaultFont</property>
+            <property name="height">10</property>
+            <property name="setgrid">false</property>
+            <property name="text" translatable="yes">Console</property>
+            <property name="width">50</property>
+            <layout manager="pack">
+              <property name="expand">true</property>
+              <property name="fill">both</property>
+              <property name="propagate">True</property>
+              <property name="side">top</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

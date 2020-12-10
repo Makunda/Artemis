@@ -1,2 +1,2 @@
-# Artemis
-Artemis extension for CAST Imaging - Instant frameworks finder 
+# Artemis extension
+ Artemis extension fo CAST Imaging
