@@ -14,6 +14,7 @@ import com.castsoftware.artemis.nlp.model.NLPCategory;
 import com.castsoftware.artemis.nlp.model.NLPConfidence;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleParser;
+import com.castsoftware.artemis.reports.ReportGenerator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
@@ -38,7 +39,7 @@ public class DetectionController {
      * @param results Results of the NLP Engine
      * @throws InvalidDatasetException
      */
-    private static void saveNLPResult(DatasetManager dtManager, String name, NLPResults results) throws InvalidDatasetException {
+    private static void saveNLPResult(DatasetManager dtManager, ReportGenerator rg, String name, NLPResults results) throws InvalidDatasetException {
         Date date = Calendar.getInstance().getTime();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd hh:mm:ss");
         String strDate = dateFormat.format(date);
@@ -55,7 +56,10 @@ public class DetectionController {
         }
 
         FrameworkBean fb = new FrameworkBean(name, strDate, "No location discovered", "", 1);
+
         dtManager.addInput(fType, fb);
+        rg.addFrameworkBean(fType, fb);
+
     }
 
     /**
@@ -68,11 +72,13 @@ public class DetectionController {
      * @throws MissingFileException A file in missing in the Artemis workspace
      * @throws NLPIncorrectConfigurationException The NLP engine failed to start due to a bad configuration
      */
-    private static List<String> getFrameworkList(Neo4jAL neo4jAL, List<Node> toInvestigateNodes, String language)
+    private static List<String> getFrameworkList(Neo4jAL neo4jAL, List<Node> toInvestigateNodes, String applicationContext, String language)
             throws IOException, MissingFileException, NLPIncorrectConfigurationException {
         DatasetManager dtManager = DatasetManager.getManager();
 
         GoogleParser gp = new GoogleParser();
+        ReportGenerator rg = new ReportGenerator(applicationContext);
+
 
         // Make sure the nlp as trained, train it otherwise
         NLPEngine nlpEngine = new NLPEngine(neo4jAL.getLogger());
@@ -96,7 +102,7 @@ public class DetectionController {
                 if(fmt == FrameworkType.NOT_KNOWN) {
                     String requestResult = gp.request(objectName);
                     NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
-                    saveNLPResult(dtManager, objectName, nlpResult);
+                    saveNLPResult(dtManager, rg, objectName, nlpResult);
                 } else {
                     neo4jAL.logInfo(String.format("The object with name '%s' is already known by Artemis as a '%s'.", objectName, fmt.toString()));
                 }
@@ -107,7 +113,11 @@ public class DetectionController {
             }
 
 
+
         }
+
+        // Generate the report
+        rg.generate();
 
         return frameworkList;
     }
@@ -146,7 +156,7 @@ public class DetectionController {
         neo4jAL.logInfo(String.format("%d nodes were identified in %d Milliseconds.", toInvestigateNodes.size(),
                 Duration.between(start, finish).toMillis()));
 
-        List<String> frameworkList = getFrameworkList(neo4jAL, toInvestigateNodes, language);
+        List<String> frameworkList = getFrameworkList(neo4jAL, toInvestigateNodes, applicationContext, language);
 
         neo4jAL.logInfo("Cleaning Artemis tags...");
         // Once the operation is done, remove Demeter tag prefix tags
