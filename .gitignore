@@ -30,3 +30,4 @@ dependency-reduced-pom.xml
 /dataset_creator/examples/
 /dataset_creator/.idea/
 /dataset_creator/data/
+*.pyc
