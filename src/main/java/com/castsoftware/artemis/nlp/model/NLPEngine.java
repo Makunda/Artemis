@@ -2,7 +2,10 @@ package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
+import com.castsoftware.artemis.nlp.KeywordsManager;
+import com.castsoftware.artemis.nlp.SupportedLanguage;
 import opennlp.tools.doccat.*;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.tokenize.TokenizerME;
@@ -18,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 
+import static com.castsoftware.artemis.nlp.SupportedLanguage.ALL;
+
 public class NLPEngine {
 
     private static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
@@ -26,7 +31,8 @@ public class NLPEngine {
     private static final String TEST_DT_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.dataset_test.name");
     private static final String TOKENIZER_FILE_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.tokenizer_file.name");
 
-    private static final String NLP_FRAMEWORK_CATEGORY = ARTEMIS_WORKSPACE + Configuration.get("nlp.category.is_framework");
+    private static final String NLP_FRAMEWORK_CATEGORY = Configuration.get("nlp.category.is_framework");
+    private static final Integer MIN_MATCH_KEYWORDS = Integer.parseInt(Configuration.get("artemis.min.match.keywords"));
 
 
     private static final String ERROR_PREFIX = "NLPx";
@@ -36,6 +42,7 @@ public class NLPEngine {
     private DocumentCategorizerME docCategorizer = null;
     private File modelFile = null;
     private DoccatModel model = null;
+    private SupportedLanguage language;
 
     private Log log;
 
@@ -179,7 +186,7 @@ public class NLPEngine {
      */
     public String predict(String text) throws IOException {
         if( docCategorizer == null|| model == null) {
-            this.train();
+            getModelOrTrain();
         }
 
         double[] probabilitiesOfOutcomes = docCategorizer.categorize(tokenizer.tokenize(text));
@@ -187,18 +194,28 @@ public class NLPEngine {
     }
 
     /**
-     * Get the result of the dectection as a NLP results, allowing an easy retrieval of the confidence score
+     * Get the result of the detection as a NLP results, allowing an easy retrieval of the confidence score
      * @param text The request to evaluate
      * @return the result of the detection as,
      * @throws IOException
      */
-    public NLPResults getNLPResult(String text) throws IOException {
+    public NLPResults getNLPResult(String text) throws IOException, NLPBlankInputException {
         if( docCategorizer == null|| model == null) {
-            this.train();
+            getModelOrTrain();
+        }
+
+        if(text.isEmpty()) {
+            throw new NLPBlankInputException("The input is empty", ERROR_PREFIX+"GRES1");
         }
 
         double[] probabilitiesOfOutcomes = docCategorizer.categorize(tokenizer.tokenize(text));
         String category = docCategorizer.getBestCategory(probabilitiesOfOutcomes);
+
+        // Check the presence of keywords in the results
+        if(language != ALL && KeywordsManager.getNumMatchKeywords(language, text) > MIN_MATCH_KEYWORDS) {
+            category=NLP_FRAMEWORK_CATEGORY;
+        }
+
         return new NLPResults(category, probabilitiesOfOutcomes);
     }
 
@@ -211,7 +228,7 @@ public class NLPEngine {
      */
     public String getBestCategory(double[] probabilitiesOfOutcomes) throws IOException {
         if( docCategorizer == null|| model == null) {
-            this.train();
+            getModelOrTrain();
         }
         return docCategorizer.getBestCategory(probabilitiesOfOutcomes);
     }
@@ -224,6 +241,17 @@ public class NLPEngine {
         log.info("Checking the existence of the model file at '%s'.", MODEL_FILE_PATH);
         this.modelFile = new File(MODEL_FILE_PATH);
         return modelFile.exists();
+    }
+
+    /**
+     * Get the model or create a new one and train the model
+     */
+    private void getModelOrTrain() throws IOException {
+        try {
+            importModelFile();
+        } catch (IOException | NLPIncorrectConfigurationException e) {
+            train();
+        }
     }
 
     /**
@@ -242,8 +270,9 @@ public class NLPEngine {
         this.docCategorizer = new DocumentCategorizerME(model);
     }
 
-    public NLPEngine(Log log) throws IOException, NLPIncorrectConfigurationException {
+    public NLPEngine(Log log, SupportedLanguage language) {
+        this.language = language;
         this.log = log;
-        importModelFile();
     }
+
 }

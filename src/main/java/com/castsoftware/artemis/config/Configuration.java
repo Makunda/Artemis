@@ -21,6 +21,8 @@ package com.castsoftware.artemis.config;
 
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -30,7 +32,7 @@ import java.util.Properties;
  */
 public class Configuration {
 
-    private static Properties properties = loadConfiguration();
+    private static final Properties PROPERTIES = loadConfiguration();
 
     private static Properties loadConfiguration() {
         try (InputStream input = Configuration.class.getClassLoader().getResourceAsStream("artemis.properties")) {
@@ -38,7 +40,7 @@ public class Configuration {
             Properties prop = new Properties();
 
             if (input == null) {
-                throw new MissingFileException("No file 'procedure.properties' was found.", "resources/procedure.properties", "CONFxLOAD1");
+                throw new MissingFileException("No file 'artemis.properties' was found.", "resources/procedure.properties", "CONFxLOAD1");
             }
 
             //load a properties file from class path, inside static method
@@ -48,8 +50,20 @@ public class Configuration {
             System.err.println(ex.getMessage());
             System.exit(-1);
         }
-
         return null;
+    }
+
+    /**
+     * Save the configuration and reload it
+     * @throws FileNotFoundException
+     */
+    public static void saveAndReload() throws MissingFileException {
+        try {
+            PROPERTIES.store(new FileOutputStream("artemis.properties"), null);
+            loadConfiguration();
+        } catch (IOException e) {
+            throw new MissingFileException("No file 'artemis.properties' was found.", "resources/procedure.properties", "CONFxLOAD1");
+        }
     }
 
     /**
@@ -59,7 +73,7 @@ public class Configuration {
      * @return <code>String</code> value for the key as a String
      */
     public static String get(String key) {
-        return properties.get(key).toString();
+        return PROPERTIES.get(key).toString();
     }
 
     /**
@@ -68,7 +82,7 @@ public class Configuration {
      * @return <Object>String</code> value for the key as a string
      */
     public static Object getAsObject(String key) {
-        return properties.get(key);
+        return PROPERTIES.get(key);
     }
 
 
@@ -77,8 +91,10 @@ public class Configuration {
      * @param key
      * @param value
      */
-    public static void set(String key, String value){
-        properties.setProperty(key, value);
+    public static Object set(String key, String value) throws MissingFileException {
+        PROPERTIES.setProperty(key, value);
+        saveAndReload();
+        return PROPERTIES.get(key);
     }
 
 }

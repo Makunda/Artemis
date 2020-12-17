@@ -1,6 +1,7 @@
 package com.castsoftware.artemis.nlp.parser;
 
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,16 +12,42 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class GoogleParser {
-    private static final String GOOGLE_URL = "https://google.com/search?q=%s&lr=lang_en";
+    private static final String GOOGLE_URL = "https://www.google.com/search?q=%s&sourceid=chrome&ie=UTF-8";
+    private static final String ERROR_PREFIX = "GOOGPx";
 
+    private Log log;
     private HeaderGenerator headerGenerator;
 
-    public String request(String query) throws IOException {
+    /**
+     * Get Random number following a normal law arrival
+     * @param mean Mean of the poisson law
+     * @return
+     */
+    private static int getNormalLawArrival(double mean, double std) {
+        Random r = new Random();
+        double delay = r.nextGaussian()*std + mean;
+        return (int) Math.round(delay);
+    }
+
+
+    /**
+     * Wait to avoid Google Bot detector to reject the query
+     */
+    private void botBusterWait() {
+        try {
+            int delay = getNormalLawArrival(1200, 500);
+            log.info("Will wait : "+delay+" ms");
+            Thread.sleep(delay);
+        } catch(InterruptedException ignore) {
+        }
+    }
+
+    public String request(String query) throws IOException, GoogleBadResponseCodeException {
+        // Wait
+        botBusterWait();
 
         query = query.replaceAll("([^A-z0-9]|[\\\\])", "");
         query = query.replace(" ", "+").toLowerCase();
@@ -32,12 +59,24 @@ public class GoogleParser {
         // optional default is GET
         con.setRequestMethod("GET");
 
-        con.setRequestProperty("User-Agent", headerGenerator.getRandomHeader());
+        String header = headerGenerator.getRandomHeader();
+        log.info("Now using header : "+ header);
+        con.setRequestProperty("User-Agent", header);
+
 
         int responseCode = con.getResponseCode();
 
         if(responseCode != 200) {
-            return null; // TODO Throw an error here
+            String respMessage = con.getResponseMessage();
+            log.info("An unexpected behavior was detected during framework list gathering.");
+            for(Map.Entry<String, List<String>> en :  con.getHeaderFields().entrySet()) {
+                log.info(String.format("Header : %s Value : %s", en.getKey(), String.join(", ", en.getValue())));
+            }
+
+
+            throw new GoogleBadResponseCodeException(String.format("The request return a bad response code. Code : %d , Response Message : %s",
+                    responseCode, respMessage)
+                    , ERROR_PREFIX+"RESC1");
         }
 
         String inputLine;
@@ -86,7 +125,8 @@ public class GoogleParser {
         return res.replaceAll("\\s{2,}", "");
     }
 
-    public GoogleParser() throws IOException {
+    public GoogleParser(Log log) throws IOException {
+        this.log = log;
         this.headerGenerator = HeaderGenerator.getInstance();
     }
 }

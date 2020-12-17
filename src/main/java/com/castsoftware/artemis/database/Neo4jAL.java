@@ -105,7 +105,7 @@ public class Neo4jAL {
         try (Transaction tx = db.beginTx()){
             return tx.execute(query, params);
         } catch (QueryExecutionException e) {
-            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
+            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXAQ1");
         }
     }
 
@@ -113,7 +113,15 @@ public class Neo4jAL {
         try (Transaction tx = db.beginTx()){
             return tx.execute(query);
         } catch (QueryExecutionException e) {
-            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
+            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXAQ11");
+        }
+    }
+
+    public Node createNode(Label... labels) throws Neo4jQueryException {
+        try {
+            return this.transaction.createNode(labels);
+        } catch (Exception e ) {
+            throw new Neo4jQueryException("Error while creating node", String.format("Create node with labels %s", labels.toString()), e, ERROR_PREFIX + "CREN1");
         }
     }
 

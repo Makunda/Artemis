@@ -169,10 +169,10 @@ class GUIDatasetCreator:
 
         # Init components
         self.tree = builder.get_object('treeviewFileView')
-        self.tree["columns"] = ("completeness", "framework")
+        self.tree["columns"] = ("framework", "completeness")
         self.tree.heading("#0", text="Filename")
-        self.tree.heading("completeness", text="Complete")
         self.tree.heading("framework", text="Framework")
+        self.tree.heading("completeness", text="Complete")
         self.tree.bind("<Double-1>", self.on_double_click_tree)
 
         scrollbar = builder.get_object('scrollbar_1')
@@ -250,8 +250,8 @@ class GUIDatasetCreator:
             try:
                 san_split = xline.replace("\n", "").split(";")
                 filename = san_split[0]
-                completeness = san_split[1]
-                is_framework = san_split[2]
+                is_framework = san_split[1]
+                completeness = san_split[2]
                 if (completeness == "False"): to_check_c += 1
                 self.file_list.append(
                     {FILENAME_COL: filename, COMPLETENESS_COL: completeness, ISFRAMEWORK_COL: is_framework})
@@ -467,7 +467,7 @@ class GUIDatasetCreator:
                     with open(file_path, 'r+') as f:
                         try:
                             tag = ""
-                            if file[ISFRAMEWORK_COL] == "True":
+                            if file[ISFRAMEWORK_COL] == "True" or file[ISFRAMEWORK_COL] == True:
                                 tag = "Framework"
                             else:
                                 tag = "NotFramework"

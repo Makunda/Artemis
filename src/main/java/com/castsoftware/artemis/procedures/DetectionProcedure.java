@@ -4,11 +4,13 @@ import com.castsoftware.artemis.controllers.DetectionController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
+import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -23,7 +25,6 @@ import java.util.stream.Stream;
 
 public class DetectionProcedure {
 
-
     @Context
     public GraphDatabaseService db;
 
@@ -35,22 +36,41 @@ public class DetectionProcedure {
 
     @Procedure(value = "artemis.launchDetection", mode = Mode.WRITE)
     @Description("artemis.launchDetection(String ApplicationContext, String Language) - Launch Detection for a specific language")
-    public Stream<OutputMessage> launchDetection(@Name(value = "ApplicationContext") String applicationContext,
-                                                 @Name(value="Language", defaultValue = "") String language) throws ProcedureException {
+    public Stream<FrameworkResult> launchDetection(@Name(value = "ApplicationContext") String applicationContext,
+                                                   @Name(value="Language", defaultValue = "") String language,
+                                                   @Name(value="FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<FrameworkResult> detectedFrameworks = DetectionController.launchDetection(nal, applicationContext, language, flagNodes);
 
-            List<String> detectedFrameworks = DetectionController.launchDetection(nal, applicationContext, language);
-
-            return detectedFrameworks.stream().map(OutputMessage::new);
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException e) {
+            return detectedFrameworks.stream();
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException | GoogleBadResponseCodeException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 
     }
+
+    @Procedure(value = "artemis.bulkDetection", mode = Mode.WRITE)
+    @Description("artemis.bulkDetection(String Language) - Launch Detection for a specific language")
+    public Stream<FrameworkResult> bulkDetection(@Name(value="Language") String language,
+                                                 @Name(value="FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<FrameworkResult> detectedFrameworks = DetectionController.launchBulkDetection(nal, language, flagNodes);
+
+            return detectedFrameworks.stream();
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException | GoogleBadResponseCodeException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+
+    }
+
 
     @Procedure(value = "artemis.trainModel", mode = Mode.WRITE)
     @Description("artemis.trainModel() - Launch Detection for a specific language")

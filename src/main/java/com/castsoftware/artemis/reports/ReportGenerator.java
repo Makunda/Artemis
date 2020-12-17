@@ -1,11 +1,7 @@
 package com.castsoftware.artemis.reports;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.datasets.FrameworkBean;
-import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.nlp.model.NLPCategory;
-import com.castsoftware.artemis.nlp.model.NLPConfidence;
-import com.castsoftware.artemis.nlp.model.NLPResults;
+import com.castsoftware.artemis.datasets.FrameworkNode;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -32,9 +28,9 @@ public class ReportGenerator {
     private HSSFWorkbook workbook;
     private HSSFSheet mainSheet;
 
-    private final List<FrameworkBean> frameworkList;
-    private final List<FrameworkBean> nonFrameworkList;
-    private final List<FrameworkBean> toInvestigateFrameworkList;
+    private final List<FrameworkNode> frameworkList;
+    private final List<FrameworkNode> nonFrameworkList;
+    private final List<FrameworkNode> toInvestigateFrameworkList;
 
     private Integer rowNumber = 0;
 
@@ -44,11 +40,9 @@ public class ReportGenerator {
         return actual;
     }
 
-
     /**
      * Add a CAST divider
      * @param text Text to be displayed in the divider
-     * @param style
      * @param height
      * @return
      */
@@ -58,7 +52,7 @@ public class ReportGenerator {
         style.setFillForegroundColor(IndexedColors.GREY_80_PERCENT.getIndex());
 
         Row row = mainSheet.createRow(rowNum);
-        Cell cell = row.createCell(rowNum);
+        Cell cell = row.createCell(0);
         cell.setCellValue(text);
         cell.setCellStyle(style);
 
@@ -69,16 +63,19 @@ public class ReportGenerator {
 
     /**
      * Add results to the Report
-     * @param type
      * @param frameworkBean
      */
-    public void addFrameworkBean(FrameworkType type, FrameworkBean frameworkBean) {
-        if(type == FrameworkType.TO_INVESTIGATE) {
-            toInvestigateFrameworkList.add(frameworkBean);
-        } else if(type == FrameworkType.FRAMEWORK) {
-            frameworkList.add(frameworkBean);
-        } else if(type == FrameworkType.NOT_FRAMEWORK) {
-            nonFrameworkList.add(frameworkBean);
+    public void addFrameworkBean(FrameworkNode frameworkBean) {
+        switch (frameworkBean.getFrameworkType()){
+            case TO_INVESTIGATE:
+                toInvestigateFrameworkList.add(frameworkBean);
+                break;
+            case NOT_FRAMEWORK:
+                nonFrameworkList.add(frameworkBean);
+                break;
+            case FRAMEWORK:
+                frameworkList.add(frameworkBean);
+                break;
         }
     }
 
@@ -86,7 +83,7 @@ public class ReportGenerator {
      * Write the framework to the worksheet
      * @param fb Framework Bean to write
      */
-    private void writeFrameworkBean(FrameworkBean fb){
+    private void writeFrameworkBean(FrameworkNode fb){
         Integer rowNum = getAndIncrementRow();
         Row row = mainSheet.createRow(rowNum);
 
@@ -95,6 +92,7 @@ public class ReportGenerator {
         row.createCell(2).setCellValue(fb.getDescription());
         row.createCell(3).setCellValue(fb.getLocation());
         row.createCell(4).setCellValue(fb.getNumberOfDetection());
+        row.createCell(5).setCellValue(fb.getNumberOfDetection());
 
     }
 
@@ -110,6 +108,7 @@ public class ReportGenerator {
         row.createCell(2).setCellValue("Description");
         row.createCell(3).setCellValue("Location");
         row.createCell(4).setCellValue("Number of detection");
+        row.createCell(5).setCellValue("Percentage of detection");
     }
 
     /**
@@ -132,23 +131,23 @@ public class ReportGenerator {
         style.setFillForegroundColor(IndexedColors.GREY_50_PERCENT.getIndex());
 
         // Write detected as framework
-        this.addCastDivider("Detected as Framework", 1);
+        addCastDivider("Detected as Framework", 1);
         writeFrameworkBeanHeaders();
-        for(FrameworkBean fb : frameworkList) {
+        for(FrameworkNode fb : frameworkList) {
             writeFrameworkBean(fb);
         }
 
         // Write detected as non-framework
-        this.addCastDivider("Detected as non-framework", 1);
+        addCastDivider("Detected as non-framework", 1);
         writeFrameworkBeanHeaders();
-        for(FrameworkBean fb : nonFrameworkList) {
+        for(FrameworkNode fb : nonFrameworkList) {
             writeFrameworkBean(fb);
         }
 
         //  Write detected as to investigate framework
-        this.addCastDivider("To investigate Framework", 1);
+        addCastDivider("To investigate Framework", 1);
         writeFrameworkBeanHeaders();
-        for(FrameworkBean fb : toInvestigateFrameworkList) {
+        for(FrameworkNode fb : toInvestigateFrameworkList) {
             writeFrameworkBean(fb);
         }
 
