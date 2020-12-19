@@ -84,7 +84,7 @@ public class DetectionController {
         FamiliesFinder finder = new FamiliesFinder(neo4jAL, candidates);
         List<FamilyGroup> fg = finder.findFamilies();
 
-        for(FamilyGroup f : fg) {
+        for (FamilyGroup f : fg) {
             neo4jAL.logInfo(String.format("Found a %d objects family with prefix '%s'.", f.getFamilySize(), f.getCommonPrefix()));
             f.addDemeterTag(neo4jAL);
         }
@@ -133,7 +133,7 @@ public class DetectionController {
                 FrameworkNode fb = FrameworkNode.findFrameworkByName(neo4jAL, objectName);
 
                 // If the Framework is not known and the connection to google still possible, launch the NLP Detection
-                if(fb != null) {
+                if (fb != null) {
                     neo4jAL.logInfo(String.format("The object with name '%s' is already known by Artemis as a '%s'.", objectName, fb.getFrameworkType()));
                 }
 
@@ -146,9 +146,9 @@ public class DetectionController {
 
 
                 // Add the framework to the list of it was detected
-                if(fb != null) {
+                if (fb != null) {
                     // If flag option is set, apply a demeter tag to the nodes considered as framework
-                    if(flagNodes && (fb.getFrameworkType() == FrameworkType.FRAMEWORK))  {
+                    if (flagNodes && (fb.getFrameworkType() == FrameworkType.FRAMEWORK)) {
                         UtilsController.applyDemeterParentTag(neo4jAL, n, " external");
                     } else {
                         notDetected.add(n);
@@ -252,6 +252,7 @@ public class DetectionController {
 
     /**
      * Train the NLP engine of Artemis
+     *
      * @param neo4jAL Neo4j Access Layer
      * @throws IOException
      * @throws NLPIncorrectConfigurationException
@@ -263,7 +264,8 @@ public class DetectionController {
 
     /**
      * Launch a detection on all application present in the database
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL  Neo4j Access Layer
      * @param language Language used for the detection
      */
     public static List<FrameworkResult> launchBulkDetection(Neo4jAL neo4jAL, String language, Boolean flagNodes) throws Neo4jQueryException, MissingFileException, IOException, NLPIncorrectConfigurationException, GoogleBadResponseCodeException {

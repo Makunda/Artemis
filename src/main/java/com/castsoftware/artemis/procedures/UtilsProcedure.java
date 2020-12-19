@@ -27,8 +27,8 @@ public class UtilsProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "artemis.change", mode = Mode.WRITE)
-    @Description("artemis.change(String name) - Change the workspace of the Artemis extension.")
+    @Procedure(value = "artemis.changeWorkspace", mode = Mode.WRITE)
+    @Description("artemis.changeWorkspace(String name) - Change the workspace of the Artemis extension.")
     public Stream<OutputMessage> changeWorkspace(@Name(value = "ArtemisDirectory") String artemisDirectory) throws ProcedureException {
 
         try {

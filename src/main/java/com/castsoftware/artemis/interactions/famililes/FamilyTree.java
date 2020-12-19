@@ -12,7 +12,7 @@ public class FamilyTree {
 
     // Imaging
     private static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
-    private static final Double MIN_PERCENTAGE = 0.10;
+    private static final int MIN_NODE = 3;
 
     public class FamilyLeaf {
         public String name;
@@ -98,18 +98,15 @@ public class FamilyTree {
         }
 
         // If not enough items in the list merge back with the most similar one
-        int numNodes = toTreatNodes.size();
-
         List<String> toRemove = new ArrayList<>();
         Iterator<Map.Entry<String, List<Node>>> itMap = families.entrySet().iterator();
         while (itMap.hasNext()) {
             Map.Entry<String, List<Node>>  en = itMap.next();
 
             String actualKey = en.getKey();
-            double ratio = (double) en.getValue().size() / (double) numNodes;
 
             // If community to small, merge back
-            if(ratio < MIN_PERCENTAGE) {
+            if(en.getValue().size() < MIN_NODE) {
                 String bestCandidate  = null;
                 Integer score = Integer.MAX_VALUE;
                 for(String name : families.keySet()) {
@@ -125,12 +122,12 @@ public class FamilyTree {
                 // Merge the community back in the best candidate
                 families.get(bestCandidate).addAll(en.getValue());
 
-                toRemove.add(bestCandidate);
+                // remove old record ( avoid concurrent access)
+                itMap.remove();
             }
         }
 
-        // remove old record ( avoid concurrent access)
-        toRemove.stream().map((Function<String, Object>) families::remove);
+
 
         return families;
     }
@@ -142,16 +139,18 @@ public class FamilyTree {
     public int increaseDepth() {
         int createdLeaves = 0;
         FamilyLeaf start = this.root;
-        List<FamilyLeaf> toVisit = new CopyOnWriteArrayList();
-        toVisit.add(start);
+        Stack<FamilyLeaf> toVisit = new Stack<>();
+        toVisit.push(start);
 
-        for(Iterator<FamilyLeaf> itTree = toVisit.listIterator(); itTree.hasNext();) {
-            FamilyLeaf actualFl = itTree.next();
+        while(!toVisit.isEmpty()) {
+            FamilyLeaf actualFl = toVisit.pop();
             int depth = actualFl.depth + 1;
 
             // Check if node have children
             if(!actualFl.children.isEmpty()) {
-                toVisit.addAll(actualFl.children);
+                for(FamilyLeaf fl : actualFl.children) {
+                    toVisit.push(fl);
+                }
             } else {
                 // Ignore empty leaf
                 if(actualFl.items.isEmpty()) continue;
@@ -175,16 +174,18 @@ public class FamilyTree {
      */
     public List<FamilyLeaf> getEndLeaves() {
         List<FamilyLeaf> returnList = new ArrayList<>();
-        List<FamilyLeaf> toVisit = Arrays.asList(root);
+        Stack<FamilyLeaf> toVisit = new Stack<>();
+        toVisit.push(this.root);
 
         FamilyLeaf fl;
-        Iterator<FamilyLeaf> itTree = toVisit.listIterator();
-        while(itTree.hasNext()) {
-            fl = itTree.next();
+
+        while(!toVisit.isEmpty()) {
+            fl = toVisit.pop();
             if(fl.children.isEmpty()) {
                 returnList.add(fl);
             } else {
-                toVisit.addAll(fl.children);
+                for(FamilyLeaf child : fl.children)
+                toVisit.push(child);
             }
         }
 

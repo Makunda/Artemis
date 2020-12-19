@@ -8,8 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class HeaderGenerator {
 
-    private static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    private static final String HEADER_FILE_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.parser.header_file.name");
+    private static final String HEADER_FILE_NAME = Configuration.get("nlp.parser.header_file.name");
 
     private static HeaderGenerator instance = null;
 
@@ -27,7 +26,8 @@ public class HeaderGenerator {
     }
 
     private HeaderGenerator () throws IOException {
-        headerFile = new File(HEADER_FILE_PATH);
+        String headerFilePath =  Configuration.get("artemis.workspace.folder") + HEADER_FILE_NAME;
+        headerFile = new File(headerFilePath);
 
         if(!headerFile.exists()) {
             throw new IOException(String.format("File with name '%s' does not exist.", headerFile));

@@ -19,7 +19,7 @@ public class FamiliesFinder {
     private FamilyTree familyTree;
 
 
-    public List<FamilyGroup> findFamilies() {
+    /*public List<FamilyGroup> findFamilies() {
         Map<String, List<Node>> families  = new HashMap<>();
 
         Node n;
@@ -53,17 +53,17 @@ public class FamiliesFinder {
         }
 
         return fg;
-    }
+    }*/
 
     /**
      * Get the family in the framework detection
      * @return
      */
-//    public List<FamilyGroup> findFamilies() {
-//        return this.familyTree.getEndLeaves().stream()
-//                .map(x -> new FamilyGroup(x.name, x.items))
-//                .collect(Collectors.toList());
-//    }
+    public List<FamilyGroup> findFamilies() {
+        return this.familyTree.getEndLeaves().stream()
+                .map(x -> new FamilyGroup(x.name, x.items))
+                .collect(Collectors.toList());
+    }
 
     public FamiliesFinder(Neo4jAL neo4jAL, List<Node> candidates) {
         this.neo4jAL = neo4jAL;

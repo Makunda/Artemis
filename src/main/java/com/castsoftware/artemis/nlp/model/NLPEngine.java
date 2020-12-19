@@ -25,11 +25,10 @@ import static com.castsoftware.artemis.nlp.SupportedLanguage.ALL;
 
 public class NLPEngine {
 
-    private static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    private static final String MODEL_FILE_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.model_file.name");
-    private static final String TRAIN_DT_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.dataset_train.name");
-    private static final String TEST_DT_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.dataset_test.name");
-    private static final String TOKENIZER_FILE_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.tokenizer_file.name");
+    private static final String MODEL_FILE_NAME =  Configuration.get("nlp.model_file.name");
+    private static final String TRAIN_DT_NAME =  Configuration.get("nlp.dataset_train.name");
+    private static final String TEST_DT_NAME =  Configuration.get("nlp.dataset_test.name");
+    private static final String TOKENIZER_FILE_NAME =  Configuration.get("nlp.tokenizer_file.name");
 
     private static final String NLP_FRAMEWORK_CATEGORY = Configuration.get("nlp.category.is_framework");
     private static final Integer MIN_MATCH_KEYWORDS = Integer.parseInt(Configuration.get("artemis.min.match.keywords"));
@@ -87,9 +86,11 @@ public class NLPEngine {
      * @throws IOException
      */
     public void train() throws IOException {
+        String trainDTPath =  Configuration.get("artemis.workspace.folder") + TRAIN_DT_NAME;
+        String modelFilePath =  Configuration.get("artemis.workspace.folder") + MODEL_FILE_NAME;
 
         // Read file with classifications samples of sentences.
-        InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(new File(TRAIN_DT_PATH));
+        InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(new File(trainDTPath));
         ObjectStream<String> lineStream = new PlainTextByLineStream(inputStreamFactory, StandardCharsets.UTF_8);
         ObjectStream<DocumentSample> sampleStream = new DocumentSampleStream(lineStream);
 
@@ -102,7 +103,7 @@ public class NLPEngine {
         model = DocumentCategorizerME.train("en", sampleStream, params, factory);
 
         // Serialize model
-        model.serialize(new File(MODEL_FILE_PATH));
+        model.serialize(new File(modelFilePath));
 
         // Use the model to create the Categorizer
         docCategorizer = new DocumentCategorizerME(model);
@@ -112,6 +113,8 @@ public class NLPEngine {
      * Load Datasets and evaluate the model
      */
     public Double evaluateModel() throws IOException {
+        String testDTPath =  Configuration.get("artemis.workspace.folder") + TEST_DT_NAME;
+
         Integer positive = 0;
         Integer negative = 0;
 
@@ -122,7 +125,7 @@ public class NLPEngine {
             this.train();
         }
 
-        File myObj = new File(TEST_DT_PATH);
+        File myObj = new File(testDTPath);
         try(Scanner myReader = new Scanner(myObj)) {
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
@@ -164,9 +167,10 @@ public class NLPEngine {
      * @return Tokens found as a list of string
      */
     private static String[] getTokens(String sentence) {
+        String tokenizerFilePath =  Configuration.get("artemis.workspace.folder") + TOKENIZER_FILE_NAME;
 
         // Use model that was created in earlier tokenizer
-        try (InputStream modelIn = new FileInputStream(TOKENIZER_FILE_PATH)) {
+        try (InputStream modelIn = new FileInputStream(tokenizerFilePath)) {
 
             TokenizerME categorizer = new TokenizerME(new TokenizerModel(modelIn));
             String[] tokens = categorizer.tokenize(sentence);
@@ -238,8 +242,9 @@ public class NLPEngine {
      * @return
      */
     public boolean checkIfModelExists() {
-        log.info("Checking the existence of the model file at '%s'.", MODEL_FILE_PATH);
-        this.modelFile = new File(MODEL_FILE_PATH);
+        String modelFilePath =  Configuration.get("artemis.workspace.folder") + MODEL_FILE_NAME;
+        log.info("Checking the existence of the model file at '%s'.", modelFilePath);
+        this.modelFile = new File(modelFilePath);
         return modelFile.exists();
     }
 
@@ -259,9 +264,8 @@ public class NLPEngine {
      * @throws IOException
      */
     public void importModelFile() throws IOException, NLPIncorrectConfigurationException {
-
         if(!checkIfModelExists()){
-            String message = String.format("No model file with name '%s' was found under workspace '%s'.", MODEL_FILE_PATH, ARTEMIS_WORKSPACE);
+            String message = String.format("No model file with name '%s' was found under workspace '%s'.", MODEL_FILE_NAME, Configuration.get("artemis.workspace.folder"));
             throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
         }
 
