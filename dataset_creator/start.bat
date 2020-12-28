@@ -1,0 +1,1 @@
+C:\Users\hjo\AppData\Local\Programs\Python\Python38\python.exe main.py -g

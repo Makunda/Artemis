@@ -1,22 +1,29 @@
 package com.castsoftware.artemis.interactions.famililes;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import org.apache.shiro.crypto.hash.Hash;
 import org.neo4j.graphdb.Node;
+import org.neo4j.logging.Log;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class FamilyTree {
 
     // Imaging
     private static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
     private static final int MIN_NODE = 3;
+    private static final double MIN_PREFIX = 2.2;
+
+    private Log log;
 
     public class FamilyLeaf {
         public String name;
         public Integer depth;
+        public Boolean breakpoint;
         public List<FamilyLeaf> children;
         public List<Node> items;
 
@@ -25,6 +32,7 @@ public class FamilyTree {
             this.depth = depth;
             this.children = children;
             this.items = items;
+            this.breakpoint = false;
         }
     }
 
@@ -100,6 +108,7 @@ public class FamilyTree {
         // If not enough items in the list merge back with the most similar one
         List<String> toRemove = new ArrayList<>();
         Iterator<Map.Entry<String, List<Node>>> itMap = families.entrySet().iterator();
+
         while (itMap.hasNext()) {
             Map.Entry<String, List<Node>>  en = itMap.next();
 
@@ -108,26 +117,29 @@ public class FamilyTree {
             // If community to small, merge back
             if(en.getValue().size() < MIN_NODE) {
                 String bestCandidate  = null;
-                Integer score = Integer.MAX_VALUE;
-                for(String name : families.keySet()) {
+
+                int score = Integer.MAX_VALUE;
+                for(String name : families.keySet()) { // Find the most similar family
                     if(name.equals(actualKey)) continue;
                     if(toRemove.contains(name)) continue;
                     // get score
                     int lScore = this.computeLevenshtein(name, actualKey);
                     if(score > lScore) {
                         bestCandidate = name;
+                        score = lScore;
                     }
                 }
 
-                // Merge the community back in the best candidate
-                families.get(bestCandidate).addAll(en.getValue());
+                if(bestCandidate != null) {
+                    // Merge the community back in the best candidate
+                    families.get(bestCandidate).addAll(en.getValue());
+                }
 
                 // remove old record ( avoid concurrent access)
                 itMap.remove();
+
             }
         }
-
-
 
         return families;
     }
@@ -154,6 +166,7 @@ public class FamilyTree {
             } else {
                 // Ignore empty leaf
                 if(actualFl.items.isEmpty()) continue;
+                log.info(String.format("KeySet for level for level %d : %s", actualFl.depth, actualFl.items.stream().map(x ->  (String) x.getProperty("Name")).collect(Collectors.joining(" ,"))));
                 Map<String, List<Node>> newFamilies = explodeName(depth, actualFl.items); // Explode the names
 
                 // Create new leaves
@@ -169,25 +182,76 @@ public class FamilyTree {
     }
 
     /**
+     * Print the tree built, in the logs
+     * @param fl The leaf used as a starting point
+     */
+    public void displayFinalTree(FamilyLeaf fl) {
+        String mes = String.format("%s : Prefix %s : Size : %s", "-".repeat(fl.depth*2), fl.name, fl.children.size());
+        if (fl.breakpoint) {
+            mes += " -- IS BREAKPOINT --";
+        }
+        log.info(mes);
+
+        for(FamilyLeaf cl : fl.children) {
+            displayFinalTree(cl);
+        }
+    }
+
+    /**
+     * Check if leaf is a breakPoint. A break point is a leaf having a better distribution than its children
+     * @param fl Leaf to inspect
+     */
+    public void applyBreakpoints(FamilyLeaf fl) {
+        int numChildren = fl.children.size();
+
+        double sumItemChildren = .0;
+        for (FamilyLeaf cfl : fl.children) {
+            sumItemChildren += cfl.children.size();
+            applyBreakpoints(cfl);
+        }
+        double meanItems = sumItemChildren / numChildren;
+        fl.breakpoint =  numChildren > meanItems && sumItemChildren != 0;
+    }
+
+    /**
+     * Check if a breakpoint is present under a branch
+     * @param fl Id of the leaf to start the investigation
+     * @return
+     */
+    public boolean breakpointUnderBranch(FamilyLeaf fl) {
+
+        for(FamilyLeaf cfl : fl.children) {
+            if(cfl.breakpoint) return true;
+            breakpointUnderBranch(cfl);
+        }
+
+        return false;
+    }
+
+    /**
      * Get end leaves representing the Families founds during the process
      * @return List of Families
      */
     public List<FamilyLeaf> getEndLeaves() {
+
         List<FamilyLeaf> returnList = new ArrayList<>();
         Stack<FamilyLeaf> toVisit = new Stack<>();
+
         toVisit.push(this.root);
 
         FamilyLeaf fl;
 
         while(!toVisit.isEmpty()) {
             fl = toVisit.pop();
-            if(fl.children.isEmpty()) {
+            if(fl.children.isEmpty() || ( !breakpointUnderBranch(fl) && fl.depth > MIN_PREFIX) ) {
                 returnList.add(fl);
             } else {
                 for(FamilyLeaf child : fl.children)
                 toVisit.push(child);
             }
         }
+
+        displayFinalTree(this.root);
 
         return returnList;
     }
@@ -198,15 +262,21 @@ public class FamilyTree {
      * @return
      */
     public FamilyLeaf buildTree(int maxDepth) {
+        // Build the tree
         for(int i = 0; i < maxDepth -1; i++) increaseDepth();
+
+        // Apply breakpoints in the tree
+        applyBreakpoints(this.root);
         return root;
     }
 
-    public FamilyTree(FamilyLeaf root) {
+    public FamilyTree(Log log, FamilyLeaf root) {
+        this.log = log;
         this.root = root;
     }
 
-    public FamilyTree(List<Node> nodes) {
+    public FamilyTree(Log log, List<Node> nodes) {
+        this.log  = log;
         this.root = new FamilyLeaf("", 0, new ArrayList<>(), nodes);
     }
 }
