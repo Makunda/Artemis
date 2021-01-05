@@ -71,6 +71,15 @@ public class MavenPackage implements SPackage {
         this.tags = tags;
     }
 
+    public Double getConfidence() {
+        return 0d;
+    }
+
+    @Override
+    public String getLicence() {
+        return "No license information";
+    }
+
     @Override
     public JSONObject toJson() {
         JSONObject o = new JSONObject();
@@ -82,6 +91,7 @@ public class MavenPackage implements SPackage {
         o.put("Tags", this.getTags());
         return o;
     }
+
 
     public MavenPackage(String groupId, String name, String fullName, String version) {
         this.groupId = groupId;

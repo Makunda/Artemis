@@ -1,6 +1,8 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.LanguageConfiguration;
+import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -20,6 +22,7 @@ import com.castsoftware.artemis.nlp.model.NLPConfidence;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.reports.ReportGenerator;
+import com.castsoftware.artemis.repositories.SPackage;
 import com.castsoftware.artemis.results.FrameworkResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -32,12 +35,15 @@ import java.time.Instant;
 import java.util.*;
 
 public class DetectionController {
+    // Artemis properties
+    private static final String ARTEMIS_SEARCH_PREFIX = Configuration.get("artemis.tag.prefix_search");
+    private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+    private static final String IMAGING_OBJECT_TAGS = Configuration.get("imaging.link.object_property.tags");
+    private static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
+    private static final String IMAGING_APPLICATION_LABEL = Configuration.get("imaging.application.label");
 
-    public static final String ARTEMIS_SEARCH_PREFIX = Configuration.get("artemis.tag.prefix_search");
-    public static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
-    public static final String IMAGING_OBJECT_TAGS = Configuration.get("imaging.link.object_property.tags");
-    public static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
-    public static final String IMAGING_APPLICATION_LABEL = Configuration.get("imaging.application.label");
+    //
+    private static LanguageConfiguration languageConfiguration = LanguageConfiguration.getInstance();
 
     /**
      * Save NLP Results to the Artemis Database. The target database will be decided depending on the value of
@@ -105,7 +111,18 @@ public class DetectionController {
                                                         String reportName, SupportedLanguage language, Boolean flagNodes)
             throws IOException, Neo4jQueryException {
         int numTreated = 0;
+
+        LanguageProp languageProp = languageConfiguration.getLanguageProperties(language.toString());
         boolean onlineMode = Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
+
+        if(languageProp == null) {
+            neo4jAL.logError(String.format("Language '%s' is not supported. Please refer to the list of supported languages.", language));
+            return new ArrayList<>();
+        } else {
+            neo4jAL.logInfo(String.format("Launching artemis detection using  language '%s'.", language));
+        }
+
+        neo4jAL.logInfo(String.format("Investigation launched against %d objects.", toInvestigateNodes.size()));
 
         GoogleParser gp = new GoogleParser(neo4jAL.getLogger());
         ReportGenerator rg = new ReportGenerator(reportName);
@@ -137,13 +154,21 @@ public class DetectionController {
                     neo4jAL.logInfo(String.format("The object with name '%s' is already known by Artemis as a '%s'.", objectName, fb.getFrameworkType()));
                 }
 
-                if (fb == null && gp != null && onlineMode) {
+                // Parse repositories
+                if(fb == null && !languageProp.getRepositorySearch().isEmpty()) {
+                    List<SPackage> sPackageList = RepositoriesController.getRepositoryMatches(objectName, languageProp.getRepositorySearch());
+                    for(SPackage sp : sPackageList) {
+                        neo4jAL.logInfo(String.format("Package detected for object with name '%s' : '%s'. ", objectName, sp.toJson().toString()));
+                    }
+                }
+
+                // Parse NLP
+                if (fb == null && gp != null && onlineMode && languageProp.getOnlineSearch()) {
                     String requestResult = gp.request(objectName);
                     neo4jAL.logInfo("Content of the google query : " + requestResult);
                     NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
                     fb = saveNLPResult(neo4jAL, rg, objectName, nlpResult);
                 }
-
 
                 // Add the framework to the list of it was detected
                 if (fb != null) {
@@ -155,7 +180,7 @@ public class DetectionController {
                     }
 
                     // Increment the number of detection and add it to the result lists
-                    fb.incrementNumberDetection();
+                    //fb.incrementNumberDetection();
                     frameworkList.add(fb);
                 }
 
@@ -176,7 +201,11 @@ public class DetectionController {
         }
 
         // Launch internal framework detector on remaining nodes
-        getInternalFramework(neo4jAL, notDetected);
+        System.out.println("Language prop : "+ languageProp.toString());
+        if(languageProp.getInteractionDetector()) {
+            getInternalFramework(neo4jAL, notDetected);
+        }
+
 
         // Generate the report
         rg.generate();
@@ -207,8 +236,9 @@ public class DetectionController {
         //        "RETURN o as node", IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, ARTEMIS_SEARCH_PREFIX);
 
         String forgedRequest = String.format("MATCH (obj:%s:%s) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node",
-                IMAGING_OBJECT_LABEL, applicationContext, language);
+                IMAGING_OBJECT_LABEL, applicationContext, sLanguage.toString());
 
+        neo4jAL.logInfo("DEBUG :: Query externals :" + forgedRequest );
         Result res = neo4jAL.executeQuery(forgedRequest);
 
         Instant start = Instant.now();
@@ -234,7 +264,7 @@ public class DetectionController {
             resultList.add(fr);
         }
 
-        neo4jAL.logInfo("Cleaning Artemis tags...");
+        /*neo4jAL.logInfo("Cleaning Artemis tags...");
         // Once the operation is done, remove Demeter tag prefix tags
         String removeTagsQuery = String.format("MATCH (o:%1$s) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
                 applicationContext, IMAGING_OBJECT_TAGS, ARTEMIS_SEARCH_PREFIX);
@@ -245,7 +275,7 @@ public class DetectionController {
             neo4jAL.logInfo("# " + nDel + " artemis 'search tags' were removed from the database.");
         }
 
-        neo4jAL.logInfo("Cleaning Done !");
+        neo4jAL.logInfo("Cleaning Done !");*/
 
         return resultList;
     }

@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -18,21 +19,18 @@ public class Maven extends Crawler {
     private static final String URL = "https://search.maven.org/solrsearch/select?q=";
     private static final String OPTIONS = "&rows=5&wt=json";
 
-    private String name;
-
-    private List<SPackage> resultPackages;
-
-    public String getName() {
-        return name;
-    }
-
+    /**
+     * Build a list of maven package from the JSON results
+     * @param jsonObject Json object containing the maven package
+     * @return
+     */
     private List<MavenPackage> buildPackageList(JSONArray jsonObject){
         List<MavenPackage> returnList = new ArrayList<>();
-        List objectList = jsonObject.toList();
 
-        System.out.println(objectList.size() + " package were found in maven repository.");
-
-        for(Object o : objectList) {
+        Iterator<Object> it = jsonObject.iterator();
+        while(it.hasNext()) {
+            Object o = it.next();
+            // Ignore if the object is not a JSON Object
             if(! (o instanceof JSONObject)) {
                 continue;
             }
@@ -51,24 +49,39 @@ public class Maven extends Crawler {
         return returnList;
     }
 
-
-    private List<MavenPackage> getByName() throws UnirestException {
+    /**
+     * Request the Maven repository and get a list of packets matching the search
+     * @param search Name of the package to search
+     * @return The list of best matching packets
+     * @throws UnirestException
+     */
+    public List<MavenPackage> getMavenPackages(String search) throws UnirestException {
         StringBuilder urlBuilder = new StringBuilder()
                 .append(URL)
-                .append(this.name)
+                .append(search)
                 .append(OPTIONS);
         JSONObject jsonResult = this.getRequest(urlBuilder.toString()).getObject();
         return buildPackageList((JSONArray) jsonResult.getJSONObject("response").get("docs"));
     }
 
+    /**
+     * Get the results of the maven repository search with a size limit
+     * @param search Name of the packet to search
+     * @param limit Max return items
+     * @return The list of the Maven package detected
+     * @throws UnirestException
+     */
     @Override
-    public List<SPackage> getResults(Integer limit) {
-        if(this.resultPackages == null || this.resultPackages.isEmpty()) return null;
-        if(resultPackages.size() < limit) limit = resultPackages.size();
-        return this.resultPackages.subList(0, limit);
+    public List<MavenPackage> getResults(String search, Integer limit) throws UnirestException {
+        List<MavenPackage> packages = getMavenPackages(search);
+
+        if(packages == null || packages.isEmpty()) return null;
+        if(packages.size() < limit) limit = packages.size();
+
+        return packages.subList(0, limit);
     }
 
-    @Override
+    /*@Override
     public void setQuery(String fullName) throws MalformedResultException {
         String[] matches = fullName.split("\\.");
         if(matches.length >= 3) {
@@ -80,6 +93,6 @@ public class Maven extends Crawler {
         } else {
             this.name = fullName;
         }
-    }
+    }*/
 
 }

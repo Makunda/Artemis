@@ -2,6 +2,7 @@ package com.castsoftware.artemis.nlp;
 
 public enum SupportedLanguage {
     COBOL("Cobol"),
+    JAVA("Java"),
     ALL("All");
 
     private String value;
@@ -18,7 +19,7 @@ public enum SupportedLanguage {
      */
     public static SupportedLanguage getLanguage(String type) {
         for(SupportedLanguage ft : SupportedLanguage.values()) {
-            if(type.equals(ft.toString())) {
+            if(type.toLowerCase().equals(ft.toString().toLowerCase())) {
                 return ft;
             }
         }

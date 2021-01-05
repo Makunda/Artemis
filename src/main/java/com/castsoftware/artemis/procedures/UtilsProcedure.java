@@ -87,4 +87,16 @@ public class UtilsProcedure {
         }
     }
 
+    @Procedure(value = "artemis.setRepositoryMode", mode = Mode.WRITE)
+    @Description("artemis.setRepositoryMode() - Get the value of online mode.")
+    public Stream<OutputMessage> setRepositoryMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
+        try {
+            String mode = UtilsController.switchRepositoryMode(value);
+            return Stream.of(new OutputMessage(String.format("Repository mode is now set on '%s'.", mode)));
+        } catch (Exception | MissingFileException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 }

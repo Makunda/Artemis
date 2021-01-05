@@ -1,0 +1,16 @@
+{
+  "COBOL" : {
+    "object_internal_type": ["Cobol Program"],
+    "online_search": true,
+    "interaction_detector": true,
+    "package_delimiter": "",
+    "repository_search": []
+  },
+  "JAVA" : {
+    "object_internal_type": ["Java"],
+    "online_search": false,
+    "interaction_detector": false,
+    "package_delimiter": ".",
+    "repository_search": ["Maven", "Github"]
+  }
+}

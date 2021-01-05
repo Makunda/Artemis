@@ -17,14 +17,7 @@ public abstract class Crawler {
      * @param limit Max return items
      * @return List of package
      */
-    public abstract List<SPackage> getResults(Integer limit);
-
-    /**
-     * Set the query of the crawler. In general the query will consist of only the name od the package you want to retrieve
-     * @param query
-     * @throws MalformedResultException
-     */
-    public abstract void setQuery(String query) throws MalformedResultException;
+    public abstract List<? extends SPackage> getResults(String search, Integer limit) throws UnirestException;
 
     /**
      * Get the body of the request

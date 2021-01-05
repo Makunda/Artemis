@@ -9,6 +9,7 @@ import org.json.JSONObject;
 
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Github extends Crawler {
@@ -16,7 +17,6 @@ public class Github extends Crawler {
     private static final String URL = "https://api.github.com/search/repositories?q=";
     private static final String OPTIONS = "&per_page=10&page=1";
 
-    private String query;
     private List<SPackage> resultPackages;
 
     /**
@@ -26,9 +26,11 @@ public class Github extends Crawler {
      */
     private List<GithubPackage> buildPackageList(JSONArray jsonObject){
         List<GithubPackage> returnList = new ArrayList<>();
-        List objectList = jsonObject.toList();
 
-        for(Object o : objectList) {
+        Iterator<Object> it = jsonObject.iterator();
+        while(it.hasNext()) {
+            Object o = it.next();
+
             if(! (o instanceof JSONObject)) {
                 continue;
             }
@@ -56,25 +58,23 @@ public class Github extends Crawler {
      * Get the results for this specific instance
      * @return
      */
-    private List<GithubPackage> getByName() throws UnirestException {
+    public List<GithubPackage> getGithubPackages(String search) throws UnirestException {
         StringBuilder urlBuilder = new StringBuilder()
                 .append(URL)
-                .append(this.query)
+                .append(search)
                 .append(OPTIONS);
         JSONObject jsonResult = getRequest(urlBuilder.toString()).getObject();
         return buildPackageList((JSONArray) jsonResult.get("items"));
     }
 
     @Override
-    public List<SPackage> getResults(Integer limit) {
-        if(this.resultPackages == null || this.resultPackages.isEmpty()) return null;
-        if(resultPackages.size() < limit) limit = resultPackages.size();
-        return this.resultPackages.subList(0, limit);
-    }
+    public List<GithubPackage> getResults(String search, Integer limit) throws UnirestException {
+        List<GithubPackage> packages = getGithubPackages(search);
 
-    @Override
-    public void setQuery(String query) {
-        this.query = query;
+        if(packages == null || packages.isEmpty()) return null;
+        if(packages.size() < limit) limit = packages.size();
+
+        return packages.subList(0, limit);
     }
 
 }

@@ -39,6 +39,7 @@ public class GoogleParser {
     private void botBusterWait() {
         try {
             int delay = getNormalLawArrival(1200, 500);
+            if(delay < 0) delay = 1500;
             log.info("Will wait : "+delay+" ms");
             Thread.sleep(delay);
         } catch(InterruptedException ignore) {

@@ -62,10 +62,22 @@ public class UtilsController {
      * Switch online mode for Artemis detection
      * @param active New state
      * @return The new state of the online mode
+     * @throws MissingFileException
      */
     public static String switchOnlineMode(Boolean active) throws MissingFileException {
         Configuration.set("artemis.onlineMode", active.toString());
         return Configuration.get("artemis.onlineMode");
+    }
+
+    /**
+     * Switch repository crawl mode for Artemis detection
+     * @param active New state
+     * @return The new state of the repository mode
+     * @throws MissingFileException
+     */
+    public static String switchRepositoryMode(Boolean active) throws MissingFileException {
+        Configuration.set("artemis.repository_search", active.toString());
+        return Configuration.get("artemis.repository_search");
     }
 
 

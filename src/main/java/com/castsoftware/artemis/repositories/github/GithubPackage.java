@@ -18,6 +18,8 @@ public class GithubPackage implements SPackage {
         return this.fullName;
     }
 
+    public String getLicence() { return  this.license; }
+
     public String getName() {
         return name;
     }
@@ -32,6 +34,10 @@ public class GithubPackage implements SPackage {
 
     public int getStartCount() {
         return startCount;
+    }
+
+    public Double getConfidence() {
+        return 0d;
     }
 
     @Override

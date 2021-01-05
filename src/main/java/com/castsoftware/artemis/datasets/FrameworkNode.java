@@ -146,8 +146,19 @@ public class FrameworkNode {
             String name = (String) n.getProperty(NAME_PROPERTY);
             String discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
             String location = (String) n.getProperty(LOCATION_PROPERTY);
-            String description = (String) n.getProperty(DESCRIPTION_PROPERTY);
-            Long numDetection = (Long) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+
+            String description = "No description";
+            if(n.hasProperty(DESCRIPTION_PROPERTY)) {
+                description  = (String) n.getProperty(DESCRIPTION_PROPERTY);
+            }
+            Long numDetection;
+            try {
+                numDetection = (Long) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+            } catch (ClassCastException e) {
+                Integer temp = (Integer) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+                numDetection = (Long) temp.longValue();
+            }
+
             Double percentageDetection = (Double) n.getProperty(PERCENTAGE_OF_DETECTION_PROPERTY);
 
             String frameworkType = (String) n.getProperty(TYPE_PROPERTY);
@@ -159,7 +170,7 @@ public class FrameworkNode {
 
             return fn;
         } catch (Exception e) {
-            String msg = String.format("The Framework node with id: %d is not in a correct format");
+            String msg = String.format("The Framework node with id: %d is not in a correct format", n.getId());
             throw new Neo4jBadNodeFormatException(msg, e, ERROR_PREFIX+"FRON2");
         }
     }

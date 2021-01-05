@@ -21,7 +21,8 @@ import org.json.JSONObject;
 
 public interface SPackage {
 
-    public String getFullName();
-
-    public JSONObject toJson();
+    String getFullName();
+    JSONObject toJson();
+    String getLicence();
+    Double getConfidence();
 }
