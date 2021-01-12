@@ -1,0 +1,197 @@
+package com.castsoftware.artemis.detector;
+
+import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.controllers.RepositoriesController;
+import com.castsoftware.artemis.controllers.UtilsController;
+import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
+import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
+import com.castsoftware.artemis.interactions.famililes.FamiliesFinder;
+import com.castsoftware.artemis.interactions.famililes.FamilyGroup;
+import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.nlp.model.NLPCategory;
+import com.castsoftware.artemis.nlp.model.NLPConfidence;
+import com.castsoftware.artemis.nlp.model.NLPResults;
+import com.castsoftware.artemis.repositories.SPackage;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.TransactionTerminatedException;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Detector for COBOL
+ */
+public class CobolDetector extends ADetector {
+
+    /**
+     * Save NLP Results to the Artemis Database. The target database will be decided depending on the value of
+     *
+     * @param neo4jAL Neo4j access layer
+     * @param name    Name of the object to save
+     * @param results Results of the NLP Engine
+     * @throws InvalidDatasetException
+     */
+    private FrameworkNode saveNLPResult(Neo4jAL neo4jAL, String name, NLPResults results) throws InvalidDatasetException, Neo4jQueryException {
+        Date date = Calendar.getInstance().getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        String strDate = dateFormat.format(date);
+
+        FrameworkType fType = null;
+
+        if (results.getConfidence() == NLPConfidence.NOT_CONFIDENT) { // If the confidence score is not high enough it
+            // will be added on the to investigate dt
+            fType = FrameworkType.TO_INVESTIGATE;
+        } else if (results.getCategory() == NLPCategory.FRAMEWORK) { // Detected as a framework
+            fType = FrameworkType.FRAMEWORK;
+        } else { // Detected as a not framework
+            fType = FrameworkType.NOT_FRAMEWORK;
+        }
+
+        // Retrieve highest detection score
+        double[] prob = results.getProbabilities();
+        double detectionScore = 0.0;
+        if (prob.length > 0) {
+            detectionScore = prob[0];
+        }
+
+        FrameworkNode fb = new FrameworkNode(neo4jAL, name, strDate, "No location discovered", "", 1L, detectionScore);
+        fb.setFrameworkType(fType);
+        fb.createNode();
+
+        return fb;
+    }
+
+    /**
+     * Get the list of internal frameworks by matching the names
+     *
+     * @param neo4jAL    Neo4j Access Layer
+     * @param candidates Candidates nodes for grouping
+     * @throws Neo4jQueryException
+     */
+    public static void getInternalFramework(Neo4jAL neo4jAL, List<Node> candidates) throws Neo4jQueryException {
+        FamiliesFinder finder = new FamiliesFinder(neo4jAL, candidates);
+        List<FamilyGroup> fg = finder.findFamilies();
+
+        for (FamilyGroup f : fg) {
+            neo4jAL.logInfo(String.format("Found a %d objects family with prefix '%s'.", f.getFamilySize(),
+                    f.getCommonPrefix()));
+            f.addDemeterTag(neo4jAL);
+        }
+    }
+
+    /**
+     * Launch the detection
+     */
+    @Override
+    public List<FrameworkNode> launch() throws IOException, Neo4jQueryException {
+        int numTreated = 0;
+        boolean onlineMode = Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
+
+
+        neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
+
+        neo4jAL.logInfo(String.format("Investigation launched against %d objects.", toInvestigateNodes.size()));
+
+        List<Node> notDetected = new ArrayList<>();
+
+        try {
+            for (Node n : toInvestigateNodes) {
+                // Ignore object without a name property
+                if (!n.hasProperty(IMAGING_OBJECT_NAME)) continue;
+                String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
+
+                try {
+                    // Check if the framework is already known
+                    FrameworkNode fb = FrameworkNode.findFrameworkByName(neo4jAL, objectName);
+                    if (fb != null) {
+                        neo4jAL.logInfo(String.format("The object with name '%s' is already known by Artemis as a '%s'.",
+                                objectName, fb.getFrameworkType()));
+                    }
+
+                    // If the Framework is not known and the connection to google still possible, launch the Repositories &
+                    // the NLP Detection
+                    // Parse repositories
+                    if (fb == null) {
+                        if (!languageProperties.getRepositorySearch().isEmpty()) {
+                            List<SPackage> sPackageList = RepositoriesController.getRepositoryMatches(objectName,
+                                    languageProperties.getRepositorySearch());
+                            for (SPackage sp : sPackageList) {
+                                neo4jAL.logInfo(String.format("Package detected for object with name '%s' : '%s'. ",
+                                        objectName, sp.toJson().toString()));
+                            }
+                        }
+
+                        // Parse NLP
+                        if (googleParser != null && onlineMode && languageProperties.getOnlineSearch()) {
+                            String requestResult = googleParser.request(objectName);
+                            neo4jAL.logInfo("Name of the package to search : " + objectName);
+                            neo4jAL.logInfo("Content of the google query : " + requestResult);
+                            NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
+                            fb = saveNLPResult(neo4jAL, objectName, nlpResult);
+                        }
+                    }
+
+                    // Add the framework to the list of it was detected
+                    if (fb != null) {
+                        // If flag option is set, apply a demeter tag to the nodes considered as framework
+                        if (fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
+                            String cat = fb.getCategory();
+                            UtilsController.applyDemeterTag(neo4jAL, n, cat);
+                        } else {
+                            notDetected.add(n);
+                        }
+
+                        // Increment the number of detection and add it to the result lists
+                        //fb.incrementNumberDetection();
+                        frameworkNodeList.add(fb);
+                        this.reportGenerator.addFrameworkBean(fb);
+                    }
+
+                    numTreated++;
+                    if (numTreated % 100 == 0) {
+                        neo4jAL.logInfo(String.format("Investigation on going. Treating node %d/%d.", numTreated,
+                                toInvestigateNodes.size()));
+                    }
+
+                } catch (InvalidDatasetException | NLPBlankInputException | Neo4jQueryException |
+                        Neo4jBadNodeFormatException e) {
+                    String message = String.format("The object with name '%s' produced an error during execution.",
+                            objectName);
+                    neo4jAL.logError(message, e);
+                } catch (GoogleBadResponseCodeException | IOException e) {
+                    neo4jAL.logError("Fatal error, the communication with Google API was refused.", e);
+                    googleParser = null; // remove the google parser
+                }
+            }
+
+        } catch (TransactionTerminatedException e) {
+            neo4jAL.logError("The detection was interrupted. Saving the results...", e);
+        } finally {
+            reportGenerator.generate(); // generate the report
+        }
+
+
+        // Launch internal framework detector on remaining nodes
+        if (languageProperties.getInteractionDetector()) {
+            getInternalFramework(neo4jAL, notDetected);
+        }
+
+        return frameworkNodeList;
+    }
+
+
+    public CobolDetector(Neo4jAL neo4jAL, String application) throws IOException, Neo4jQueryException {
+        super(neo4jAL, application, SupportedLanguage.COBOL);
+    }
+}

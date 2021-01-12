@@ -1,16 +1,20 @@
 {
   "COBOL" : {
-    "object_internal_type": ["Cobol Program"],
+    "name": "Cobol",
+    "objects_internal_type": ["Cobol Program"],
     "online_search": true,
-    "interaction_detector": true,
+    "interaction_detector": false,
     "package_delimiter": "",
-    "repository_search": []
+    "repository_search": [],
+    "keywords" : "IBM Knowledge Center|Knowledge Center"
   },
   "JAVA" : {
-    "object_internal_type": ["Java"],
+    "name": "Java",
+    "objects_internal_type": ["Java"],
     "online_search": false,
     "interaction_detector": false,
     "package_delimiter": ".",
-    "repository_search": ["Maven", "Github"]
+    "repository_search": ["Maven", "Github"],
+    "keywords": "maven|stackoverflow|github"
   }
 }

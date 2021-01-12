@@ -20,7 +20,7 @@ public class UtilsController {
      * @param directoryPath The new Artemis workspace
      * @return
      */
-    public static String changeArtemisDirectory(String directoryPath) throws MissingFileException {
+    public static String setArtemisDirectory(String directoryPath) throws MissingFileException {
         if (!Files.exists(Path.of(directoryPath))) {
             return String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath);
         }
@@ -28,6 +28,15 @@ public class UtilsController {
         Configuration.set("artemis.workspace.folder", directoryPath);
         return String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath);
     }
+
+    /**
+     * Get the current Artemis directory
+     * @return
+     */
+    public static String getArtemisDirectory() {
+        return Configuration.get("artemis.workspace.folder");
+    }
+
 
     /**
      * Apply a demeter tag to the object using its parent level
@@ -64,9 +73,18 @@ public class UtilsController {
      * @return The new state of the online mode
      * @throws MissingFileException
      */
-    public static String switchOnlineMode(Boolean active) throws MissingFileException {
+    public static Boolean setOnlineMode(Boolean active) throws MissingFileException {
         Configuration.set("artemis.onlineMode", active.toString());
-        return Configuration.get("artemis.onlineMode");
+        Configuration.saveAndReload();
+        return Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
+    }
+
+    /**
+     * Get the value of the Online mode of Artemis
+     * @return
+     */
+    public static Boolean getOnlineMode() {
+        return Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
     }
 
     /**
@@ -75,11 +93,19 @@ public class UtilsController {
      * @return The new state of the repository mode
      * @throws MissingFileException
      */
-    public static String switchRepositoryMode(Boolean active) throws MissingFileException {
+    public static Boolean setRepositoryMode(Boolean active) throws MissingFileException {
         Configuration.set("artemis.repository_search", active.toString());
-        return Configuration.get("artemis.repository_search");
+        Configuration.saveAndReload();
+        return Boolean.parseBoolean(Configuration.get("artemis.repository_search"));
     }
 
+    /**
+     * Get the value of the repository parse parameter
+     * @return
+     */
+    public static Boolean getRepositoryMode() {
+        return Boolean.parseBoolean(Configuration.get("artemis.repository_search"));
+    }
 
 }
 

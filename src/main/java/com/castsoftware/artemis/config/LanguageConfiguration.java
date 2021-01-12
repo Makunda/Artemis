@@ -86,6 +86,7 @@ public class LanguageConfiguration {
                 String key = it.next();
                 JSONObject j = jsonConfig.getJSONObject(key);
                 List<String> repoList = new ArrayList<>();
+                List<String> objectTypeList = new ArrayList<>();
 
                 Iterator<Object> repoIterator = j.getJSONArray("repository_search").iterator();
                 while(repoIterator.hasNext()) {
@@ -93,10 +94,20 @@ public class LanguageConfiguration {
                     repoList.add(o.toString());
                 }
 
-                LanguageProp lp  = new LanguageProp(j.getBoolean("online_search"),
+                Iterator<Object> objectTypeIterator = j.getJSONArray("objects_internal_type").iterator();
+                while(objectTypeIterator.hasNext()) {
+                    Object o = objectTypeIterator.next();
+                    objectTypeList.add(o.toString());
+                }
+
+                LanguageProp lp  = new LanguageProp(
+                        j.getString("name"),
+                        j.getBoolean("online_search"),
                         j.getBoolean("interaction_detector"),
                         j.getString("package_delimiter"),
-                        repoList);
+                        repoList,
+                        objectTypeList);
+
                 languageMap.put(key, lp);
                 // Print the JSON detected
                 System.out.println("Detected : " + lp.toString());

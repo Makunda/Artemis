@@ -32,13 +32,13 @@ public class InteractionsController {
     public static final String IMAGING_APPLICATION_LABEL = Configuration.get("imaging.application.label");
 
 
-    public static List<OutputMessage> launchDetection(Neo4jAL neo4jAL, String applicationContext, String language)
+    public static List<OutputMessage> launchDetection(Neo4jAL neo4jAL, String applicationContext, String language, Boolean flagNodes)
             throws Neo4jQueryException {
 
 
         // Get language
         SupportedLanguage sLanguage = SupportedLanguage.getLanguage(language);
-        neo4jAL.logInfo(String.format("Starting Artemis intercation detection on language '%s'...", sLanguage.toString()));
+        neo4jAL.logInfo(String.format("Starting Artemis interaction detection on language '%s'...", sLanguage.toString()));
 
         // Get the list of nodes prefixed by dm_tag
         //String forgedTagRequest = String.format("MATCH (o:%1$s:%2$s) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s') " +
@@ -65,7 +65,14 @@ public class InteractionsController {
                 Duration.between(start, finish).toMillis()));
 
         FamiliesFinder ff = new FamiliesFinder(neo4jAL, toInvestigateNodes);
-        List<FamilyGroup> resultList = ff.findFamilies(); // LOGIC
+        List<FamilyGroup> resultList = ff.findFamilies(); // Logic of grouping
+
+        // If the flag option is set, apply demeter tag on the objects
+        for( FamilyGroup fg : resultList) {
+            for(Node n : fg.getNodeList()) {
+                UtilsController.applyDemeterParentTag(neo4jAL, n, fg.getCommonPrefix());
+            }
+        }
 
         neo4jAL.logInfo("Interaction detector done !");
 

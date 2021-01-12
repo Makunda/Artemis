@@ -23,6 +23,7 @@ public class FrameworkNode {
     private static final String PERCENTAGE_OF_DETECTION_PROPERTY = Configuration.get("artemis.frameworkNode.percentageDetection");
     private static final String TYPE_PROPERTY = Configuration.get("artemis.frameworkNode.frameworkType");
     private static final String CONFIRMED_PROPERTY = Configuration.get("artemis.frameworkNode.confirmed");
+    private static final String CATEGORY_PROPERTY = Configuration.get("artemis.frameworkNode.category");
 
     private static final String ERROR_PREFIX = "FRAMNx";
 
@@ -33,10 +34,11 @@ public class FrameworkNode {
     // Properties
     private String name;
     private String discoveryDate;
-    private String location;
-    private String description;
-    private Long numberOfDetection;
-    private Double percentageDetection;
+    private String location = "";
+    private String description = "";
+    private String category = "";
+    private Long numberOfDetection = 0L;
+    private Double percentageDetection = 0.0;
     private FrameworkType frameworkType;
     private Boolean confirmed;
 
@@ -107,6 +109,14 @@ public class FrameworkNode {
         return this.node;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     /**
      * Create a node based on the characteristics of the Framework
      * @return The node created
@@ -125,6 +135,7 @@ public class FrameworkNode {
         n.setProperty(NUMBER_OF_DETECTION_PROPERTY, getNumberOfDetection());
         n.setProperty(PERCENTAGE_OF_DETECTION_PROPERTY, getPercentageDetection());
         n.setProperty(TYPE_PROPERTY, getFrameworkType().toString());
+        n.setProperty(CATEGORY_PROPERTY, getCategory());
 
         setNode(n);
         return n;
@@ -159,13 +170,27 @@ public class FrameworkNode {
                 numDetection = (Long) temp.longValue();
             }
 
-            Double percentageDetection = (Double) n.getProperty(PERCENTAGE_OF_DETECTION_PROPERTY);
+            Double percentageDetection;
+            try {
+                percentageDetection = (Double) n.getProperty(PERCENTAGE_OF_DETECTION_PROPERTY);
+            } catch (ClassCastException e) {
+                Integer temp = (Integer) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+                percentageDetection = (Double) temp.doubleValue();
+            }
 
             String frameworkType = (String) n.getProperty(TYPE_PROPERTY);
             FrameworkType type = FrameworkType.getType(frameworkType);
 
+            String category = "Externals";
+            try{
+                category = (String) n.getProperty(CATEGORY_PROPERTY);
+            } catch (ClassCastException ignored) {
+                // Ignore
+            }
+
             FrameworkNode fn = new FrameworkNode(neo4jAL, name, discoveryDate, location, description, numDetection, percentageDetection);
             fn.setFrameworkType(type);
+            fn.setCategory(category);
             fn.setNode(n);
 
             return fn;
@@ -243,6 +268,7 @@ public class FrameworkNode {
         this.description = description;
         this.numberOfDetection = numberOfDetection;
         this.percentageDetection = percentageDetection;
+
     }
 
 }

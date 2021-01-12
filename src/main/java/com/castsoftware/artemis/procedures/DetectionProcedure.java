@@ -34,8 +34,8 @@ public class DetectionProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "artemis.launchDetection", mode = Mode.WRITE)
-    @Description("artemis.launchDetection(String ApplicationContext, String Language) - Launch Detection for a specific language")
+    @Procedure(value = "artemis.launch.detection", mode = Mode.WRITE)
+    @Description("artemis.launch.detection(String ApplicationContext, String Language) - Launch Detection for a specific language")
     public Stream<FrameworkResult> launchDetection(@Name(value = "ApplicationContext") String applicationContext,
                                                    @Name(value="Language", defaultValue = "") String language,
                                                    @Name(value="FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
@@ -53,8 +53,8 @@ public class DetectionProcedure {
 
     }
 
-    @Procedure(value = "artemis.bulkDetection", mode = Mode.WRITE)
-    @Description("artemis.bulkDetection(String Language) - Launch Detection for a specific language")
+    @Procedure(value = "artemis.launch.bulkDetection", mode = Mode.WRITE)
+    @Description("artemis.launch.bulkDetection(String Language) - Launch Detection for a specific language")
     public Stream<FrameworkResult> bulkDetection(@Name(value="Language") String language,
                                                  @Name(value="FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
 

@@ -26,13 +26,14 @@ public class InteractionsProcedure {
     public Log log;
 
     @Procedure(value = "artemis.get.interactions", mode = Mode.WRITE)
-    @Description("artemis.get.interactions(String ApplicationContext, String language) - Get the interactions in an application")
+    @Description("artemis.get.interactions(String ApplicationContext, String language, Boolean flagNodes) - Get the interactions in an application")
     public Stream<OutputMessage> launchDetection(@Name(value = "ApplicationContext") String applicationContext,
-                                                   @Name(value = "Language") String language) throws ProcedureException {
+                                                 @Name(value = "Language") String language,
+                                                 @Name(value = "FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            List<OutputMessage> detectedFrameworks = InteractionsController.launchDetection(nal, applicationContext, language);
+            List<OutputMessage> detectedFrameworks = InteractionsController.launchDetection(nal, applicationContext, language, flagNodes);
 
             return detectedFrameworks.stream();
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
