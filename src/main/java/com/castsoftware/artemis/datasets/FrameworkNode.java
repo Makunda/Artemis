@@ -24,6 +24,7 @@ public class FrameworkNode {
     private static final String TYPE_PROPERTY = Configuration.get("artemis.frameworkNode.frameworkType");
     private static final String CONFIRMED_PROPERTY = Configuration.get("artemis.frameworkNode.confirmed");
     private static final String CATEGORY_PROPERTY = Configuration.get("artemis.frameworkNode.category");
+    private static final String INTERNAL_TYPE_PROPERTY = Configuration.get("artemis.frameworkNode.internal_type");
 
     private static final String ERROR_PREFIX = "FRAMNx";
 
@@ -37,18 +38,16 @@ public class FrameworkNode {
     private String location = "";
     private String description = "";
     private String category = "";
+    private String internalType = "";
     private Long numberOfDetection = 0L;
     private Double percentageDetection = 0.0;
     private FrameworkType frameworkType;
     private Boolean confirmed;
 
-
     // Getters and setters
-
     public String getName() {
         return name;
     }
-
     public void setName(String name) {
         this.name = name;
     }
@@ -56,7 +55,6 @@ public class FrameworkNode {
     public String getDiscoveryDate() {
         return discoveryDate;
     }
-
     public void setDiscoveryDate(String discoveryDate) {
         this.discoveryDate = discoveryDate;
     }
@@ -64,7 +62,6 @@ public class FrameworkNode {
     public String getLocation() {
         return location;
     }
-
     public void setLocation(String location) {
         this.location = location;
     }
@@ -72,7 +69,6 @@ public class FrameworkNode {
     public String getDescription() {
         return description;
     }
-
     public void setDescription(String description) {
         this.description = description;
     }
@@ -80,7 +76,6 @@ public class FrameworkNode {
     public Long getNumberOfDetection() {
         return numberOfDetection;
     }
-
     public void setNumberOfDetection(Long numberOfDetection) {
         this.numberOfDetection = numberOfDetection;
     }
@@ -88,7 +83,6 @@ public class FrameworkNode {
     public Double getPercentageDetection() {
         return percentageDetection;
     }
-
     public void setPercentageDetection(Double percentageDetection) {
         this.percentageDetection = percentageDetection;
     }
@@ -96,7 +90,6 @@ public class FrameworkNode {
     public FrameworkType getFrameworkType() {
         return frameworkType;
     }
-
     public void setFrameworkType(FrameworkType frameworkType) {
         this.frameworkType = frameworkType;
     }
@@ -104,7 +97,6 @@ public class FrameworkNode {
     public void setNode(Node n) {
         this.node = n;
     }
-
     public Node getNode(){
         return this.node;
     }
@@ -112,9 +104,15 @@ public class FrameworkNode {
     public String getCategory() {
         return category;
     }
-
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getInternalType() {
+        return internalType;
+    }
+    public void setInternalType(String internalType) {
+        this.internalType = internalType;
     }
 
     /**
@@ -133,9 +131,10 @@ public class FrameworkNode {
         n.setProperty(LOCATION_PROPERTY, getLocation());
         n.setProperty(DESCRIPTION_PROPERTY, getDescription());
         n.setProperty(NUMBER_OF_DETECTION_PROPERTY, getNumberOfDetection());
-        n.setProperty(PERCENTAGE_OF_DETECTION_PROPERTY, getPercentageDetection());
+        n.setProperty(PERCENTAGE_OF_DETECTION_PROPERTY, getPercentageDetection().floatValue());
         n.setProperty(TYPE_PROPERTY, getFrameworkType().toString());
         n.setProperty(CATEGORY_PROPERTY, getCategory());
+        n.setProperty(INTERNAL_TYPE_PROPERTY, getInternalType());
 
         setNode(n);
         return n;
@@ -157,17 +156,26 @@ public class FrameworkNode {
             String name = (String) n.getProperty(NAME_PROPERTY);
             String discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
             String location = (String) n.getProperty(LOCATION_PROPERTY);
+            String internalType = (String) n.getProperty(LOCATION_PROPERTY);
+
 
             String description = "No description";
             if(n.hasProperty(DESCRIPTION_PROPERTY)) {
                 description  = (String) n.getProperty(DESCRIPTION_PROPERTY);
             }
+
             Long numDetection;
             try {
                 numDetection = (Long) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
             } catch (ClassCastException e) {
-                Integer temp = (Integer) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
-                numDetection = (Long) temp.longValue();
+                try {
+                    Integer temp = (Integer) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+                    numDetection = (Long) temp.longValue();
+                } catch (ClassCastException ex) {
+                    String temp = (String) n.getProperty(NUMBER_OF_DETECTION_PROPERTY);
+                    numDetection = (Long) Long.parseLong(temp);
+                }
+
             }
 
             Double percentageDetection;
@@ -191,6 +199,8 @@ public class FrameworkNode {
             FrameworkNode fn = new FrameworkNode(neo4jAL, name, discoveryDate, location, description, numDetection, percentageDetection);
             fn.setFrameworkType(type);
             fn.setCategory(category);
+            fn.setInternalType(internalType);
+
             fn.setNode(n);
 
             return fn;

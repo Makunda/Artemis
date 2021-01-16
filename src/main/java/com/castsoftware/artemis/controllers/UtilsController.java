@@ -1,14 +1,15 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.utils.Workspace;
 import org.neo4j.graphdb.Node;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 public class UtilsController {
@@ -20,13 +21,21 @@ public class UtilsController {
      * @param directoryPath The new Artemis workspace
      * @return
      */
-    public static String setArtemisDirectory(String directoryPath) throws MissingFileException {
+    public static List<String> setArtemisDirectory(String directoryPath) throws MissingFileException {
         if (!Files.exists(Path.of(directoryPath))) {
-            return String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath);
+            return List.of(String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath));
         }
-
+        // Generate Workspace
         Configuration.set("artemis.workspace.folder", directoryPath);
-        return String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath);
+
+        // Validate the workspace
+        List<String> outputMessages = Workspace.validateWorkspace();
+
+        // Reload User configuration
+        UserConfiguration.reload();
+
+        outputMessages.add(String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath));
+        return outputMessages;
     }
 
     /**
@@ -105,6 +114,27 @@ public class UtilsController {
      */
     public static Boolean getRepositoryMode() {
         return Boolean.parseBoolean(Configuration.get("artemis.repository_search"));
+    }
+
+    /**
+     * Set the value of the Persistent mode. In persistent mode the Framework detector will save the entries to the Neo4j
+     * database.
+     * @param active Value of the persistent mode
+     * @return The new value of the Persistent mode
+     * @throws MissingFileException
+     */
+    public static Boolean setPersistentMode(Boolean active) throws MissingFileException {
+        Configuration.set("artemis.persistent_mode", active.toString());
+        Configuration.saveAndReload();
+        return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+    }
+
+    /**
+     * Get the value of the Persistent mode parameter
+     * @return
+     */
+    public static Boolean getPersistentMode() {
+        return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
     }
 
 }

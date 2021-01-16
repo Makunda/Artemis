@@ -49,9 +49,9 @@ public class UtilsProcedure {
     public Stream<OutputMessage> setWorkspace(@Name(value = "ArtemisDirectory") String artemisDirectory) throws ProcedureException {
 
         try {
-            String message = UtilsController.setArtemisDirectory(artemisDirectory);
+            List<String> outputMessages = UtilsController.setArtemisDirectory(artemisDirectory);
 
-            return Stream.of(new OutputMessage(message));
+            return outputMessages.stream().map(OutputMessage::new);
         } catch (Exception | MissingFileException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
@@ -77,7 +77,7 @@ public class UtilsProcedure {
 
 
     @Procedure(value = "artemis.set.onlineMode", mode = Mode.WRITE)
-    @Description("artemis.set.onlineMode() - Set the online mode of artemis value")
+    @Description("artemis.set.onlineMode() - Set the value of online mode ")
     public Stream<BooleanResult> setOnlineMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
         try {
             Boolean mode = UtilsController.setOnlineMode(value);
@@ -103,8 +103,8 @@ public class UtilsProcedure {
     }
 
     @Procedure(value = "artemis.set.repositoryParse", mode = Mode.WRITE)
-    @Description("artemis.set.repositoryParse(Boolean value) - Get the value of online mode.")
-    public Stream<BooleanResult> getRepositoryMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
+    @Description("artemis.set.repositoryParse(Boolean value) - Set the value of repository mode.")
+    public Stream<BooleanResult> setRepositoryMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
         try {
             Boolean mode = UtilsController.setRepositoryMode(value);
             return Stream.of(new BooleanResult(mode));
@@ -116,8 +116,8 @@ public class UtilsProcedure {
     }
 
     @Procedure(value = "artemis.get.repositoryParse", mode = Mode.WRITE)
-    @Description("artemis.get.repositoryParse() - Get the value of online mode.")
-    public Stream<BooleanResult> setRepositoryMode() throws ProcedureException {
+    @Description("artemis.get.repositoryParse() - Get the value of repository mode.")
+    public Stream<BooleanResult> getRepositoryMode() throws ProcedureException {
         try {
             Boolean mode = UtilsController.getRepositoryMode();
             return Stream.of(new BooleanResult(mode));
@@ -127,4 +127,31 @@ public class UtilsProcedure {
             throw ex;
         }
     }
+
+    @Procedure(value = "artemis.set.persistentMode", mode = Mode.WRITE)
+    @Description("artemis.set.persistentMode(Boolean value) - Set the value of the persistent mode.")
+    public Stream<BooleanResult> setPersistentMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
+        try {
+            Boolean mode = UtilsController.setRepositoryMode(value);
+            return Stream.of(new BooleanResult(mode));
+        } catch (Exception | MissingFileException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "artemis.get.persistentMode", mode = Mode.WRITE)
+    @Description("artemis.get.persistentMode() - Get the value of the persistent mode.")
+    public Stream<BooleanResult> getPersistentMode() throws ProcedureException {
+        try {
+            Boolean mode = UtilsController.getRepositoryMode();
+            return Stream.of(new BooleanResult(mode));
+        } catch (Exception  e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
 }

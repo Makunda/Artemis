@@ -1,5 +1,6 @@
 package com.castsoftware.artemis.nlp.parser;
 
+import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import org.jsoup.Jsoup;
@@ -13,10 +14,19 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GoogleParser {
     private static final String GOOGLE_URL = "https://www.google.com/search?q=%s&sourceid=chrome&ie=UTF-8";
     private static final String ERROR_PREFIX = "GOOGPx";
+
+    private static final String RAW_BLACKLISTED_WEBSITE = Configuration.get("artemis.online.website.blacklist");
+    private static final String RAW_BLACKLISTED_KEYWORDS = Configuration.get("artemis.online.word.blacklist");
+    private static final List<String> BLACKLISTED_WEBSITE = Arrays.asList(RAW_BLACKLISTED_WEBSITE.split(";"));
+    private static final List<String> BLACKLISTED_KEYWORDS = Arrays.asList(RAW_BLACKLISTED_KEYWORDS.split(";"));
+
+    private static final Pattern TITLE_REGEX_PATTERN = Pattern.compile("<a[\\s]+[^>]+>((?:.(?!\\<\\/a\\>))*.)<\\/a>");
 
     private Log log;
     private HeaderGenerator headerGenerator;
@@ -46,7 +56,10 @@ public class GoogleParser {
         }
     }
 
-    public String request(String query) throws IOException, GoogleBadResponseCodeException {
+    public GoogleResult request(String query) throws IOException, GoogleBadResponseCodeException {
+        GoogleResult googleResult = new GoogleResult();
+        googleResult.setTitle(query);
+
         // Wait
         botBusterWait();
 
@@ -96,19 +109,56 @@ public class GoogleParser {
         List<String> extractedTitle = new ArrayList<>();
         List<String> extractedBody = new ArrayList<>();
 
+        // Get the title and verify the presence of blacklisted words in the first 4 elements
         List<Element> titles = document.getElementsByClass("rc");
+        googleResult.setNumberResult(titles.size());
+
+        int itTitle = 0;
         for (Element title: titles) {
             String titleText = null;
             if( !title.getElementsByTag("h3").isEmpty() ) {
                 titleText = title.getElementsByTag("h3").get(0).text();
+                if(itTitle < 4 ) {
+                    for(String blackListed : BLACKLISTED_KEYWORDS) {
+                        if(titleText.contains(blackListed)) {
+                            googleResult.setBlacklisted(true);
+                            break;
+                        }
+                    }
+                }
             }
             extractedTitle.add(titleText);
+
+            itTitle++;
         }
 
         // Add aCOpRe / st
         List<Element> bodies = document.getElementsByClass("rc");
         for (Element body: bodies) {
             extractedBody.add(body.text());
+        }
+
+        // Check website url and verify the first 4 results aren't blacklisted
+        // Regex
+        Matcher titleMatcher;
+        int itWebUrl = 0;
+        List<Element> urls = document.getElementsByClass("rc");
+        for (Element body: urls) {
+            if(itWebUrl > 4) {
+                break;
+            }
+            titleMatcher = TITLE_REGEX_PATTERN.matcher(body.text());
+            if(titleMatcher.matches()) {
+                for(int i=0; i <= titleMatcher.groupCount(); i++) {
+                    for(String forbidden : BLACKLISTED_WEBSITE) {
+                        if(titleMatcher.group(i).toLowerCase().contains(forbidden)) {
+                            googleResult.setBlacklisted(true);
+                            break;
+                        }
+                    }
+                }
+            }
+            itWebUrl ++;
         }
 
         Iterator<String> it1 = extractedTitle.iterator();
@@ -123,7 +173,9 @@ public class GoogleParser {
         // Remove Html anchors , http links, special characters and isolated numbers
         String res =  fullResults.toString().replaceAll("<\\/?\\s*\\w[^>]*\\/?>|[\\.]{2,}|([\\<\\>›»])|(\\b(\\d+)\\.?\\b)|(w{3}\\.[A-z0-9-]*\\.[A-z]{2,})|(?!([a-zA-Z\\s:,\\.-]))", " ");
         // Remove extra spaces
-        return res.replaceAll("\\s{2,}", "");
+        googleResult.setContent(res.replaceAll("\\s{2,}", ""));
+
+        return googleResult;
     }
 
     public GoogleParser(Log log) throws IOException {

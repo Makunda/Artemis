@@ -19,7 +19,7 @@ import java.util.List;
 public class ReportGenerator {
 
     public static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    public static final String REPORT_FOLDER = ARTEMIS_WORKSPACE + Configuration.get("nlp.reports_generator.folder");
+    public static final String REPORT_FOLDER = ARTEMIS_WORKSPACE + Configuration.get("artemis.reports_generator.folder");
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
     private static final Integer COLUMN_LENGTH = 5;

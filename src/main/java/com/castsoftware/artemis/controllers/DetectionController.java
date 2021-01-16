@@ -2,40 +2,24 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
-import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.CobolDetector;
-import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
+import com.castsoftware.artemis.detector.cobol.CobolDetector;
+import com.castsoftware.artemis.detector.java.JavaDetector;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
-import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
-import com.castsoftware.artemis.interactions.famililes.FamiliesFinder;
-import com.castsoftware.artemis.interactions.famililes.FamilyGroup;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
-import com.castsoftware.artemis.nlp.model.NLPCategory;
-import com.castsoftware.artemis.nlp.model.NLPConfidence;
 import com.castsoftware.artemis.nlp.model.NLPEngine;
-import com.castsoftware.artemis.nlp.model.NLPResults;
-import com.castsoftware.artemis.nlp.parser.GoogleParser;
-import com.castsoftware.artemis.reports.ReportGenerator;
-import com.castsoftware.artemis.repositories.SPackage;
 import com.castsoftware.artemis.results.FrameworkResult;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.TransactionTerminatedException;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class DetectionController {
     // Artemis properties
@@ -51,9 +35,10 @@ public class DetectionController {
 
     /**
      * Get the list of detected framework inside the provided list of node
-     * @param neo4jAL Neo4j access Layer
+     *
+     * @param neo4jAL     Neo4j access Layer
      * @param application Name of the application
-     * @param language Language of the detector
+     * @param language    Language of the detector
      * @return The list of the framework detected
      * @throws IOException
      * @throws Neo4jQueryException
@@ -67,6 +52,9 @@ public class DetectionController {
             case COBOL:
                 aDetector = new CobolDetector(neo4jAL, application);
                 break;
+            case JAVA:
+                aDetector = new JavaDetector(neo4jAL, application);
+                break;
             default:
                 throw new IllegalArgumentException(String.format("The language is not currently supported %s", language.toString()));
         }
@@ -77,9 +65,9 @@ public class DetectionController {
     /**
      * Launch the Artemis Detection against the specified application
      *
-     * @param neo4jAL            Neo4J Access Layer
-     * @param application        Application used during the detection
-     * @param language           Specify the language of the application to pick the correct dt
+     * @param neo4jAL     Neo4J Access Layer
+     * @param application Application used during the detection
+     * @param language    Specify the language of the application to pick the correct dt
      * @return The list of detected frameworks
      * @throws Neo4jQueryException
      * @throws IOException
@@ -129,6 +117,8 @@ public class DetectionController {
         String appNameRequest = String.format("MATCH (a:%1$s) WITH a.Name as appName  MATCH (obj:%2$s) WHERE appName IN LABELS(obj)  AND  obj.Type CONTAINS '%3$s' RETURN appName, COUNT(obj) as countObj;",
                 IMAGING_APPLICATION_LABEL, IMAGING_OBJECT_LABEL, language);
         neo4jAL.logInfo("Request to execute : " + appNameRequest);
+
+        // Get the List of application
         Result resAppName = neo4jAL.executeQuery(appNameRequest);
         while (resAppName.hasNext()) {
             Map<String, Object> res = resAppName.next();

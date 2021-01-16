@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class HeaderGenerator {
 
-    private static final String HEADER_FILE_NAME = Configuration.get("nlp.parser.header_file.name");
+    private static final String HEADER_FILE_NAME = Configuration.get("artemis.parser.header_file.name");
 
     private static HeaderGenerator instance = null;
 

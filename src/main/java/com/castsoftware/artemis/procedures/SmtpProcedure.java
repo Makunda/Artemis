@@ -56,4 +56,31 @@ public class SmtpProcedure {
 
     }
 
+    @Procedure(value = "artemis.get.smtpConfiguration", mode = Mode.WRITE)
+    @Description("artemis.get.smtpConfiguration() - Get the configuration of the SMTP server.")
+    public Stream<OutputMessage> getMailConfiguration() throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            return SmtpController.getMailConfiguration(nal).stream().map(OutputMessage::new);
+        } catch (Exception | Neo4jConnectionError e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+
+    }
+
+    @Procedure(value = "artemis.mail.testMailCampaign", mode = Mode.WRITE)
+    @Description("artemis.mail.testMailCampaign() - Get the configuration of the SMTP server.")
+    public void testMailCampaign() throws ProcedureException {
+        try {
+            SmtpController.testMailCampaign();
+        } catch (Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+
+    }
+
 }

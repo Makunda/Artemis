@@ -1,7 +1,8 @@
 package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.config.LanguageConfiguration;
+import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
 import com.castsoftware.artemis.nlp.KeywordsManager;
@@ -10,24 +11,16 @@ import opennlp.tools.doccat.*;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
-import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.*;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Scanner;
 
 import static com.castsoftware.artemis.nlp.SupportedLanguage.ALL;
 
 public class NLPEngine {
-
-    private static final String MODEL_FILE_NAME =  Configuration.get("nlp.model_file.name");
-    private static final String TRAIN_DT_NAME =  Configuration.get("nlp.dataset_train.name");
-    private static final String TEST_DT_NAME =  Configuration.get("nlp.dataset_test.name");
     private static final String TOKENIZER_FILE_NAME =  Configuration.get("nlp.tokenizer_file.name");
 
     private static final String NLP_FRAMEWORK_CATEGORY = Configuration.get("nlp.category.is_framework");
@@ -42,6 +35,10 @@ public class NLPEngine {
     private File modelFile = null;
     private DoccatModel model = null;
     private SupportedLanguage language;
+
+    private String modelFilePath;
+    private String trainDatasetFilePath;
+    private String testDatasetFilePath;
 
     private Log log;
 
@@ -86,8 +83,7 @@ public class NLPEngine {
      * @throws IOException
      */
     public void train() throws IOException {
-        String trainDTPath =  Configuration.get("artemis.workspace.folder") + TRAIN_DT_NAME;
-        String modelFilePath =  Configuration.get("artemis.workspace.folder") + MODEL_FILE_NAME;
+        String trainDTPath =  trainDatasetFilePath;
 
         // Read file with classifications samples of sentences.
         InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(new File(trainDTPath));
@@ -113,7 +109,7 @@ public class NLPEngine {
      * Load Datasets and evaluate the model
      */
     public Double evaluateModel() throws IOException {
-        String testDTPath =  Configuration.get("artemis.workspace.folder") + TEST_DT_NAME;
+        String testDTPath =  testDatasetFilePath;
 
         Integer positive = 0;
         Integer negative = 0;
@@ -242,7 +238,6 @@ public class NLPEngine {
      * @return
      */
     public boolean checkIfModelExists() {
-        String modelFilePath =  Configuration.get("artemis.workspace.folder") + MODEL_FILE_NAME;
         log.info("Checking the existence of the model file at '%s'.", modelFilePath);
         this.modelFile = new File(modelFilePath);
         return modelFile.exists();
@@ -265,7 +260,7 @@ public class NLPEngine {
      */
     public void importModelFile() throws IOException, NLPIncorrectConfigurationException {
         if(!checkIfModelExists()){
-            String message = String.format("No model file with name '%s' was found under workspace '%s'.", MODEL_FILE_NAME, Configuration.get("artemis.workspace.folder"));
+            String message = String.format("No model file with name '%s' was found under workspace '%s'.", modelFilePath, Configuration.get("artemis.workspace.folder"));
             throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
         }
 
@@ -277,6 +272,15 @@ public class NLPEngine {
     public NLPEngine(Log log, SupportedLanguage language) {
         this.language = language;
         this.log = log;
+
+        LanguageConfiguration lc = LanguageConfiguration.getInstance();
+        LanguageProp languageProperties = lc.getLanguageProperties(language.toString());
+
+        // Work space is artemis workspace + name of the language
+        String workspace = Configuration.get("artemis.workspace.folder") + language.toString() +"/";
+        this.modelFilePath = workspace + languageProperties.getModelFileName();
+        this.testDatasetFilePath = workspace + Configuration.get("nlp.dataset_test.name");
+        this.trainDatasetFilePath =  workspace + Configuration.get("nlp.dataset_train.name");
     }
 
 }

@@ -12,6 +12,7 @@ public class NLPResults {
 
     private NLPCategory category;
     private NLPConfidence confidence;
+    private double probability;
     private double[] probabilities;
 
     // Getters
@@ -28,22 +29,28 @@ public class NLPResults {
         return probabilities;
     }
 
+    public double getProbability() {
+        return probability;
+    }
+
     public NLPResults(String category, double[] probabilities) {
         this.probabilities = probabilities;
 
+        this.probability = probabilities[0];
+
         // Bind the result to a NLPResult
         this.category = NLPCategory.NOT_FRAMEWORK;
-        if(category.equals(IS_FRAMEWORK_CATEGORY)) {
+        if (category.equals(IS_FRAMEWORK_CATEGORY)) {
             this.category = NLPCategory.FRAMEWORK;
         }
 
         // Get the level of confidence base on the user preferences
         this.confidence = NLPConfidence.CONFIDENT;
         // Check if the gap between detection is lower than the minimum gap of confidence
-        if(probabilities.length >= 2) {
-            for(int i = 0; i < probabilities.length -2; i++) {
-                double gap = probabilities[i+1] - probabilities[i];
-                if(gap < MIN_CONFIDENCE_GAP) {
+        if (probabilities.length >= 2) {
+            for (int i = 0; i < probabilities.length - 2; i++) {
+                double gap = probabilities[i + 1] - probabilities[i];
+                if (gap < MIN_CONFIDENCE_GAP) {
                     this.confidence = NLPConfidence.NOT_CONFIDENT;
                 }
             }

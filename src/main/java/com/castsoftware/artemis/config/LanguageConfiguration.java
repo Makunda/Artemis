@@ -106,7 +106,8 @@ public class LanguageConfiguration {
                         j.getBoolean("interaction_detector"),
                         j.getString("package_delimiter"),
                         repoList,
-                        objectTypeList);
+                        objectTypeList,
+                        j.getString("nlp_model"));
 
                 languageMap.put(key, lp);
                 // Print the JSON detected
