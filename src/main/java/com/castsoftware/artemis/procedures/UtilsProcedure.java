@@ -77,7 +77,7 @@ public class UtilsProcedure {
 
 
     @Procedure(value = "artemis.set.onlineMode", mode = Mode.WRITE)
-    @Description("artemis.set.onlineMode() - Set the value of online mode ")
+    @Description("artemis.set.onlineMode(Boolean value) - Set the value of online mode ")
     public Stream<BooleanResult> setOnlineMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
         try {
             Boolean mode = UtilsController.setOnlineMode(value);
@@ -102,8 +102,8 @@ public class UtilsProcedure {
         }
     }
 
-    @Procedure(value = "artemis.set.repositoryParse", mode = Mode.WRITE)
-    @Description("artemis.set.repositoryParse(Boolean value) - Set the value of repository mode.")
+    @Procedure(value = "artemis.set.repositoryMode", mode = Mode.WRITE)
+    @Description("artemis.set.repositoryMode(Boolean value) - Set the value of repository mode.")
     public Stream<BooleanResult> setRepositoryMode(@Name(value = "Value", defaultValue = "true") Boolean value ) throws ProcedureException {
         try {
             Boolean mode = UtilsController.setRepositoryMode(value);
@@ -115,8 +115,8 @@ public class UtilsProcedure {
         }
     }
 
-    @Procedure(value = "artemis.get.repositoryParse", mode = Mode.WRITE)
-    @Description("artemis.get.repositoryParse() - Get the value of repository mode.")
+    @Procedure(value = "artemis.get.repositoryMode", mode = Mode.WRITE)
+    @Description("artemis.get.repositoryMode() - Get the value of repository mode.")
     public Stream<BooleanResult> getRepositoryMode() throws ProcedureException {
         try {
             Boolean mode = UtilsController.getRepositoryMode();
