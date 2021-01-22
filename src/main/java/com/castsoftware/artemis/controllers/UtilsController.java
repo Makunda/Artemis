@@ -14,13 +14,17 @@ package com.castsoftware.artemis.controllers;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.io.Importer;
 import com.castsoftware.artemis.utils.Workspace;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class UtilsController {
@@ -146,6 +150,39 @@ public class UtilsController {
      */
     public static Boolean getPersistentMode() {
         return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+    }
+
+    /**
+     * Install the extension
+     * @param neo4jAL Neo4j acces Layer
+     * @param workspacePath Path of the workspace
+     * @return The list of message to follow the different step.
+     * @throws MissingFileException
+     */
+    public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws MissingFileException {
+        // Set the workspace path
+        List<String> returnList = new ArrayList<>();
+        returnList.addAll(setArtemisDirectory(workspacePath));
+
+        Path initDataZip = Workspace.getInitDataZip();
+
+        // Import list of frameworks
+        if (Files.exists(initDataZip)) {
+            try {
+                returnList.add("Initialisation data were discovered.");
+                Importer importer = new Importer(neo4jAL);
+                importer.load(initDataZip.toString());
+                returnList.add("Initialisation was successful !");
+            } catch (Exception  | ProcedureException e) {
+                returnList.add("The import of the data failed. If the Demeter extension is not present, make sure you installed the 'Friendly exporter'.");
+                returnList.add("The import of the data failed for the following reason: " + e.getLocalizedMessage());
+            }
+
+        } else {
+            returnList.add("The Initialisation was skipped due to missing files");
+        }
+
+        return returnList;
     }
 
 }

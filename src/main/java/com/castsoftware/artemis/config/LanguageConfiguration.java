@@ -13,6 +13,7 @@ package com.castsoftware.artemis.config;
 
 
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
@@ -52,6 +53,10 @@ public class LanguageConfiguration {
         language = language.toUpperCase();
         if(!checkLanguageExistence(language)) return null;
         return languageMap.get(language);
+    }
+
+    public LanguageProp getLanguageProperties(SupportedLanguage language) {
+        return getLanguageProperties(language.toString());
     }
 
     /**

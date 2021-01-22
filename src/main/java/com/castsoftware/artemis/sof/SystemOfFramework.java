@@ -12,14 +12,17 @@
 package com.castsoftware.artemis.sof;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.LanguageConfiguration;
+import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SystemOfFramework {
 
@@ -50,11 +53,49 @@ public class SystemOfFramework {
         return node;
     }
 
+    /**
+     * Run this instance of System of Framework to show the discovered links in your applications
+     */
     public void run() {
-        String request = String.format("");
+        // Parse detected object in the application
+        RelationshipType relationshipType = RelationshipType.withName("PRESENT_IN");
+        LanguageProp lp = LanguageConfiguration.getInstance().getLanguageProperties(this.language);
+        String internalTypeString = lp.getObjectsInternalType().stream()
+                .collect(Collectors.joining(", ", "\"", "\""));
+
+        String request = "MATCH (o:Object)<-[]-(l:Level5) WHERE NOT '"+ this.application +"' in LABELS(o) AND o.Name='%s' " +
+                "and o.InternalType IN ["+internalTypeString+"] RETURN [x IN LABELS(o) WHERE x <> 'VZ' and x <> 'Object'][0] as application, l as level;";
+        for(FrameworkNode fNode : frameworkNodeList) {
+            try {
+                Result res = neo4jAL.executeQuery(String.format(request, fNode.getName()));
+                if(res.hasNext())  {
+                    String application = (String) res.next().get("application");
+                    Node level = (Node) res.next().get("level");
+
+                    neo4jAL.logInfo(String.format("Framework link found, will create link between object %s and application %s", application ,level.getProperty("Name")));
+                    // Create a link to the level
+                    Node targetApplicationNode = createSofObject(application);
+                    level.createRelationshipTo(targetApplicationNode, relationshipType);
+                }
+            } catch (Neo4jQueryException e) {
+                neo4jAL.logError("An error occurred parsing the applications to find similar frameworks.", e);
+            }
+
+
+        }
+
+
+
 
     }
 
+    /**
+     * Create a instance of System of Frameworks, to detect if the framework detected in your application, is present somewhere else
+     * @param neo4jAL Neo4j Access Layer
+     * @param language Language to detect
+     * @param application Name of the Application
+     * @param frameworkNodeList List of frameworks detected in the application
+     */
     public SystemOfFramework(Neo4jAL neo4jAL, SupportedLanguage language, String application, List<FrameworkNode> frameworkNodeList) {
         this.neo4jAL = neo4jAL;
         this.language = language;

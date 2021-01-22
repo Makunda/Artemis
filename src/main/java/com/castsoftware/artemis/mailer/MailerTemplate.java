@@ -11,8 +11,12 @@
 
 package com.castsoftware.artemis.mailer;
 
+import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.results.FrameworkResult;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class MailerTemplate {
 
@@ -36,5 +40,48 @@ public class MailerTemplate {
     sb.append(error.getLocalizedMessage());
 
     return sb.toString();
+  }
+
+
+  public static String generateResultMail(String application, List<FrameworkResult> nodes) {
+
+    StringBuilder sb = new StringBuilder();
+
+    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    Date date = new Date();
+
+    sb.append("The analysis for application : ").append(application).append(" returned the following results :").append("<br>");
+    sb.append("<i>Analysis completed on ").append(formatter.format(date)).append(" </i>");
+    sb.append("<br");
+    sb.append("Please find the results of the analysis below: <br>");
+
+    // Build the table
+    sb.append("<div class=\"divTable paleBlueRows\">\n" +
+            "        <div class=\"divTableHeading\">\n" +
+            "          <div class=\"divTableRow\">\n" +
+            "            <div class=\"divTableHead\">Name</div>\n" +
+            "            <div class=\"divTableHead\">Category</div>\n" +
+            "            <div class=\"divTableHead\">Description</div>\n" +
+            "            <div class=\"divTableHead\">Detected  as</div>\n" +
+            "          </div>\n" +
+            "          </div>\n" +
+            "          <div class=\"divTableBody\">");
+
+    // Append the rows containing the values in the table
+    for(FrameworkResult fn : nodes) {
+
+      sb.append("<div class=\"divTableRow\">\n" +
+              "            <div class=\"divTableCell\">"+ fn.name +"</div>\n" +
+              "            <div class=\"divTableCell\">"+ fn.category +"</div>\n" +
+              "            <div class=\"divTableCell\">"+ fn.description +"</div>\n" +
+              "            <div class=\"divTableCell\">"+ fn.type +"</div>\n" +
+              "          </div>");
+    }
+
+    sb.append("</div>\n" +
+            "      </div>");
+
+    return sb.toString();
+
   }
 }

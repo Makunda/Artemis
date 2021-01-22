@@ -39,6 +39,7 @@ public class UtilsProcedure {
     @Context
     public Log log;
 
+
     @Procedure(value = "artemis.get.workspace", mode = Mode.WRITE)
     @Description("artemis.get.workspace() - Get the workspace directory of the Artemis extension.")
     public Stream<OutputMessage> getWorkspace() throws ProcedureException {
@@ -163,6 +164,23 @@ public class UtilsProcedure {
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
+    }
+
+    @Procedure(value = "artemis.install", mode = Mode.WRITE)
+    @Description("artemis.install(String artemisDirectory) - Install the Artemis extension.")
+    public Stream<OutputMessage> install(@Name(value = "ArtemisDirectory") String artemisDirectory) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<String> outputMessages = UtilsController.install(nal, artemisDirectory);
+
+            return outputMessages.stream().map(OutputMessage::new);
+        } catch (Exception | MissingFileException | Neo4jConnectionError e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+
     }
 
 }

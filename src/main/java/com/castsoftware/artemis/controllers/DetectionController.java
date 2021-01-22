@@ -90,8 +90,8 @@ public class DetectionController {
         List<FrameworkResult> resultList = new ArrayList<>();
 
         // Convert the framework detected to Framework Results
-        for (FrameworkNode fb : frameworkList) {
-            FrameworkResult fr = new FrameworkResult(fb.getName(), fb.getDescription(), fb.getCategory(), fb.getFrameworkType().toString());
+        for (FrameworkNode fn : frameworkList) {
+            FrameworkResult fr = new FrameworkResult(fn);
             resultList.add(fr);
         }
 
@@ -147,8 +147,8 @@ public class DetectionController {
         }
 
 
-        for (FrameworkNode fb : frameworkList) {
-            FrameworkResult fr = new FrameworkResult(fb.getName(), fb.getDescription(), fb.getCategory(), fb.getFrameworkType().toString());
+        for (FrameworkNode fn : frameworkList) {
+            FrameworkResult fr = new FrameworkResult(fn);
             resultList.add(fr);
         }
 

@@ -26,6 +26,7 @@ import com.castsoftware.artemis.interactions.famililes.FamilyGroup;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;
+import com.castsoftware.artemis.sof.SystemOfFramework;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
@@ -55,6 +56,11 @@ public class CobolDetector extends ADetector {
               f.getFamilySize(), f.getCommonPrefix()));
       f.addDemeterTag(neo4jAL);
     }
+  }
+
+  public void createSystemOfFrameworks(List<FrameworkNode> frameworkNodeList) {
+    SystemOfFramework sof = new SystemOfFramework(this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
+    sof.run();
   }
 
   /** Launch the detection */
@@ -149,6 +155,7 @@ public class CobolDetector extends ADetector {
         }
       }
 
+
     } catch (TransactionTerminatedException e) {
       neo4jAL.logError("The detection was interrupted. Saving the results...", e);
     } finally {
@@ -158,8 +165,10 @@ public class CobolDetector extends ADetector {
 
     // Launch internal framework detector on remaining nodes
     if (languageProperties.getInteractionDetector()) {
-      getInternalFramework(neo4jAL, notDetected);
+      //getInternalFramework(neo4jAL, notDetected);
+      createSystemOfFrameworks(frameworkNodeList);
     }
+
 
     return frameworkNodeList;
   }

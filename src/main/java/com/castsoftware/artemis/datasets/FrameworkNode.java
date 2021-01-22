@@ -231,7 +231,6 @@ public class FrameworkNode {
      */
     public static FrameworkNode findFrameworkByName(Neo4jAL neo4jAL, String frameworkName) throws Neo4jQueryException, Neo4jBadNodeFormatException {
         String matchReq = String.format("MATCH (n:%s) WHERE n.%s='%s' RETURN n as node LIMIT 1;", LABEL_PROPERTY, NAME_PROPERTY, frameworkName);
-
         Result res = neo4jAL.executeQuery(matchReq);
         // Check if the query returned a correct result
         if(!res.hasNext()) {
@@ -242,6 +241,33 @@ public class FrameworkNode {
         FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, n);
 
         return fn;
+    }
+
+    /**
+     * Update a framework in the database
+     * @param neo4jAL Neo4j Access Layer
+     * @param frameworkName Name of the framework
+     * @param fn New Framework Node
+     * @return
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadNodeFormatException
+     */
+    public static FrameworkNode updateFrameworkByName(Neo4jAL neo4jAL, String frameworkName, FrameworkNode fn) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+        FrameworkNode actualFn = findFrameworkByName(neo4jAL, frameworkName);
+        if(actualFn == null) return null;
+
+        actualFn.delete();
+        fn.createNode();
+
+        return fn;
+    }
+
+    /**
+     * Delete the node from the database
+     */
+    public void delete() {
+        if(this.node == null) return;
+        this.node.delete();
     }
 
     /**
@@ -281,6 +307,7 @@ public class FrameworkNode {
         this.numberOfDetection = numberOfDetection;
         this.percentageDetection = 0.0;
     }
+
     public FrameworkNode(Neo4jAL neo4jAL, String name, String discoveryDate, String location, String description, Long numberOfDetection, Double percentageDetection) {
         this.neo4jAL = neo4jAL;
         this.name = name;

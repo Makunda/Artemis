@@ -44,6 +44,16 @@ public class Workspace {
     }
 
     /**
+     * Get the supposed path of the initialization
+     * @return
+     */
+    public static Path getInitDataZip() {
+        String workspace = Configuration.get("artemis.workspace.folder");
+        Path dataFolder = Path.of(workspace).resolve(Configuration.get("artemis.install_data.folder"));
+        return dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
+    }
+
+    /**
      * Get the path of the model for a specific language
      * @param language
      * @return
@@ -60,6 +70,28 @@ public class Workspace {
     }
 
     /**
+     * Check if the folder exist. If not, create it
+     * @param folderPath Path of the folder to check
+     * @param name Name of the folder
+     * @return
+     */
+    private static List<String> checkOrCreateFolder(Path folderPath, String name) {
+        List<String> messageOutputList = new ArrayList<>();
+        // Check main folders and create if necessary
+        if (!Files.exists(folderPath)) {
+            try {
+                Files.createDirectory(folderPath);
+                messageOutputList.add(String.format("%s was missing and has been created.", name));
+            } catch (IOException e) {
+                messageOutputList.add(String.format("ERROR : %s is missing and its creation failed : %s", name,  e.getMessage()));
+            }
+        }
+
+        return messageOutputList;
+    }
+
+
+    /**
      * Validate if the workspace is valid and contains all the Artemis mandatory files
      * @return List of message to be displayed
      */
@@ -70,6 +102,8 @@ public class Workspace {
         Path workspacePath = Path.of(workspace);
         Path reportFolder = workspacePath.resolve(Configuration.get("artemis.reports_generator.folder"));
         Path enrichmentFolder = workspacePath.resolve(Configuration.get("artemis.nlp_enrichment.folder"));
+        Path dataFolder = workspacePath.resolve(Configuration.get("artemis.install_data.folder"));
+        Path installData = dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
         Path headerFilePath = workspacePath.resolve(Configuration.get("artemis.parser.header_file.name"));
         Path confFilePath = workspacePath.resolve(Configuration.get("artemis.config.user.conf_file"));
 
@@ -83,24 +117,13 @@ public class Workspace {
         }
 
         // Check main folders and create if necessary
-        if (!Files.exists(reportFolder)) {
-            try {
-                Files.createDirectory(reportFolder);
-                messageOutputList.add("Report folder was missing and has been created.");
-            } catch (IOException e) {
-                messageOutputList.add(String.format("ERROR : Report folder is missing and its creation failed : %s", e.getMessage()));
-            }
-        }
+        messageOutputList.addAll(checkOrCreateFolder(reportFolder, "Report folder"));
+
+        // Check data folders and create if necessary
+        messageOutputList.addAll(checkOrCreateFolder(dataFolder, "Data folder"));
 
         // Enrichment folder
-        if (!Files.exists(enrichmentFolder)) {
-            try {
-                Files.createDirectory(enrichmentFolder);
-                messageOutputList.add("Enrichment folder was missing and has been created.");
-            } catch (IOException e) {
-                messageOutputList.add(String.format("ERROR : Enrichment folder is missing and its creation failed : %s", e.getMessage()));
-            }
-        }
+        messageOutputList.addAll(checkOrCreateFolder(enrichmentFolder, "Enrichment folder"));
 
         // Check the existent of the user agent file
         if (!Files.exists(headerFilePath)) {
@@ -110,6 +133,11 @@ public class Workspace {
         // Check the existent of the user configuration file
         if (!Files.exists(confFilePath)) {
             messageOutputList.add(String.format("ERROR : Configuration file '%s' is missing. The SMTP parse will not work without this file.", Configuration.get("artemis.config.user.conf_file")));
+        }
+
+        // Check the existent of the user configuration file
+        if (!Files.exists(installData)) {
+            messageOutputList.add(String.format("ERROR :  Data initialization zip '%s' is missing. The initialization will not work without this file.", Configuration.get("artemis.install_data.artemis_framework_file")));
         }
 
         // Check languages & associated models
