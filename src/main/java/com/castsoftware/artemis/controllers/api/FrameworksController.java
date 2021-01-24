@@ -19,13 +19,35 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 
 public class FrameworksController {
 
-
+    /**
+     * Find a framework using its name
+     * @param neo4jAL Neo4j Access Layer
+     * @param name Name of the Framework to find
+     * @return
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadNodeFormatException
+     */
     public static FrameworkNode findFrameworkByName(
         Neo4jAL neo4jAL,
         String name) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        FrameworkNode fn = FrameworkNode.findFrameworkByName(neo4jAL, name);
 
-        return fn;
+        return FrameworkNode.findFrameworkByName(neo4jAL, name);
+    }
+
+    /**
+     * Find a framework using its name and its internal type
+     * @param neo4jAL Neo4j Access Layer
+     * @param name Name of the Framework to find
+     * @param internalType  Internal type of the object
+     * @return
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadNodeFormatException
+     */
+    public static FrameworkNode findFrameworkByNameAndType(
+            Neo4jAL neo4jAL,
+            String name, String internalType) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+
+        return FrameworkNode.findFrameworkByNameAndType(neo4jAL, name, internalType);
     }
 
     /**

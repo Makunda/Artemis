@@ -34,10 +34,10 @@ public class FrameworkResult {
         this.name = fn.getName();
         this.category = fn.getCategory();
         this.description = fn.getDescription();
-        this.type = fn.getCategory();
+        this.type = fn.getFrameworkType().toString();
         this.internalType = fn.getInternalType();
-        this.location = fn.getInternalType();
+        this.location = fn.getLocation();
         this.discoveryDate = fn.getDiscoveryDate();
-        this.percentageOfDetection = fn.getPercentageDetection();
+        this.percentageOfDetection = fn.getPercentageOfDetection();
     }
 }

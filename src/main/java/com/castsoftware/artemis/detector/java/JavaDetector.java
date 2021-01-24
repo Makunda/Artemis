@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.detector.java;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.controllers.RepositoriesController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
@@ -37,8 +38,8 @@ public class JavaDetector extends ADetector {
     @Override
     public List<FrameworkNode> launch() throws IOException, Neo4jQueryException {
         // Get Dynamic parameters
-        boolean onlineMode = Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
-        boolean learningMode = Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
+        boolean onlineMode = Boolean.parseBoolean(UserConfiguration.get("artemis.onlineMode"));
+        boolean learningMode = Boolean.parseBoolean(UserConfiguration.get("artemis.learning_mode"));
 
         // Init properties
         List<FrameworkNode> returnList = new ArrayList<>();

@@ -2,9 +2,9 @@
  * Copyright (C) 2020  Hugo JOBY
  *
  *  This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty ofnMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNUnLesser General Public License v3 for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public v3 License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
@@ -14,6 +14,7 @@ package com.castsoftware.artemis.detector;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -26,6 +27,7 @@ import com.castsoftware.artemis.nlp.model.NLPEngine;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.nlp.saver.NLPSaver;
+import com.castsoftware.artemis.oracle.OracleCom;
 import com.castsoftware.artemis.reports.ReportGenerator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -49,8 +51,7 @@ public abstract class ADetector {
   protected static final String IMAGING_APPLICATION_LABEL =
       Configuration.get("imaging.application.label");
   protected static final String IMAGING_INTERNAL_TYPE =
-          Configuration.get("imaging.application.InternalType");
-
+      Configuration.get("imaging.application.InternalType");
 
   // Member of the detector
   protected Neo4jAL neo4jAL;
@@ -60,6 +61,7 @@ public abstract class ADetector {
   protected List<FrameworkNode> frameworkNodeList;
   protected NLPEngine nlpEngine;
   protected NLPSaver nlpSaver;
+  protected OracleCom oracleCom;
 
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
@@ -76,7 +78,7 @@ public abstract class ADetector {
    */
   protected FrameworkNode saveFrameworkResult(String name, NLPResults results, String internalType)
       throws Neo4jQueryException {
-    boolean persistentMode = Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+    boolean persistentMode = Boolean.parseBoolean(UserConfiguration.get("artemis.persistent_mode"));
 
     Date date = Calendar.getInstance().getTime();
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -106,8 +108,20 @@ public abstract class ADetector {
     fb.setFrameworkType(fType);
     fb.setInternalType(internalType);
 
+    // Save the Node to the local database
     if (persistentMode) {
       fb.createNode();
+    }
+
+    // If the Oracle communication is up, send the framework to the oracle
+    if (oracleCom.isConnected()) {
+      try {
+        oracleCom.addFramework(fb);
+      } catch (Exception e) {
+        neo4jAL.logError("Failed to send the framework to the oracle.", e);
+      }
+    } else {
+      oracleCom.getStatus();
     }
 
     return fb;
@@ -166,6 +180,7 @@ public abstract class ADetector {
     this.application = application;
     this.toInvestigateNodes = new ArrayList<>();
     this.nlpSaver = new NLPSaver(application);
+    this.oracleCom = OracleCom.getInstance(neo4jAL.getLogger());
 
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);

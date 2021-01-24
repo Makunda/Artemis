@@ -102,22 +102,23 @@ public class FrameworksApiProcedure {
 
   @Procedure(value = "artemis.api.find.framework", mode = Mode.WRITE)
   @Description(
-          "artemis.api.find.framework(String Name) - Find a framework using its name")
-  public Stream<FrameworkResult> updateFramework(
-          @Name(value = "Name") String name) throws ProcedureException {
+          "artemis.api.find.framework(String Name, Optional String InternalType) - Find a framework using its name")
+  public Stream<FrameworkResult> findFramework(
+          @Name(value = "Name") String name,
+          @Name(value = "InternalType", defaultValue = "") String internalType ) throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      FrameworkNode fn =
-              FrameworksController.findFrameworkByName(
-                      nal,
-                      name);
-
-      if(fn != null) {
-        return Stream.of(new FrameworkResult(fn));
+      FrameworkNode fn;
+      if(internalType.isEmpty()) {
+        fn = FrameworksController.findFrameworkByName( nal, name);
       } else {
-        return null;
+        fn = FrameworksController.findFrameworkByNameAndType( nal, name, internalType );
       }
+
+      if(fn == null) return Stream.of();
+
+      return Stream.of(new FrameworkResult(fn));
 
     } catch (Exception
             | Neo4jConnectionError

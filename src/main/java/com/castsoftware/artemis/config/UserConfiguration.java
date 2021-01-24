@@ -14,13 +14,10 @@ package com.castsoftware.artemis.config;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.utils.Workspace;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Retrieve the Configuration of the user config file
@@ -42,6 +39,57 @@ public class UserConfiguration {
         }
 
         return PROPERTIES.get(key).toString();
+    }
+
+    public static String set(String key, String value) throws MissingFileException {
+        PROPERTIES.setProperty(key, value);
+        saveAndReload();
+        return PROPERTIES.get(key).toString();
+    }
+
+    /**
+     * Save the configuration and reload it
+     * @throws FileNotFoundException
+     */
+    public static void saveAndReload() throws MissingFileException {
+
+        Path configurationPath = Workspace.getUserConfigPath();
+
+        try (FileOutputStream file = new FileOutputStream(configurationPath.toFile())) {
+
+            file.write("# Artemis Configuration properties".concat(System.lineSeparator()).getBytes());
+            file.write("# For more information please refer to the documentation on Github : https://github.com/CAST-Extend/com.castsoftware.uc.artemis/wiki".concat(System.lineSeparator()).getBytes());
+
+            SortedMap sortedSystemProperties = new TreeMap(PROPERTIES);
+            Set keySet = sortedSystemProperties.keySet();
+            Iterator iterator = keySet.iterator();
+
+            String lastIdentifier = null;
+            String prop;
+            while (iterator.hasNext()) {
+                String propertyName = (String) iterator.next();
+                String propertyValue = PROPERTIES.getProperty(propertyName);
+
+                String[] currentId = propertyName.split("\\.");
+                // Add space between categories
+                if(lastIdentifier != null && currentId.length > 0) {
+                    if(!lastIdentifier.equals(currentId[0])) {
+                        file.write(System.lineSeparator().getBytes());
+                    }
+                }
+
+                if(currentId.length > 0) {
+                    lastIdentifier = currentId[0];
+                }
+
+                prop = propertyName + "=" + propertyValue+ System.lineSeparator();
+                file.write(prop.getBytes());
+            }
+
+            file.flush();
+        } catch (IOException e) {
+            throw new MissingFileException("No file 'artemis.properties' was found.", configurationPath.toString(), "CONFxLOAD1");
+        }
     }
 
     /**
@@ -68,6 +116,15 @@ public class UserConfiguration {
 
     public static Set<Object> getKeySet() {
         return PROPERTIES.keySet();
+    }
+
+    /**
+     * Check the presence of a key
+     * @param key
+     * @return
+     */
+    public static boolean isKey(String key) {
+        return PROPERTIES.containsKey(key);
     }
 
     /**

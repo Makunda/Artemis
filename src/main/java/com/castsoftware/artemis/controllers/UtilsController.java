@@ -29,7 +29,7 @@ import java.util.List;
 
 public class UtilsController {
 
-    public static final String DEMETER_PREFIX = Configuration.get("artemis.tag.demeter_prefix");
+    public static final String DEMETER_PREFIX = UserConfiguration.get("demeter.prefix.group_level");
 
     /**
      * Change the Artemis default workspace
@@ -98,9 +98,8 @@ public class UtilsController {
      * @throws MissingFileException
      */
     public static Boolean setOnlineMode(Boolean active) throws MissingFileException {
-        Configuration.set("artemis.onlineMode", active.toString());
-        Configuration.saveAndReload();
-        return Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
+        UserConfiguration.set("artemis.onlineMode", active.toString());
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.onlineMode"));
     }
 
     /**
@@ -108,7 +107,7 @@ public class UtilsController {
      * @return
      */
     public static Boolean getOnlineMode() {
-        return Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.onlineMode"));
     }
 
     /**
@@ -118,9 +117,8 @@ public class UtilsController {
      * @throws MissingFileException
      */
     public static Boolean setRepositoryMode(Boolean active) throws MissingFileException {
-        Configuration.set("artemis.repository_search", active.toString());
-        Configuration.saveAndReload();
-        return Boolean.parseBoolean(Configuration.get("artemis.repository_search"));
+        UserConfiguration.set("artemis.repository_search", active.toString());
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.repository_search"));
     }
 
     /**
@@ -128,7 +126,7 @@ public class UtilsController {
      * @return
      */
     public static Boolean getRepositoryMode() {
-        return Boolean.parseBoolean(Configuration.get("artemis.repository_search"));
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.repository_search"));
     }
 
     /**
@@ -139,9 +137,8 @@ public class UtilsController {
      * @throws MissingFileException
      */
     public static Boolean setPersistentMode(Boolean active) throws MissingFileException {
-        Configuration.set("artemis.persistent_mode", active.toString());
-        Configuration.saveAndReload();
-        return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+        UserConfiguration.set("artemis.persistent_mode", active.toString());
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.persistent_mode"));
     }
 
     /**
@@ -149,7 +146,7 @@ public class UtilsController {
      * @return
      */
     public static Boolean getPersistentMode() {
-        return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+        return Boolean.parseBoolean(UserConfiguration.get("artemis.persistent_mode"));
     }
 
     /**
