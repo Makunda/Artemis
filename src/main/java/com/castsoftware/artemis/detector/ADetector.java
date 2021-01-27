@@ -139,7 +139,7 @@ public abstract class ADetector {
     if (categories.isEmpty()) {
       String forgedRequest =
           String.format(
-              "MATCH (obj:%s:%s) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node",
+              "MATCH (obj:%s:`%s`) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node",
               IMAGING_OBJECT_LABEL, application, languageProperties.getName());
       res = neo4jAL.executeQuery(forgedRequest);
 
@@ -152,7 +152,7 @@ public abstract class ADetector {
       for (String type : categories) {
         String forgedRequest =
             String.format(
-                "MATCH (obj:%s:%s) WHERE  obj.InternalType='%s' AND obj.External=true RETURN obj as node",
+                "MATCH (obj:%s:`%s`) WHERE  obj.InternalType='%s' AND obj.External=true RETURN obj as node",
                 IMAGING_OBJECT_LABEL, application, type);
         res = neo4jAL.executeQuery(forgedRequest);
 
