@@ -49,14 +49,14 @@ public class DetectionProcedure {
     @Description("artemis.launch.detection(String ApplicationContext, String Language) - Launch Detection for a specific language")
     public Stream<FrameworkResult> launchDetection(@Name(value = "ApplicationContext") String applicationContext,
                                                    @Name(value="Language", defaultValue = "") String language,
-                                                   @Name(value="FlagNodes", defaultValue = "false") Boolean flagNodes) throws ProcedureException {
+                                                   @Name(value="FlagNodes", defaultValue = "true") Boolean flagNodes) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             List<FrameworkResult> detectedFrameworks = DetectionController.launchDetection(nal, applicationContext, language, flagNodes);
 
             return detectedFrameworks.stream();
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException | GoogleBadResponseCodeException e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

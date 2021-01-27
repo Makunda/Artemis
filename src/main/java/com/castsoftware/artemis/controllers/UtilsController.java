@@ -29,7 +29,6 @@ import java.util.List;
 
 public class UtilsController {
 
-    public static final String DEMETER_PREFIX = UserConfiguration.get("demeter.prefix.group_level");
 
     /**
      * Change the Artemis default workspace
@@ -37,11 +36,13 @@ public class UtilsController {
      * @return
      */
     public static List<String> setArtemisDirectory(String directoryPath) throws MissingFileException {
-        if (!Files.exists(Path.of(directoryPath))) {
+        Path newDirectory = Path.of(directoryPath);
+        if (!Files.exists(newDirectory)) {
             return List.of(String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath));
         }
+
         // Generate Workspace
-        Configuration.set("artemis.workspace.folder", directoryPath);
+        Configuration.set("artemis.workspace.folder", newDirectory.toAbsolutePath().toString());
 
         // Validate the workspace
         List<String> outputMessages = Workspace.validateWorkspace();
@@ -70,9 +71,10 @@ public class UtilsController {
      * @throws Neo4jQueryException
      */
     public static void applyDemeterTag(Neo4jAL neo4jAL, Node n, String groupName) throws Neo4jQueryException {
+        String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
         Long id = n.getId();
         String tagRequest = String.format("MATCH (obj) WHERE ID(obj)=%1$s " +
-                "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END", id, DEMETER_PREFIX+groupName);
+                "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END", id, demeterPrefix+groupName);
         neo4jAL.executeQuery(tagRequest);
     }
 
@@ -84,10 +86,11 @@ public class UtilsController {
      * @throws Neo4jQueryException
      */
     public static void applyDemeterParentTag(Neo4jAL neo4jAL, Node n, String suffix) throws Neo4jQueryException {
+        String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
         Long id = n.getId();
         String tagRequest = String.format("MATCH (obj)<-[:Aggregates]-(l:Level5) WHERE ID(obj)=%1$s " +
                 "WITH obj, '%2$s' + l.Name + '%3$s' as tagName " +
-                "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN [tagName] ELSE obj.Tags + tagName END", id, DEMETER_PREFIX, suffix);
+                "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN [tagName] ELSE obj.Tags + tagName END", id, demeterPrefix, suffix);
         neo4jAL.executeQuery(tagRequest);
     }
 

@@ -124,7 +124,11 @@ public class UserConfiguration {
      * @return
      */
     public static boolean isKey(String key) {
-        return PROPERTIES.containsKey(key);
+        try {
+            return PROPERTIES.containsKey(key);
+        } catch (NullPointerException e) {
+            return false;
+        }
     }
 
     /**
