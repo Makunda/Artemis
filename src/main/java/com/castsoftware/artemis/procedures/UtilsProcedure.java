@@ -43,10 +43,8 @@ public class UtilsProcedure {
     @Procedure(value = "artemis.get.workspace", mode = Mode.WRITE)
     @Description("artemis.get.workspace() - Get the workspace directory of the Artemis extension.")
     public Stream<OutputMessage> getWorkspace() throws ProcedureException {
-
         try {
             String message = UtilsController.getArtemisDirectory();
-
             return Stream.of(new OutputMessage(message));
         } catch (Exception e) {
             ProcedureException ex = new ProcedureException(e);
@@ -59,10 +57,8 @@ public class UtilsProcedure {
     @Procedure(value = "artemis.set.workspace", mode = Mode.WRITE)
     @Description("artemis.set.workspace(String name) - Change the workspace of the Artemis extension.")
     public Stream<OutputMessage> setWorkspace(@Name(value = "ArtemisDirectory") String artemisDirectory) throws ProcedureException {
-
         try {
             List<String> outputMessages = UtilsController.setArtemisDirectory(artemisDirectory);
-
             return outputMessages.stream().map(OutputMessage::new);
         } catch (Exception | MissingFileException e) {
             ProcedureException ex = new ProcedureException(e);
@@ -75,7 +71,6 @@ public class UtilsProcedure {
     @Procedure(value = "artemis.version", mode = Mode.WRITE)
     @Description("artemis.version() - Get the version of the extension")
     public Stream<OutputMessage> getVersion() throws ProcedureException {
-
         try {
             String version = Configuration.get("artemis.version");
             return Stream.of(new OutputMessage(version));
@@ -86,7 +81,6 @@ public class UtilsProcedure {
         }
 
     }
-
 
     @Procedure(value = "artemis.set.onlineMode", mode = Mode.WRITE)
     @Description("artemis.set.onlineMode(Boolean value) - Set the value of online mode ")

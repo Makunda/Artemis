@@ -206,7 +206,7 @@ public class FrameworkNode {
       try {
         category = (String) n.getProperty(CATEGORY_PROPERTY);
       } catch (ClassCastException | NotFoundException ignored) {
-        // Ignorec
+        // Ignored
       }
 
       FrameworkNode fn =

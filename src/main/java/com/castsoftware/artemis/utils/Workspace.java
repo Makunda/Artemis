@@ -14,6 +14,8 @@ package com.castsoftware.artemis.utils;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.UserConfiguration;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 
 import java.io.IOException;
@@ -32,6 +34,34 @@ public class Workspace {
     public static Path getWorkspacePath() {
         String workspace = Configuration.get("artemis.workspace.folder");
         return Path.of(workspace);
+    }
+
+    /**
+     * Change the Workspace of Artemis
+     * @param directoryPath New directory path
+     * @return
+     * @throws MissingFileException
+     */
+    public static List<String> setWorkspacePath(String directoryPath) throws MissingFileException {
+        Path newDirectory = Path.of(directoryPath);
+
+        if (!Files.exists(newDirectory)) {
+            return List.of(String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath));
+        }
+
+        // Generate Workspace
+        Configuration.set("artemis.workspace.folder", newDirectory.toAbsolutePath().toString());
+
+        // Validate the workspace
+        List<String> outputMessages = Workspace.validateWorkspace();
+
+        // Reload User configuration
+        UserConfiguration.reload();
+        Configuration.saveAndReload();
+
+        outputMessages.add(String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath));
+        return outputMessages;
+
     }
 
     /**

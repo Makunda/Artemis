@@ -36,22 +36,7 @@ public class UtilsController {
      * @return
      */
     public static List<String> setArtemisDirectory(String directoryPath) throws MissingFileException {
-        Path newDirectory = Path.of(directoryPath);
-        if (!Files.exists(newDirectory)) {
-            return List.of(String.format("'%s' is not a valid path. Make sure the target folder exists and retry.", directoryPath));
-        }
-
-        // Generate Workspace
-        Configuration.set("artemis.workspace.folder", newDirectory.toAbsolutePath().toString());
-
-        // Validate the workspace
-        List<String> outputMessages = Workspace.validateWorkspace();
-
-        // Reload User configuration
-        UserConfiguration.reload();
-
-        outputMessages.add(String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath));
-        return outputMessages;
+        return Workspace.setWorkspacePath(directoryPath);
     }
 
     /**
@@ -162,7 +147,7 @@ public class UtilsController {
     public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws MissingFileException {
         // Set the workspace path
         List<String> returnList = new ArrayList<>();
-        returnList.addAll(setArtemisDirectory(workspacePath));
+        returnList.addAll(Workspace.setWorkspacePath(workspacePath));
 
         Path initDataZip = Workspace.getInitDataZip();
 
