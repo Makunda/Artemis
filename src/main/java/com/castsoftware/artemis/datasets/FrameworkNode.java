@@ -18,6 +18,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Result;
 
 import java.util.Objects;
@@ -204,8 +205,8 @@ public class FrameworkNode {
       String category = "Externals";
       try {
         category = (String) n.getProperty(CATEGORY_PROPERTY);
-      } catch (ClassCastException ignored) {
-        // Ignore
+      } catch (ClassCastException | NotFoundException ignored) {
+        // Ignorec
       }
 
       FrameworkNode fn =

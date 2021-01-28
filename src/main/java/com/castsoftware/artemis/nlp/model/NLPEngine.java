@@ -18,6 +18,7 @@ import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
 import com.castsoftware.artemis.nlp.KeywordsManager;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.utils.Workspace;
 import opennlp.tools.doccat.*;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.tokenize.TokenizerME;
@@ -27,6 +28,8 @@ import org.neo4j.logging.Log;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Scanner;
 
 import static com.castsoftware.artemis.nlp.SupportedLanguage.ALL;
@@ -39,17 +42,17 @@ public class NLPEngine {
 
 
     private static final String ERROR_PREFIX = "NLPx";
+    private final LanguageProp languageProperties;
 
     private SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
 
     private DocumentCategorizerME docCategorizer = null;
-    private File modelFile = null;
     private DoccatModel model = null;
     private SupportedLanguage language;
 
-    private String modelFilePath;
-    private String trainDatasetFilePath;
-    private String testDatasetFilePath;
+    private Path modelFilePath;
+    private Path trainDatasetFilePath;
+    private Path testDatasetFilePath;
 
     private Log log;
 
@@ -94,10 +97,12 @@ public class NLPEngine {
      * @throws IOException
      */
     public void train() throws IOException {
-        String trainDTPath =  trainDatasetFilePath;
+        Path trainDtFile = Workspace.getWorkspacePath()
+                .resolve(languageProperties.getName())
+                .resolve(Configuration.get("nlp.dataset_train.name"));
 
         // Read file with classifications samples of sentences.
-        InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(new File(trainDTPath));
+        InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(trainDtFile.toFile());
         ObjectStream<String> lineStream = new PlainTextByLineStream(inputStreamFactory, StandardCharsets.UTF_8);
         ObjectStream<DocumentSample> sampleStream = new DocumentSampleStream(lineStream);
 
@@ -110,7 +115,7 @@ public class NLPEngine {
         model = DocumentCategorizerME.train("en", sampleStream, params, factory);
 
         // Serialize model
-        model.serialize(new File(modelFilePath));
+        model.serialize(trainDtFile.toFile());
 
         // Use the model to create the Categorizer
         docCategorizer = new DocumentCategorizerME(model);
@@ -120,7 +125,9 @@ public class NLPEngine {
      * Load Datasets and evaluate the model
      */
     public Double evaluateModel() throws IOException {
-        String testDTPath =  testDatasetFilePath;
+        Path testDtFile = Workspace.getWorkspacePath()
+                .resolve(languageProperties.getName())
+                .resolve(Configuration.get("nlp.dataset_test.name"));
 
         Integer positive = 0;
         Integer negative = 0;
@@ -132,7 +139,7 @@ public class NLPEngine {
             this.train();
         }
 
-        File myObj = new File(testDTPath);
+        File myObj = testDtFile.toFile();
         try(Scanner myReader = new Scanner(myObj)) {
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
@@ -174,10 +181,10 @@ public class NLPEngine {
      * @return Tokens found as a list of string
      */
     private static String[] getTokens(String sentence) {
-        String tokenizerFilePath =  Configuration.get("artemis.workspace.folder") + TOKENIZER_FILE_NAME;
+        Path tokenizerFilePath =  Workspace.getWorkspacePath().resolve(TOKENIZER_FILE_NAME);
 
         // Use model that was created in earlier tokenizer
-        try (InputStream modelIn = new FileInputStream(tokenizerFilePath)) {
+        try (InputStream modelIn = new FileInputStream(tokenizerFilePath.toFile())) {
 
             TokenizerME categorizer = new TokenizerME(new TokenizerModel(modelIn));
             String[] tokens = categorizer.tokenize(sentence);
@@ -248,10 +255,15 @@ public class NLPEngine {
      * Check if the model file exists int
      * @return
      */
-    public boolean checkIfModelExists() {
+    public Path checkIfModelExists() {
+        Path modelFile = Workspace.getLanguageModelFile(this.language);
         log.info("Checking the existence of the model file at '%s'.", modelFilePath);
-        this.modelFile = new File(modelFilePath);
-        return modelFile.exists();
+        if (Files.exists(modelFile)) {
+            return modelFile;
+        } else {
+            log.error("No model file found at '%s'.", modelFilePath);
+            return null;
+        }
     }
 
     /**
@@ -270,12 +282,15 @@ public class NLPEngine {
      * @throws IOException
      */
     public void importModelFile() throws IOException, NLPIncorrectConfigurationException {
-        if(!checkIfModelExists()){
-            String message = String.format("No model file with name '%s' was found under workspace '%s'.", modelFilePath, Configuration.get("artemis.workspace.folder"));
+
+        Path modelFile = checkIfModelExists();
+
+        if(modelFile == null){
+            String message = String.format("No model file with name '%s' was found under workspace '%s'.", modelFilePath, Workspace.getWorkspacePath().toString());
             throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
         }
 
-        InputStream is = new FileInputStream(this.modelFile);
+        InputStream is = new FileInputStream(modelFile.toFile());
         this.model = new DoccatModel(is);
         this.docCategorizer = new DocumentCategorizerME(model);
     }
@@ -285,13 +300,7 @@ public class NLPEngine {
         this.log = log;
 
         LanguageConfiguration lc = LanguageConfiguration.getInstance();
-        LanguageProp languageProperties = lc.getLanguageProperties(language.toString());
-
-        // Work space is artemis workspace + name of the language
-        String workspace = Configuration.get("artemis.workspace.folder") + language.toString() +"/";
-        this.modelFilePath = workspace + languageProperties.getModelFileName();
-        this.testDatasetFilePath = workspace + Configuration.get("nlp.dataset_test.name");
-        this.trainDatasetFilePath =  workspace + Configuration.get("nlp.dataset_train.name");
+        this.languageProperties = lc.getLanguageProperties(language.toString());
     }
 
 }

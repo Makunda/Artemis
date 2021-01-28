@@ -13,6 +13,7 @@ package com.castsoftware.artemis.reports;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.utils.Workspace;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -29,8 +30,6 @@ import java.util.List;
 
 public class ReportGenerator {
 
-    public static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    public static final String REPORT_FOLDER = ARTEMIS_WORKSPACE + Configuration.get("artemis.reports_generator.folder");
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
     private static final Integer COLUMN_LENGTH = 5;
@@ -128,8 +127,8 @@ public class ReportGenerator {
      * @throws IOException
      */
     public void generate() throws IOException {
+        Path reportFolderPath = Workspace.getWorkspacePath().resolve(Configuration.get("artemis.reports_generator.folder"));
 
-        Path reportFolderPath = Path.of(REPORT_FOLDER);
         if(!Files.exists(reportFolderPath)) {
             Files.createDirectories(reportFolderPath);
         }

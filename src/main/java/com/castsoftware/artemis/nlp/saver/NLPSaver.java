@@ -14,6 +14,7 @@ package com.castsoftware.artemis.nlp.saver;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.nlp.model.NLPCategory;
 import com.castsoftware.artemis.nlp.model.NLPResults;
+import com.castsoftware.artemis.utils.Workspace;
 
 import java.io.Closeable;
 import java.io.FileOutputStream;
@@ -26,8 +27,6 @@ import java.text.SimpleDateFormat;
 
 public class NLPSaver implements Closeable {
 
-    public static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    public static final String REPORT_FOLDER = ARTEMIS_WORKSPACE + Configuration.get("artemis.nlp_enrichment.folder");
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
     private FileWriter fileWriter;
@@ -54,7 +53,7 @@ public class NLPSaver implements Closeable {
      * @throws IOException
      */
     private void init() throws IOException {
-        Path reportFolderPath = Path.of(REPORT_FOLDER);
+        Path reportFolderPath = Workspace.getWorkspacePath().resolve(Configuration.get("artemis.nlp_enrichment.folder"));
         if(!Files.exists(reportFolderPath)) {
             Files.createDirectories(reportFolderPath);
         }

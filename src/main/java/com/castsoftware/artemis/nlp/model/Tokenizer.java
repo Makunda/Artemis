@@ -12,23 +12,23 @@
 package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.utils.Workspace;
 import opennlp.tools.tokenize.*;
 import opennlp.tools.util.*;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 public class Tokenizer {
-
-    private static final String ARTEMIS_WORKSPACE = Configuration.get("artemis.workspace.folder");
-    private static final String TOKENIZER_FILE_PATH = ARTEMIS_WORKSPACE + Configuration.get("nlp.tokenizer_file.name");
-
 
     public static void run() throws Exception {
 
         /**
          * Read human understandable data & train a model
          */
+        Path tokenizerFilePath = Workspace.getWorkspacePath().resolve(Configuration.get("nlp.tokenizer_file.name"));
+
         // Read file with examples of tokenization.
         InputStreamFactory inputStreamFactory = new MarkableFileInputStreamFactory(new File("tokenizerdata.txt"));
         ObjectStream<String> lineStream = new PlainTextByLineStream(inputStreamFactory, StandardCharsets.UTF_8);
@@ -40,7 +40,7 @@ public class Tokenizer {
 
         // Serialize model to some file so that next time we don't have to again train a
         // model. Next time We can just load this file directly into model.
-        model.serialize(new File(TOKENIZER_FILE_PATH));
+        model.serialize(tokenizerFilePath.toFile());
 
     }
 }

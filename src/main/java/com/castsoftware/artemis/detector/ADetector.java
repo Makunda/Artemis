@@ -33,6 +33,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -187,7 +189,9 @@ public abstract class ADetector {
 
     // Make sure the nlp is trained, train it otherwise
     this.nlpEngine = new NLPEngine(neo4jAL.getLogger(), language);
-    if (!this.nlpEngine.checkIfModelExists()) {
+
+    Path modelFile = this.nlpEngine.checkIfModelExists();
+    if (!Files.exists(modelFile)) {
       this.nlpEngine.train();
     }
 

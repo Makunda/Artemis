@@ -39,6 +39,8 @@ public class OracleCom {
      */
     public boolean pingApi()  {
 
+        if(uri== null || uri.isEmpty()) return false;
+
         StringBuilder url = new StringBuilder();
         url.append(this.uri);
 
@@ -56,7 +58,7 @@ public class OracleCom {
                 log.info(String.format("ORACLE COM : The API is online (%s). Message : %s", this.uri, jsonResponse.getBody()));
                 return true;
             }
-        } catch (UnirestException e) {
+        } catch (Exception e) {
             log.error(String.format("ORACLE COM : Failed to connect to the API (%s) with error.", this.uri), e);
             return false;
         }

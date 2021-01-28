@@ -12,14 +12,15 @@
 package com.castsoftware.artemis.nlp.parser;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.utils.Workspace;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class HeaderGenerator {
 
-    private static final String HEADER_FILE_NAME = Configuration.get("artemis.parser.header_file.name");
 
     private static HeaderGenerator instance = null;
 
@@ -37,8 +38,8 @@ public class HeaderGenerator {
     }
 
     private HeaderGenerator () throws IOException {
-        String headerFilePath =  Configuration.get("artemis.workspace.folder") + HEADER_FILE_NAME;
-        headerFile = new File(headerFilePath);
+        Path headerFilePath = Workspace.getWorkspacePath().resolve(Configuration.get("artemis.parser.header_file.name"));
+        headerFile = headerFilePath.toFile();
 
         if(!headerFile.exists()) {
             throw new IOException(String.format("File with name '%s' does not exist.", headerFile));

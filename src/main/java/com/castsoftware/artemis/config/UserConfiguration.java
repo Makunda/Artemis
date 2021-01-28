@@ -35,7 +35,7 @@ public class UserConfiguration {
      */
     public static String get(String key) {
         if(PROPERTIES == null){
-            return null;
+            return "";
         }
 
         return PROPERTIES.get(key).toString();

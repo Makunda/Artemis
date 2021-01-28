@@ -98,8 +98,7 @@ public class Workspace {
     public static List<String> validateWorkspace() {
         List<String> messageOutputList = new ArrayList<>();
 
-        String workspace = Configuration.get("artemis.workspace.folder");
-        Path workspacePath = Path.of(workspace);
+        Path workspacePath = Workspace.getWorkspacePath();
         Path reportFolder = workspacePath.resolve(Configuration.get("artemis.reports_generator.folder"));
         Path enrichmentFolder = workspacePath.resolve(Configuration.get("artemis.nlp_enrichment.folder"));
         Path dataFolder = workspacePath.resolve(Configuration.get("artemis.install_data.folder"));
@@ -112,7 +111,7 @@ public class Workspace {
 
         // Check if the folder is valid
         if (!Files.exists(workspacePath)) {
-            messageOutputList.add(String.format("ERROR : %s does not exist. Please specify an existing directory.", workspace));
+            messageOutputList.add(String.format("ERROR : %s does not exist. Please specify an existing directory.", workspacePath.toString()));
             return messageOutputList;
         }
 
@@ -146,7 +145,7 @@ public class Workspace {
         LanguageProp lp;
         for(Map.Entry<String, LanguageProp> en : languagePropMap.entrySet()) {
             lp = en.getValue();
-            languageFolder = Path.of(workspace, lp.getName());
+            languageFolder = workspacePath.resolve(lp.getName());
 
             if (!Files.exists(languageFolder)) {
                 try {
