@@ -84,16 +84,21 @@ public class Importer {
      */
     private Object getNeo4jType(String value) {
 
+        // Long
+        try { return Long.parseLong(value); } catch (NumberFormatException ignored) { }
+
+        // Double
+        try { return Double.parseDouble(value); } catch (NumberFormatException ignored) { }
+
         // Integer
-        try { return Integer.parseInt(value); } catch (NumberFormatException ignored) { }
+        try { return ((Integer) Integer.parseInt(value)).longValue() ; } catch (NumberFormatException ignored) { }
+
         // Byte
         try { return Byte.parseByte(value); } catch (NumberFormatException ignored) { }
         // Short
         try { return Short.parseShort(value); } catch (NumberFormatException ignored) { }
-        // Long
-        try { return Long.parseLong(value); } catch (NumberFormatException ignored) { }
-        // Double
-        try { return Double.parseDouble(value); } catch (NumberFormatException ignored) { }
+
+
 
         // Boolean
         if(value.toLowerCase().matches("true|false")) {

@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.procedures.api;
 
-import com.castsoftware.artemis.controllers.api.FrameworksController;
+import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
@@ -19,11 +19,13 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.FrameworkResult;
+import com.castsoftware.artemis.results.LongResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public class FrameworksApiProcedure {
@@ -32,6 +34,7 @@ public class FrameworksApiProcedure {
   @Context public Transaction transaction;
 
   @Context public Log log;
+
 
   @Procedure(value = "artemis.api.add.framework", mode = Mode.WRITE)
   @Description(
@@ -49,7 +52,7 @@ public class FrameworksApiProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode addedFramework =
-          FrameworksController.addFramework(
+          FrameworkController.addFramework(
               nal, name, discoveryDate, location, description, type, category, internalType);
 
       return Stream.of(new FrameworkResult(addedFramework));
@@ -78,7 +81,7 @@ public class FrameworksApiProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode addedFramework =
-          FrameworksController.updateFramework(
+          FrameworkController.updateFramework(
               nal,
               name,
               discoveryDate,
@@ -111,9 +114,9 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode fn;
       if(internalType.isEmpty()) {
-        fn = FrameworksController.findFrameworkByName( nal, name);
+        fn = FrameworkController.findFrameworkByName( nal, name);
       } else {
-        fn = FrameworksController.findFrameworkByNameAndType( nal, name, internalType );
+        fn = FrameworkController.findFrameworkByNameAndType( nal, name, internalType );
       }
 
       if(fn == null) return Stream.of();
@@ -124,6 +127,102 @@ public class FrameworksApiProcedure {
             | Neo4jConnectionError
             | Neo4jQueryException
             | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+  @Procedure(value = "artemis.api.find.framework.name.contains", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.find.framework.name.contains(String Name, Long limit) - Get the 10 first frameworks containing a certains string in the name")
+  public Stream<FrameworkResult> findFrameworkNameContains(
+          @Name(value = "Name") String name,
+          @Name(value = "Limit") Long limit ) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<FrameworkNode> nodeList = FrameworkController.findFrameworkNameContains( nal, name, limit);;
+
+      return nodeList.stream().map(FrameworkResult::new);
+
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.get.framework.batch", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.batch(Long StartIndex, Long EndIndex, Optional String InternalType) - Get the list of Framework using a start and a end index")
+  public Stream<FrameworkResult> getBatchedFrameworks(
+          @Name(value = "StartIndex") Long startIndex,
+          @Name(value = "EndIndex") Long stopIndex,
+          @Name(value = "InternalType", defaultValue = "") String internalType ) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<FrameworkNode> frameworkNodeList;
+      if (internalType.isEmpty()) {
+        frameworkNodeList = FrameworkController.getBatchedFrameworks(nal, startIndex, stopIndex);
+      } else {
+        frameworkNodeList = FrameworkController.getBatchedFrameworksByType(nal, startIndex, stopIndex, internalType);
+      }
+
+      return frameworkNodeList.stream().map(FrameworkResult::new);
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.get.framework.number", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.number(Optional String InternalType) - Get the number of framework in the database. Optional filter on internal type ")
+  public Stream<LongResult> getFrameworksNumber(
+          @Name(value = "InternalType", defaultValue = "") String internalType ) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long numFramework;
+
+      if (internalType.isEmpty()) {
+        numFramework = FrameworkController.getNumFrameworks(nal);
+      } else {
+        numFramework = FrameworkController.getNumFrameworksByInternalType(nal, internalType);
+      }
+
+      return Stream.of(new LongResult(numFramework));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.get.framework.candidate", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.candidate(String application, String language) - Get the number of candidate on an application with a specific language")
+  public Stream<LongResult> getCandidateNumber(
+          @Name(value = "Application") String application,
+          @Name(value = "Language") String language) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long numCandidate =  FrameworkController.getNumCandidateByLanguage(nal, application, language);
+      return Stream.of(new LongResult(numCandidate));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

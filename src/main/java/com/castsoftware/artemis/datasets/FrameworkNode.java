@@ -21,7 +21,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Result;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class FrameworkNode {
 
@@ -143,6 +147,18 @@ public class FrameworkNode {
 
   public void setInternalType(String internalType) {
     this.internalType = internalType;
+  }
+
+  public static String getLabel() {
+    return LABEL_PROPERTY;
+  }
+
+  public static String getNameProperty() {
+    return NAME_PROPERTY;
+  }
+
+  public static String getInternalTypeProperty() {
+    return INTERNAL_TYPE_PROPERTY;
   }
 
   /**
@@ -305,6 +321,26 @@ public class FrameworkNode {
     fn.createNode();
 
     return fn;
+  }
+
+  /**
+   * Get the whole list of framework
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<FrameworkNode> getAll(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    return neo4jAL.findNodes(Label.label(LABEL_PROPERTY))
+            .stream().map(x -> {
+              try {
+                return FrameworkNode.fromNode(neo4jAL, x);
+              } catch (Neo4jBadNodeFormatException err) {
+                neo4jAL.logError("Failed to retrieve framework", err);
+                return null;
+              }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
   }
 
   /** Delete the node from the database */
