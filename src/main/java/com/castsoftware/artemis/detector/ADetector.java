@@ -82,8 +82,8 @@ public abstract class ADetector {
       throws Neo4jQueryException {
     boolean persistentMode = Boolean.parseBoolean(UserConfiguration.get("artemis.persistent_mode"));
 
-    Date date = Calendar.getInstance().getTime();
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    Date date = Calendar.getInstance().getTime();
     String strDate = dateFormat.format(date);
 
     FrameworkType fType = null;

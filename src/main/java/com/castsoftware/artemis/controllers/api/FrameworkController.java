@@ -162,7 +162,7 @@ public class FrameworkController {
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
 
-    return FrameworkNode.updateFrameworkByName(neo4jAL, name, fn);
+    return FrameworkNode.updateFrameworkByName(neo4jAL, name, internalType, fn);
   }
 
   /**

@@ -21,10 +21,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Result;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FrameworkNode {
@@ -50,6 +47,8 @@ public class FrameworkNode {
       Configuration.get("artemis.frameworkNode.category");
   private static final String INTERNAL_TYPE_PROPERTY =
       Configuration.get("artemis.frameworkNode.internal_type");
+  private static final String USER_CREATED_PROPERTY =
+          Configuration.get("artemis.frameworkNode.user_created");
 
   private static final String ERROR_PREFIX = "FRAMNx";
 
@@ -66,7 +65,8 @@ public class FrameworkNode {
   private String internalType = "";
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
-  private FrameworkType frameworkType;
+  private FrameworkType frameworkType = FrameworkType.NOT_KNOWN;
+  private Boolean userCreated = false;
 
   // Getters and setters
   public String getName() {
@@ -161,6 +161,14 @@ public class FrameworkNode {
     return INTERNAL_TYPE_PROPERTY;
   }
 
+  public Boolean getUserCreated() {
+    return userCreated;
+  }
+
+  public void setUserCreated(Boolean userCreated) {
+    this.userCreated = userCreated;
+  }
+
   /**
    * Create a node based on the characteristics of the Framework
    *
@@ -182,6 +190,7 @@ public class FrameworkNode {
     n.setProperty(TYPE_PROPERTY, getFrameworkType().toString());
     n.setProperty(CATEGORY_PROPERTY, getCategory());
     n.setProperty(INTERNAL_TYPE_PROPERTY, getInternalType());
+    n.setProperty(USER_CREATED_PROPERTY, getUserCreated());
 
     setNode(n);
     return n;
@@ -218,11 +227,22 @@ public class FrameworkNode {
       String frameworkType = (String) n.getProperty(TYPE_PROPERTY);
       FrameworkType type = FrameworkType.getType(frameworkType);
 
+      // Categories
       String category = "Externals";
       try {
         category = (String) n.getProperty(CATEGORY_PROPERTY);
       } catch (ClassCastException | NotFoundException ignored) {
         // Ignored
+      }
+
+      // User created
+      Boolean userCreated = false;
+      if (n.hasProperty(USER_CREATED_PROPERTY)){
+        try {
+          userCreated = (Boolean) n.getProperty(USER_CREATED_PROPERTY);
+        } catch (ClassCastException | NotFoundException ignored) {
+          // Ignored
+        }
       }
 
       FrameworkNode fn =
@@ -237,6 +257,7 @@ public class FrameworkNode {
       fn.setFrameworkType(type);
       fn.setCategory(category);
       fn.setInternalType(internalType);
+      fn.setUserCreated(userCreated);
 
       fn.setNode(n);
 
@@ -246,6 +267,16 @@ public class FrameworkNode {
           String.format("The Framework node with id: %d is not in a correct format", n.getId());
       throw new Neo4jBadNodeFormatException(msg, e, ERROR_PREFIX + "FRON2");
     }
+  }
+
+  /**
+   * Flag node as created by the user
+   */
+  public boolean flagUserCreated() {
+    this.userCreated = true;
+    if(node == null) return false;
+    node.setProperty(USER_CREATED_PROPERTY,true);
+    return true;
   }
 
   /**
@@ -261,9 +292,11 @@ public class FrameworkNode {
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
         String.format(
-            "MATCH (n:%s) WHERE n.%s='%s' RETURN n as node LIMIT 1;",
-            LABEL_PROPERTY, NAME_PROPERTY, frameworkName);
-    Result res = neo4jAL.executeQuery(matchReq);
+            "MATCH (n:%s) WHERE n.%s=$frameworkName  RETURN n as node LIMIT 1;",
+            LABEL_PROPERTY, NAME_PROPERTY);
+
+    Map<String, Object> params = Map.of("frameworkName", frameworkName);
+    Result res = neo4jAL.executeQuery(matchReq, params);
     // Check if the query returned a correct result
     if (!res.hasNext()) {
       return null;
@@ -288,9 +321,11 @@ public class FrameworkNode {
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
         String.format(
-            "MATCH (n:%s) WHERE n.%s='%s' AND n.%s='%s' RETURN n as node LIMIT 1;",
-            LABEL_PROPERTY, NAME_PROPERTY, frameworkName, INTERNAL_TYPE_PROPERTY, internalType);
-    Result res = neo4jAL.executeQuery(matchReq);
+            "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalType RETURN n as node LIMIT 1;",
+            LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+
+    Map<String, Object> params = Map.of("frameworkName", frameworkName, "internalType", internalType);
+    Result res = neo4jAL.executeQuery(matchReq, params);
     // Check if the query returned a correct result
     if (!res.hasNext()) {
       return null;
@@ -312,9 +347,9 @@ public class FrameworkNode {
    * @throws Neo4jBadNodeFormatException
    */
   public static FrameworkNode updateFrameworkByName(
-      Neo4jAL neo4jAL, String frameworkName, FrameworkNode fn)
+      Neo4jAL neo4jAL, String frameworkName, String internalType, FrameworkNode fn)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    FrameworkNode actualFn = findFrameworkByName(neo4jAL, frameworkName);
+    FrameworkNode actualFn = findFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
     if (actualFn == null) return null;
 
     actualFn.delete();
@@ -370,7 +405,7 @@ public class FrameworkNode {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     FrameworkNode that = (FrameworkNode) o;
-    return Objects.equals(name, that.name);
+    return Objects.equals(name, that.name) && Objects.equals(internalType, that.internalType);
   }
 
   @Override
@@ -405,6 +440,8 @@ public class FrameworkNode {
         + ", \"type\" : \""
         + frameworkType.toString()
         + '\"'
+        + ", \"userCreated\" : "
+        + userCreated
         + '}';
   }
 
