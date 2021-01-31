@@ -20,6 +20,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.LongResult;
+import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -220,6 +221,24 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       Long numCandidate =  FrameworkController.getNumCandidateByLanguage(nal, application, language);
       return Stream.of(new LongResult(numCandidate));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.get.framework.internalType", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.internalType() - Get the list of type in the database")
+  public Stream<OutputMessage> getInternalType() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<String> internalTypes =  FrameworkController.getFrameworkInternalTypes(nal);
+      return internalTypes.stream().map(OutputMessage::new);
     } catch (Exception
             | Neo4jConnectionError
             | Neo4jQueryException e) {

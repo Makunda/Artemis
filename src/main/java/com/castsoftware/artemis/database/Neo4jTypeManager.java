@@ -27,43 +27,38 @@ public class Neo4jTypeManager {
             node.setProperty(property, val);
             return val;
         }
+        Object valObject = node.getProperty(property);
 
-        try {
-            val = (Double) node.getProperty(property);
-            return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
+        if(valObject instanceof Double) {
+            return (Double) valObject;
         }
 
-        try {
+        if(valObject instanceof Float) {
             Float aFloat = (Float) node.getProperty(property);
             val = aFloat.doubleValue();
             node.setProperty(property, val);
             return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        try {
+        if(valObject instanceof Long) {
             Long aLong = (Long) node.getProperty(property);
             val = aLong.doubleValue();
             node.setProperty(property, val);
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        try {
+        if(valObject instanceof Integer) {
             Integer aInteger = (Integer) node.getProperty(property);
             val = aInteger.doubleValue();
             node.setProperty(property, val);
             return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        String aString = (String) node.getProperty(property);
-        val = Double.parseDouble(aString);
-        node.setProperty(property, val);
+        if(valObject instanceof String) {
+            String aString = (String) node.getProperty(property);
+            val = Double.parseDouble(aString);
+            node.setProperty(property, val);
+        }
+
         return val;
     }
 
@@ -79,43 +74,38 @@ public class Neo4jTypeManager {
             node.setProperty(property, val);
             return val;
         }
-
-        try {
-            val = (Long) node.getProperty(property);
+        Object valObject = node.getProperty(property);
+        if(valObject instanceof Long) {
+            val = (Long) valObject;
             return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        try {
-            Float aFloat = (Float) node.getProperty(property);
+        if(valObject instanceof Float)  {
+            Float aFloat = (Float) valObject;
             val = aFloat.longValue();
             node.setProperty(property, val);
             return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        try {
-            Double aDouble = (Double) node.getProperty(property);
+        if(valObject instanceof Double) {
+            Double aDouble = (Double) valObject;
             val = aDouble.longValue();
             node.setProperty(property, val);
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        try {
-            Integer aInteger = (Integer) node.getProperty(property);
+        if(valObject instanceof Integer) {
+            Integer aInteger = (Integer) valObject;
             val = aInteger.longValue();
             node.setProperty(property, val);
             return val;
-        } catch (ClassCastException ignored) {
-            // Ignored
         }
 
-        String aString = (String) node.getProperty(property);
-        val = Long.parseLong(aString);
-        node.setProperty(property, val);
+        if(valObject instanceof String) {
+            String aString = (String) valObject;
+            val = Long.parseLong(aString);
+            node.setProperty(property, val);
+        }
+
         return val;
     }
 

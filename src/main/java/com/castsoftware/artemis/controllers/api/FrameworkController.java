@@ -22,6 +22,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -359,5 +360,33 @@ public class FrameworkController {
     }
 
     return frameworkNodeList;
+  }
+
+  /**
+   * Get the list of the internal type
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<String> getFrameworkInternalTypes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    String request =
+            String.format(
+                    "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;",
+                    FrameworkNode.getLabel(), FrameworkNode.getInternalTypeProperty());
+
+    Result res = neo4jAL.executeQuery(request);
+
+    List<String> internalType = new ArrayList<>();
+    String internal;
+    while (res.hasNext()) {
+      internal = (String) res.next().get("internalType");
+      internalType.add(internal);
+    }
+
+    // Clean the results
+    internalType.removeAll(Collections.singleton(null));
+    internalType.removeAll(Collections.singleton(""));
+
+    return internalType;
   }
 }

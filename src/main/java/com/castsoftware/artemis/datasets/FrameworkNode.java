@@ -247,7 +247,7 @@ public class FrameworkNode {
       if(n.hasProperty(CATEGORY_PROPERTY)) {
         category = (String) n.getProperty(CATEGORY_PROPERTY);
       } else {
-        n.getProperty(CATEGORY_PROPERTY);
+        n.setProperty(CATEGORY_PROPERTY, "");
       }
 
       // User created
