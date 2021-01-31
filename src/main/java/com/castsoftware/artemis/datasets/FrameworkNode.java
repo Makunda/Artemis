@@ -213,12 +213,27 @@ public class FrameworkNode {
     try {
       String name = (String) n.getProperty(NAME_PROPERTY);
       String discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
-      String location = (String) n.getProperty(LOCATION_PROPERTY);
-      String internalType = (String) n.getProperty(LOCATION_PROPERTY);
+
+      String internalType = "";
+      if(!n.hasProperty(INTERNAL_TYPE_PROPERTY)) {
+        n.setProperty(INTERNAL_TYPE_PROPERTY, "");
+      } else {
+        internalType = (String) n.getProperty(INTERNAL_TYPE_PROPERTY);
+      }
+
+      // Get or Set
+      String location = "";
+      if(!n.hasProperty(LOCATION_PROPERTY)) {
+        n.setProperty(LOCATION_PROPERTY, "");
+      } else {
+        location = (String) n.getProperty(LOCATION_PROPERTY);
+      }
 
       String description = "No description";
       if (n.hasProperty(DESCRIPTION_PROPERTY)) {
         description = (String) n.getProperty(DESCRIPTION_PROPERTY);
+      } else {
+        n.setProperty(DESCRIPTION_PROPERTY, "");
       }
 
       Long numDetection = Neo4jTypeManager.getAsLong(n, NUMBER_OF_DETECTION_PROPERTY);
@@ -229,10 +244,10 @@ public class FrameworkNode {
 
       // Categories
       String category = "Externals";
-      try {
+      if(n.hasProperty(CATEGORY_PROPERTY)) {
         category = (String) n.getProperty(CATEGORY_PROPERTY);
-      } catch (ClassCastException | NotFoundException ignored) {
-        // Ignored
+      } else {
+        n.getProperty(CATEGORY_PROPERTY);
       }
 
       // User created

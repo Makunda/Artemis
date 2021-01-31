@@ -23,6 +23,10 @@ public class Neo4jTypeManager {
      */
     public static Double getAsDouble(Node node, String property) {
         Double val = .0;
+        if(!node.hasProperty(property)) {
+            node.setProperty(property, val);
+            return val;
+        }
 
         try {
             val = (Double) node.getProperty(property);
@@ -71,6 +75,10 @@ public class Neo4jTypeManager {
      */
     public static Long getAsLong(Node node, String property) {
         Long val = 0L;
+        if(!node.hasProperty(property)) {
+            node.setProperty(property, val);
+            return val;
+        }
 
         try {
             val = (Long) node.getProperty(property);
