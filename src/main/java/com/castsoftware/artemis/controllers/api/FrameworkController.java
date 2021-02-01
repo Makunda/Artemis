@@ -139,6 +139,8 @@ public class FrameworkController {
    */
   public static FrameworkNode updateFramework(
       Neo4jAL neo4jAL,
+      String oldName,
+      String oldInternalType,
       String name,
       String discoveryDate,
       String location,
@@ -163,7 +165,7 @@ public class FrameworkController {
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
 
-    return FrameworkNode.updateFrameworkByName(neo4jAL, name, internalType, fn);
+    return FrameworkNode.updateFrameworkByName(neo4jAL, oldName, oldInternalType, fn);
   }
 
   /**
@@ -339,12 +341,12 @@ public class FrameworkController {
   public static List<FrameworkNode> findFrameworkNameContains(Neo4jAL neo4jAL, String name, Long limit) throws Neo4jQueryException {
     String request =
         String.format(
-            "MATCH(o:%s) WHERE toLower(s.%2$s) CONTAINS toLower($toSearch) ORDER BY o.%2$s RETURN  LIMIT $limit;",
+            "MATCH(o:%s) WHERE toLower(o.%2$s) CONTAINS toLower($toSearch) RETURN o as framework ORDER BY o.%2$s LIMIT $limit;",
             FrameworkNode.getLabel(), FrameworkNode.getNameProperty());
 
     Map<String, Object> params =
             Map.of(
-                    "$toSearch", name,
+                    "toSearch", name,
                     "limit", limit);
     Result res = neo4jAL.executeQuery(request, params);
 

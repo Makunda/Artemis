@@ -80,8 +80,10 @@ public class CustomFrameworkController {
                 fn.setInternalType(internalType);
                 fn.setFrameworkType(FrameworkType.FRAMEWORK);
 
-                // Update the framework
-                FrameworkNode.updateFrameworkByName(neo4jAL, name, internalType, fn);
+                // Update the framework if not exist in the database
+                if(FrameworkNode.findFrameworkByNameAndType(neo4jAL, name, internalType) == null) {
+                    fn.createNode();
+                }
 
                 frameworkNodeList.add(fn);
             } catch (Exception | Neo4jBadNodeFormatException e) {

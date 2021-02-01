@@ -347,7 +347,6 @@ public class FrameworkNode {
     }
     // Node was found, return corresponding Framework Node
     Node n = (Node) res.next().get("node");
-
     return FrameworkNode.fromNode(neo4jAL, n);
   }
 

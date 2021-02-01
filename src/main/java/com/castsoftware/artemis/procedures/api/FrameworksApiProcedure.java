@@ -18,6 +18,7 @@ import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.LongResult;
 import com.castsoftware.artemis.results.OutputMessage;
@@ -66,8 +67,10 @@ public class FrameworksApiProcedure {
 
   @Procedure(value = "artemis.api.update.framework", mode = Mode.WRITE)
   @Description(
-      "artemis.api.update.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, String InternalType, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
-  public Stream<FrameworkResult> updateFramework(
+      "artemis.api.update.framework(String oldName, String oldInternalType, String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, String InternalType, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
+  public Stream<BooleanResult> updateFramework(
+          @Name(value = "OldName") String oldName,
+          @Name(value = "OldInternalType") String oldInternalType,
       @Name(value = "Name") String name,
       @Name(value = "DiscoveryDate") String discoveryDate,
       @Name(value = "Location") String location,
@@ -84,6 +87,8 @@ public class FrameworksApiProcedure {
       FrameworkNode addedFramework =
           FrameworkController.updateFramework(
               nal,
+              oldName,
+              oldInternalType,
               name,
               discoveryDate,
               location,
@@ -93,7 +98,7 @@ public class FrameworksApiProcedure {
               numberOfDetection,
               percentageOfDetection,
               internalType);
-      return Stream.of(new FrameworkResult(addedFramework));
+      return Stream.of(new BooleanResult(addedFramework != null));
     } catch (Exception
         | Neo4jConnectionError
         | Neo4jQueryException
