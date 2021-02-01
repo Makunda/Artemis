@@ -16,6 +16,7 @@ import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
@@ -75,7 +76,7 @@ public class CustomFrameworkController {
                 // Split tag and get category
                 category = tag.replace(artemisFrameworkTag, "");
 
-                fn = new FrameworkNode(neo4jAL, name, strDate, "", "", 1L, 1.0);
+                fn = new FrameworkNode(neo4jAL, name, strDate, "", "", 1L, 1.0, new Date().getTime());
                 fn.setCategory(category);
                 fn.setInternalType(internalType);
                 fn.setFrameworkType(FrameworkType.FRAMEWORK);
@@ -117,6 +118,31 @@ public class CustomFrameworkController {
 
         Result res = neo4jAL.executeQuery(req, params);
         return res.hasNext();
+    }
+
+
+    /**
+     * Get the custom framework tag
+     * @return The tag
+     */
+    public static String getTag() {
+        if(UserConfiguration.isKey("artemis.tag.framework.identifier")) {
+            return UserConfiguration.get("artemis.tag.framework.identifier");
+        }
+
+        return Configuration.get("artemis.tag.framework.identifier");
+    }
+
+    /**
+     * Set a new custom framework tag in the user configuration
+     * @param newTag New tag
+     * @return The new value of the custom framework tag
+     * @throws MissingFileException If the user configuration doesn't exist
+     */
+    public static String setTag(String newTag) throws MissingFileException {
+        String tag = UserConfiguration.set("artemis.tag.framework.identifier", newTag);
+        UserConfiguration.reload();
+        return tag;
     }
 
 }

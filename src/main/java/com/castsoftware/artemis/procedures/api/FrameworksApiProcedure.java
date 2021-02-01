@@ -253,4 +253,24 @@ public class FrameworksApiProcedure {
     }
   }
 
+  @Procedure(value = "artemis.api.get.framework.olderThan", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.olderThan() - Get the list of frameworks older than a certain timestamp")
+  public Stream<FrameworkResult> getFrameworkOlderThan(@Name(value="Timestamp") Long timestamp) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<FrameworkNode> frameworkNodes =  FrameworkController.getFrameworkOlderThan(nal, timestamp);
+      return frameworkNodes.stream().map(FrameworkResult::new);
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+
 }

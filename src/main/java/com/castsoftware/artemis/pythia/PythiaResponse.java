@@ -9,11 +9,11 @@
  *
  */
 
-package com.castsoftware.artemis.oracle;
+package com.castsoftware.artemis.pythia;
 
 import com.mashape.unirest.http.JsonNode;
 
-public class OracleResponse {
-    public String data;
-    public JsonNode message;
+public class PythiaResponse {
+    public Object data;
+    public String message;
 }

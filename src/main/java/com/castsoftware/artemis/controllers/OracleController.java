@@ -14,7 +14,9 @@ package com.castsoftware.artemis.controllers;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.oracle.OracleCom;
+import com.castsoftware.artemis.pythia.PythiaCom;
+
+import java.util.Date;
 
 public class OracleController {
 
@@ -23,7 +25,7 @@ public class OracleController {
      * @return True if working, false otherwise
      */
     public static Boolean getOracleComStatus(Neo4jAL neo4jAL) {
-        return OracleCom.getInstance(neo4jAL.getLogger()).getStatus();
+        return PythiaCom.getInstance(neo4jAL.getLogger()).getStatus();
     }
 
     /**
@@ -31,7 +33,7 @@ public class OracleController {
      * @return True if working, false otherwise
      */
     public static FrameworkNode testOracleFindings(Neo4jAL neo4jAL, String frameworkName, String InternalType) {
-        return OracleCom.getInstance(neo4jAL.getLogger()).findFramework(neo4jAL, frameworkName, InternalType);
+        return PythiaCom.getInstance(neo4jAL.getLogger()).findFramework(neo4jAL, frameworkName, InternalType);
     }
 
     /**
@@ -48,13 +50,14 @@ public class OracleController {
                         "Test Location",
                         "My description",
                         0L,
-                        .0);
+                        .0,
+                        new Date().getTime());
         fn.setCategory("Test Category");
         fn.setInternalType("Internal Type");
         fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 
 
-        return OracleCom.getInstance(neo4jAL.getLogger()).addFramework(fn);
+        return PythiaCom.getInstance(neo4jAL.getLogger()).addFramework(fn);
     }
 
 }

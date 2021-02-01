@@ -27,7 +27,7 @@ import com.castsoftware.artemis.nlp.model.NLPEngine;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.nlp.saver.NLPSaver;
-import com.castsoftware.artemis.oracle.OracleCom;
+import com.castsoftware.artemis.pythia.PythiaCom;
 import com.castsoftware.artemis.reports.ReportGenerator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -63,7 +63,7 @@ public abstract class ADetector {
   protected List<FrameworkNode> frameworkNodeList;
   protected NLPEngine nlpEngine;
   protected NLPSaver nlpSaver;
-  protected OracleCom oracleCom;
+  protected PythiaCom oracleCom;
 
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
@@ -106,7 +106,7 @@ public abstract class ADetector {
     }
 
     FrameworkNode fb =
-        new FrameworkNode(neo4jAL, name, strDate, "No location discovered", "", 1L, detectionScore);
+        new FrameworkNode(neo4jAL, name, strDate, "No location discovered", "", 1L, detectionScore, new Date().getTime());
     fb.setFrameworkType(fType);
     fb.setInternalType(internalType);
 
@@ -182,7 +182,7 @@ public abstract class ADetector {
     this.application = application;
     this.toInvestigateNodes = new ArrayList<>();
     this.nlpSaver = new NLPSaver(application);
-    this.oracleCom = OracleCom.getInstance(neo4jAL.getLogger());
+    this.oracleCom = PythiaCom.getInstance(neo4jAL.getLogger());
 
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);

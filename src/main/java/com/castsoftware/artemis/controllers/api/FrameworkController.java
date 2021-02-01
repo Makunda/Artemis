@@ -21,10 +21,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FrameworkController {
 
@@ -108,7 +105,7 @@ public class FrameworkController {
       throws Neo4jQueryException {
 
     FrameworkNode fn =
-        new FrameworkNode(neo4jAL, name, discoveryDate, location, description, 0l, .0);
+        new FrameworkNode(neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
     fn.setInternalType(internalType);
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
@@ -160,7 +157,8 @@ public class FrameworkController {
             location,
             description,
             numberOfDetection,
-            percentageOfDetection);
+            percentageOfDetection,
+                new Date().getTime());
     fn.setInternalType(internalType);
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
@@ -390,5 +388,24 @@ public class FrameworkController {
     internalType.removeAll(Collections.singleton(""));
 
     return internalType;
+  }
+
+  public static List<FrameworkNode> getFrameworkOlderThan(Neo4jAL neo4jAL, Long limitTimestamp) throws Neo4jQueryException {
+    String req = "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp RETURN o as framework";
+    Map<String, Object> params = Map.of("$timestamp", limitTimestamp);
+
+    Node n;
+    List<FrameworkNode> frameworkNodeList = new ArrayList<>();
+    Result res = neo4jAL.executeQuery(req, params);
+    while (res.hasNext()) {
+      n = (Node) res.next().get("framework");
+      try {
+        frameworkNodeList.add(FrameworkNode.fromNode(neo4jAL, n));
+      } catch (Neo4jBadNodeFormatException e) {
+        neo4jAL.logError("Failed to retrieve a framework.", e);
+      }
+    }
+
+    return frameworkNodeList;
   }
 }

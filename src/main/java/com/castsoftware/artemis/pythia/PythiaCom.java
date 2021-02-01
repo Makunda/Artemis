@@ -9,7 +9,7 @@
  *
  */
 
-package com.castsoftware.artemis.oracle;
+package com.castsoftware.artemis.pythia;
 
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
@@ -23,10 +23,12 @@ import org.json.JSONObject;
 import org.neo4j.logging.Log;
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.List;
 
-public class OracleCom {
+public class PythiaCom {
 
-    private static OracleCom INSTANCE;
+    private static PythiaCom INSTANCE;
 
     private Log log;
     private String uri;
@@ -45,11 +47,11 @@ public class OracleCom {
         url.append(this.uri);
 
         try {
-            HttpResponse<String> jsonResponse
+            HttpResponse<PythiaResponse> jsonResponse
                     = Unirest.get(url.toString())
                     .header("accept", "application/json")
                     .header("Authorization", "Bearer "+token)
-                    .asString();
+                    .asObject(PythiaResponse.class);
 
             if (jsonResponse.getStatus() != 200) {
                 log.error(String.format("ORACLE COM : Failed to connect to the API (%s) with status %d", this.uri, jsonResponse.getStatus()));
@@ -74,6 +76,43 @@ public class OracleCom {
     }
 
     /**
+     * Get the last update of Pythia instance
+     * @return
+     */
+    public String getLastUpdate() {
+        if(uri== null || uri.isEmpty()) return "";
+
+        StringBuilder url = new StringBuilder();
+        url.append(this.uri).append("/api/repo/lastUpdate");
+
+        try {
+            HttpResponse<PythiaResponse> pResponse
+                    = Unirest.get(url.toString())
+                    .header("accept", "application/json")
+                    .header("Authorization", "Bearer "+token)
+                    .asObject(PythiaResponse.class);
+
+            if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+                 return (String) pResponse.getBody().data ;
+            } else {
+                log.error(String.format("ORACLE COM : Failed to connect to the API (%s) with status %d", this.uri, pResponse.getStatus()));
+                return "";
+            }
+        } catch (Exception e) {
+            log.error(String.format("ORACLE COM : Failed to connect to the API (%s) with error.", this.uri), e);
+            return "";
+        }
+    }
+
+    /**
+     * Pull the list of the new frameworks into the database ( in case of conflict, the user data will not be overridden )
+     * @return The list of framework retrieved
+     */
+    public List<FrameworkNode> pullFrameworks() {
+        return null;
+    }
+
+    /**
      * Check the status
      * @return
      */
@@ -90,7 +129,7 @@ public class OracleCom {
 
         StringBuilder url = new StringBuilder();
         url.append(this.uri);
-        url.append("/artemis/frameworks");
+        url.append("/api/artemis/frameworks");
 
         try {
             HttpResponse<JsonNode> jsonResponse
@@ -125,7 +164,7 @@ public class OracleCom {
 
         StringBuilder url = new StringBuilder();
         url.append(this.uri);
-        url.append("/artemis/frameworks/");
+        url.append("/api/artemis/frameworks/");
         url.append(frameworkName);
 
         if(!frameworkInternalType.isEmpty()) {
@@ -166,6 +205,7 @@ public class OracleCom {
                 String internalType = frameworkJson.getString("internalType");
                 Long numberOfDetection = frameworkJson.has("numberOfDetection") ? frameworkJson.getLong("numberOfDetection") : 0L;
                 Double percentageDetection = frameworkJson.has("percentageOfDetection") ? frameworkJson.getDouble("percentageOfDetection") : .0;
+                Long timestampCreation = frameworkJson.has("creationDate") ? frameworkJson.getLong("creationDate") : new Date().getTime();
 
                 String frameworkTypeAsString = frameworkJson.getString("type");
                 FrameworkType frameworkType = FrameworkType.getType(frameworkTypeAsString);
@@ -178,7 +218,8 @@ public class OracleCom {
                         location,
                         description,
                         numberOfDetection,
-                        percentageDetection);
+                        percentageDetection,
+                        timestampCreation);
                 fn.setCategory(category);
                 fn.setInternalType(internalType);
                 fn.setFrameworkType(frameworkType);
@@ -196,14 +237,14 @@ public class OracleCom {
      * @return
      * @throws IOException
      */
-    public static OracleCom getInstance(Log log) {
+    public static PythiaCom getInstance(Log log) {
         if(INSTANCE == null) {
-            INSTANCE = new OracleCom(log);
+            INSTANCE = new PythiaCom(log);
         }
         return INSTANCE;
     }
 
-    private OracleCom(Log log) {
+    private PythiaCom(Log log) {
         this.log = log;
 
         // If configuration is empty
