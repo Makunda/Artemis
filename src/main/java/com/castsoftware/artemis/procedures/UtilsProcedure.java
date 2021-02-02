@@ -18,6 +18,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -169,7 +170,7 @@ public class UtilsProcedure {
             List<String> outputMessages = UtilsController.install(nal, artemisDirectory);
 
             return outputMessages.stream().map(OutputMessage::new);
-        } catch (Exception | MissingFileException | Neo4jConnectionError e) {
+        } catch (Exception | MissingFileException | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

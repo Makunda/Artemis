@@ -12,8 +12,24 @@
 package com.castsoftware.artemis.pythia;
 
 import com.mashape.unirest.http.JsonNode;
+import org.json.JSONObject;
 
 public class PythiaResponse {
     public Object data;
     public String message;
+
+    public PythiaResponse(JsonNode json) {
+        JSONObject obj = json.getObject();
+        this.data = obj.get("data");
+        this.message = obj.getString("message");
+    }
+
+    public PythiaResponse(String jsonAsString) {
+        JSONObject obj = new JSONObject(jsonAsString);
+
+        // Todo add erro handling
+
+        this.data = obj.get("data");
+        this.message = obj.getString("message");
+    }
 }

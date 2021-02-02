@@ -13,7 +13,10 @@ package com.castsoftware.artemis.controllers.api;
 
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.pythia.PythiaCom;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.util.List;
 
@@ -25,15 +28,15 @@ public class PythiaComController {
      * @return
      */
     public static boolean isOracleConnected(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL.getLogger()).isConnected();
+        return PythiaCom.getInstance(neo4jAL).getStatus();
     }
 
     /**
      * Get the date of the last update
      * @param neo4jAL Neo4j Access Layer
      */
-    public static String getLastUpdate(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL.getLogger()).getLastUpdate();
+    public static Long getLastUpdate(Neo4jAL neo4jAL) {
+        return PythiaCom.getInstance(neo4jAL).getLastUpdate();
     }
 
     /**
@@ -41,7 +44,7 @@ public class PythiaComController {
      * @param neo4jAL Neo4j Access Layer
      * @return The list of the frameworks pulled
      */
-    public static List<FrameworkNode> pullFrameworks(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL.getLogger()).pullFrameworks();
+    public static List<FrameworkNode> pullFrameworks(Neo4jAL neo4jAL) throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
+        return PythiaCom.getInstance(neo4jAL).pullFrameworks();
     }
 }

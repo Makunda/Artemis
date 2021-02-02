@@ -37,10 +37,14 @@ public class CustomFrameworkController {
      * @throws Neo4jQueryException
      */
     public static List<FrameworkNode> getUserCustomFrameworks(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        String artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
-        if(artemisFrameworkTag == null || artemisFrameworkTag.isEmpty()) {
+        String artemisFrameworkTag = null;
+        if( UserConfiguration.isKey("artemis.tag.framework.identifier")) {
+            artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
+        } else {
             artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
+            neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier found in the user configuration. Will use the default : '%s' tag", artemisFrameworkTag));
         }
+
 
         String req = "MATCH (o:Object) WHERE single( x in o.Tags WHERE x CONTAINS $tagArtemis) " +
                 "RETURN o as object, [x in o.Tags WHERE x CONTAINS $tagArtemis ][0] as tag";
@@ -107,9 +111,12 @@ public class CustomFrameworkController {
      * @return True if tags are present
      */
     public static boolean isTagPresent(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        String artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
-        if(artemisFrameworkTag == null || artemisFrameworkTag.isEmpty()) {
+        String artemisFrameworkTag = null;
+        if( UserConfiguration.isKey("artemis.tag.framework.identifier")) {
+            artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
+        }else {
             artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
+            neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier parameter found in the user configuration. Will use the default one '%s'.", artemisFrameworkTag));
         }
 
         String req = "MATCH (o:Object) WHERE single( x in o.Tags WHERE x CONTAINS $tagArtemis) " +

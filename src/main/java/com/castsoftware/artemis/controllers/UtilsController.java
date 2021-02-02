@@ -13,6 +13,7 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
+import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
@@ -144,7 +145,7 @@ public class UtilsController {
      * @return The list of message to follow the different step.
      * @throws MissingFileException
      */
-    public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws MissingFileException {
+    public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws MissingFileException, Neo4jQueryException {
         // Set the workspace path
         List<String> returnList = new ArrayList<>();
         returnList.addAll(Workspace.setWorkspacePath(workspacePath));
@@ -166,6 +167,10 @@ public class UtilsController {
         } else {
             returnList.add("The Initialisation was skipped due to missing files");
         }
+
+        // Reformat framework in base to the new version
+        Long reformatted = FrameworkController.reformatFrameworks(neo4jAL);
+        returnList.add(String.format("%d frameworks were updated and reformatted during the installation.", reformatted));
 
         return returnList;
     }

@@ -16,6 +16,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.BooleanResult;
@@ -253,18 +254,69 @@ public class FrameworksApiProcedure {
     }
   }
 
-  @Procedure(value = "artemis.api.get.framework.olderThan", mode = Mode.WRITE)
+  @Procedure(value = "artemis.api.get.framework.youngerThan", mode = Mode.WRITE)
   @Description(
-          "artemis.api.get.framework.olderThan() - Get the list of frameworks older than a certain timestamp")
+          "artemis.api.get.framework.youngerThan(Long timestamp) - Get the list of frameworks younger than a certain timestamp")
   public Stream<FrameworkResult> getFrameworkOlderThan(@Name(value="Timestamp") Long timestamp) throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<FrameworkNode> frameworkNodes =  FrameworkController.getFrameworkOlderThan(nal, timestamp);
+      List<FrameworkNode> frameworkNodes =  FrameworkController.getFrameworkYoungerThan(nal, timestamp);
       return frameworkNodes.stream().map(FrameworkResult::new);
     } catch (Exception
             | Neo4jConnectionError
             | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.get.framework.youngerThan.forecast", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.youngerThan.forecast(Long timestamp) - Get the number of frameworks younger than a certain timestamp")
+  public Stream<LongResult> getFrameworkOlderThanForecast(@Name(value="Timestamp") Long timestamp) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long numFrameworks =  FrameworkController.getFrameworkYoungerThanForecast(nal, timestamp);
+      return Stream.of(new LongResult(numFrameworks));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+  @Procedure(value = "artemis.api.get.last.update", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.last.update() - Get value of the last update")
+  public Stream<LongResult> getLastUpdate() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long lastTimestamp =  FrameworkController.getLastUpdate(nal);
+      return Stream.of(new LongResult(lastTimestamp));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.run.reformat.frameworks", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.run.reformat.frameworks() - Routine to reformat the frameworks in base")
+  public Stream<LongResult> reformatFrameworks() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long numFramework =  FrameworkController.reformatFrameworks(nal);
+      return Stream.of(new LongResult(numFramework));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

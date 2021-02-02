@@ -13,10 +13,12 @@ package com.castsoftware.artemis.controllers.api;
 
 import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -59,6 +61,7 @@ public class FrameworkController {
 
   /**
    * Delete a framework in the database using its name and its internal type
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param name Name of the Framework to find
    * @param internalType
@@ -67,8 +70,8 @@ public class FrameworkController {
    * @throws Neo4jBadNodeFormatException
    */
   public static Boolean deleteFrameworkByNameAndType(
-          Neo4jAL neo4jAL, String name, String internalType)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+      Neo4jAL neo4jAL, String name, String internalType)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     FrameworkNode fn = FrameworkNode.findFrameworkByNameAndType(neo4jAL, name, internalType);
     if (fn != null) {
@@ -105,7 +108,8 @@ public class FrameworkController {
       throws Neo4jQueryException {
 
     FrameworkNode fn =
-        new FrameworkNode(neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
+        new FrameworkNode(
+            neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
     fn.setInternalType(internalType);
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
@@ -158,7 +162,7 @@ public class FrameworkController {
             description,
             numberOfDetection,
             percentageOfDetection,
-                new Date().getTime());
+            new Date().getTime());
     fn.setInternalType(internalType);
     fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
@@ -305,8 +309,8 @@ public class FrameworkController {
    * @param neo4jAL Neo4j access layer
    * @return
    */
-  public static Long getNumCandidateByLanguage(
-      Neo4jAL neo4jAL, String application, String language) throws Neo4jQueryException {
+  public static Long getNumCandidateByLanguage(Neo4jAL neo4jAL, String application, String language)
+      throws Neo4jQueryException {
     String request =
         String.format(
             "MATCH(o:Object:`%s`) WHERE o.%s IN $listInternalType AND o.External=true RETURN COUNT(o) as count;",
@@ -331,21 +335,23 @@ public class FrameworkController {
 
   /**
    * Get the list of n framework where the name contains a specific string
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param name Name to search
    * @param limit Limit of results
    * @return
    */
-  public static List<FrameworkNode> findFrameworkNameContains(Neo4jAL neo4jAL, String name, Long limit) throws Neo4jQueryException {
+  public static List<FrameworkNode> findFrameworkNameContains(
+      Neo4jAL neo4jAL, String name, Long limit) throws Neo4jQueryException {
     String request =
         String.format(
             "MATCH(o:%s) WHERE toLower(o.%2$s) CONTAINS toLower($toSearch) RETURN o as framework ORDER BY o.%2$s LIMIT $limit;",
             FrameworkNode.getLabel(), FrameworkNode.getNameProperty());
 
     Map<String, Object> params =
-            Map.of(
-                    "toSearch", name,
-                    "limit", limit);
+        Map.of(
+            "toSearch", name,
+            "limit", limit);
     Result res = neo4jAL.executeQuery(request, params);
 
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
@@ -364,15 +370,17 @@ public class FrameworkController {
 
   /**
    * Get the list of the internal type
+   *
    * @param neo4jAL Neo4j Access Layer
    * @return
    * @throws Neo4jQueryException
    */
   public static List<String> getFrameworkInternalTypes(Neo4jAL neo4jAL) throws Neo4jQueryException {
     String request =
-            String.format(
-                    "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;",
-                    FrameworkNode.getLabel(), FrameworkNode.getInternalTypeProperty());
+        String.format(
+            "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;",
+            FrameworkNode.getLabel(),
+            FrameworkNode.getInternalTypeProperty());
 
     Result res = neo4jAL.executeQuery(request);
 
@@ -390,9 +398,20 @@ public class FrameworkController {
     return internalType;
   }
 
-  public static List<FrameworkNode> getFrameworkOlderThan(Neo4jAL neo4jAL, Long limitTimestamp) throws Neo4jQueryException {
-    String req = "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp RETURN o as framework";
-    Map<String, Object> params = Map.of("$timestamp", limitTimestamp);
+  /**
+   * Get the frameworks younger than a certain timestamp
+   * @param neo4jAL Neo4J Access Layer
+   * @param limitTimestamp Timestamp
+   * @return List of Framework youger than the timestamp provided
+   * @throws Neo4jQueryException
+   */
+  public static List<FrameworkNode> getFrameworkYoungerThan(Neo4jAL neo4jAL, Long limitTimestamp)
+      throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp RETURN o as framework",
+            FrameworkNode.getLabel(), FrameworkNode.getCreationDateProperty());
+    Map<String, Object> params = Map.of("timestamp", limitTimestamp);
 
     Node n;
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
@@ -408,4 +427,70 @@ public class FrameworkController {
 
     return frameworkNodeList;
   }
+
+  /**
+   * Get the number of frameworks younger than a certain timestamp
+   * @param neo4jAL Neo4J Access Layer
+   * @param limitTimestamp Timestamp
+   * @ The number of frameworks youger
+   * @throws Neo4jQueryException
+   */
+  public static Long getFrameworkYoungerThanForecast(Neo4jAL neo4jAL, Long limitTimestamp)
+          throws Neo4jQueryException {
+    String req =
+            String.format(
+                    "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp RETURN COUNT(o) as numFramework",
+                    FrameworkNode.getLabel(), FrameworkNode.getCreationDateProperty());
+    Map<String, Object> params = Map.of("timestamp", limitTimestamp);
+
+    Result res = neo4jAL.executeQuery(req, params);
+    if (res.hasNext()) {
+      return (Long) res.next().get("numFramework");
+    } else {
+      return 0L;
+    }
+
+  }
+
+
+  /**
+   * Get the timestamp of the last update in the Database
+   * @param neo4jAL Neo4j Access Layer
+   * @return The Last update timestamp
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadRequestException
+   */
+  public static Long getLastUpdate(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
+    NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
+    return nodeConf.getLastUpdate();
+  }
+
+  /**
+   * Reformat the Framework nodes in the database ( Add default properties if they aren't present)
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static Long reformatFrameworks(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    String req =
+            String.format(
+                    "MATCH (o:%s) RETURN o as framework",
+                    FrameworkNode.getLabel());
+
+    Node n;
+    Long numFramework = 0L;
+    Result res = neo4jAL.executeQuery(req);
+    while (res.hasNext()) {
+      n = (Node) res.next().get("framework");
+      try {
+        FrameworkNode.fromNode(neo4jAL, n);
+        numFramework ++;
+      } catch (Exception | Neo4jBadNodeFormatException e) {
+        neo4jAL.logError("Failed to reformat a framework.", e);
+      }
+    }
+
+    return numFramework;
+  }
+
 }

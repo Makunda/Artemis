@@ -182,7 +182,7 @@ public abstract class ADetector {
     this.application = application;
     this.toInvestigateNodes = new ArrayList<>();
     this.nlpSaver = new NLPSaver(application);
-    this.oracleCom = PythiaCom.getInstance(neo4jAL.getLogger());
+    this.oracleCom = PythiaCom.getInstance(neo4jAL);
 
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);

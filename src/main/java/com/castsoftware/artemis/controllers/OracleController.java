@@ -25,7 +25,7 @@ public class OracleController {
      * @return True if working, false otherwise
      */
     public static Boolean getOracleComStatus(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL.getLogger()).getStatus();
+        return PythiaCom.getInstance(neo4jAL).getStatus();
     }
 
     /**
@@ -33,7 +33,7 @@ public class OracleController {
      * @return True if working, false otherwise
      */
     public static FrameworkNode testOracleFindings(Neo4jAL neo4jAL, String frameworkName, String InternalType) {
-        return PythiaCom.getInstance(neo4jAL.getLogger()).findFramework(neo4jAL, frameworkName, InternalType);
+        return PythiaCom.getInstance(neo4jAL).findFramework(neo4jAL, frameworkName, InternalType);
     }
 
     /**
@@ -57,7 +57,7 @@ public class OracleController {
         fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 
 
-        return PythiaCom.getInstance(neo4jAL.getLogger()).addFramework(fn);
+        return PythiaCom.getInstance(neo4jAL).addFramework(fn);
     }
 
 }

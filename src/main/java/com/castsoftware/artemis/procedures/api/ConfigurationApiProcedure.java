@@ -11,31 +11,23 @@
 
 package com.castsoftware.artemis.procedures.api;
 
-import com.castsoftware.artemis.controllers.api.LanguageController;
+import com.castsoftware.artemis.controllers.api.ConfigurationController;
 import com.castsoftware.artemis.controllers.api.PythiaComController;
 import com.castsoftware.artemis.database.Neo4jAL;
-import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
-import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.BooleanResult;
-import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.LongResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Description;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.*;
 
-import java.util.List;
 import java.util.stream.Stream;
 
-public class PythiaProcedure {
-
+public class ConfigurationApiProcedure {
     @Context
     public GraphDatabaseService db;
 
@@ -43,19 +35,17 @@ public class PythiaProcedure {
 
     @Context public Log log;
 
-    @Procedure(value = "artemis.api.pythia.get.lastUpdate", mode = Mode.WRITE)
+
+    // Configuration Pythia
+    @Procedure(value = "artemis.api.configuration.get.pythia.uri", mode = Mode.WRITE)
     @Description(
-            "artemis.api.pythia.get.lastUpdate() - Get the last update of the oracle")
-    public Stream<LongResult> getLastUpdate() throws ProcedureException {
+            "artemis.api.configuration.get.pythia.uri() - Get the URI of Pythia")
+    public Stream<OutputMessage> getPythiaURL() throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            if(!connected) return Stream.empty();
-
-            Long lastUpdate = PythiaComController.getLastUpdate(nal);
-
-            return Stream.of(new LongResult(lastUpdate));
+            String uri = ConfigurationController.getURIPythia(nal);
+            return Stream.of(new OutputMessage(uri));
         } catch (Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
@@ -63,15 +53,15 @@ public class PythiaProcedure {
         }
     }
 
-    @Procedure(value = "artemis.api.pythia.get.connection", mode = Mode.WRITE)
+    @Procedure(value = "artemis.api.configuration.set.pythia.uri", mode = Mode.WRITE)
     @Description(
-            "artemis.api.pythia.get.connection() - Check if Artemis is connected to the Pythia")
-    public Stream<BooleanResult> getConnection() throws ProcedureException {
+            "artemis.api.configuration.set.pythia.uri(String URI) - Set the URI of Pythia")
+    public Stream<OutputMessage> setPythiaURL(@Name(value = "URI") String URI) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            return Stream.of(new BooleanResult(connected));
+            String uri = ConfigurationController.setURIPythia(nal, URI);
+            return Stream.of(new OutputMessage(uri));
         } catch (Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
@@ -79,24 +69,36 @@ public class PythiaProcedure {
         }
     }
 
-    @Procedure(value = "artemis.api.pythia.pull.frameworks", mode = Mode.WRITE)
+    @Procedure(value = "artemis.api.configuration.get.pythia.token", mode = Mode.WRITE)
     @Description(
-            "artemis.api.pythia.pull.frameworks() - Check if Artemis is connected to the Pythia")
-    public Stream<FrameworkResult> pullFrameworks() throws ProcedureException {
+            "artemis.api.configuration.get.pythia.token() - Get the presence of the Pythia token")
+    public Stream<BooleanResult> getPythiaToken() throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            if(!connected) return Stream.empty();
-
-            List<FrameworkNode> listFrameworks = PythiaComController.pullFrameworks(nal);
-            return listFrameworks.stream().map(FrameworkResult::new);
-        } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
+            Boolean present = ConfigurationController.getTokenPythia(nal);
+            return Stream.of(new BooleanResult(present));
+        } catch (Exception | Neo4jConnectionError | MissingFileException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
 
+    @Procedure(value = "artemis.api.configuration.set.pythia.token", mode = Mode.WRITE)
+    @Description(
+            "artemis.api.configuration.set.pythia.token() - Get the presence of the Pythia token")
+    public Stream<BooleanResult> setPythiaToken(@Name(value = "Token") String token) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            Boolean changed = ConfigurationController.setTokenPythia(nal, token);
+            return Stream.of(new BooleanResult(changed));
+        } catch (Exception | Neo4jConnectionError | MissingFileException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
 }
