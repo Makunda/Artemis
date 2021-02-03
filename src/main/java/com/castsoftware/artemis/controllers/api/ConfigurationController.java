@@ -35,8 +35,8 @@ public class ConfigurationController {
      * @param uri the new URI
      * @return
      */
-    public static String setURIPythia(Neo4jAL neo4jAL, String uri) {
-        String newUri = PythiaCom.getInstance(neo4jAL).getUri();
+    public static String setURIPythia(Neo4jAL neo4jAL, String uri) throws MissingFileException {
+        String newUri = PythiaCom.getInstance(neo4jAL).setUri(uri);
         if(newUri == null) return "";
         return newUri;
     }

@@ -42,6 +42,10 @@ public class UserConfiguration {
     }
 
     public static String set(String key, String value) throws MissingFileException {
+        if(PROPERTIES == null) {
+            PROPERTIES = loadConfiguration();
+        }
+
         PROPERTIES.setProperty(key, value);
         saveAndReload();
         return PROPERTIES.get(key).toString();

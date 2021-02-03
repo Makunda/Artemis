@@ -62,7 +62,7 @@ public class ConfigurationApiProcedure {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             String uri = ConfigurationController.setURIPythia(nal, URI);
             return Stream.of(new OutputMessage(uri));
-        } catch (Exception | Neo4jConnectionError e) {
+        } catch (Exception | Neo4jConnectionError | MissingFileException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
