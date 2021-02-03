@@ -18,10 +18,7 @@ import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.results.BooleanResult;
-import com.castsoftware.artemis.results.OutputMessage;
-import com.castsoftware.artemis.results.RegexNodeResult;
-import com.castsoftware.artemis.results.RelationshipResult;
+import com.castsoftware.artemis.results.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -42,15 +39,16 @@ public class RegexNodeApiProcedure {
 
     @Procedure(value = "artemis.api.regex.create.node", mode = Mode.WRITE)
     @Description(
-            "artemis.api.regex.create.node(String name, String[] regexes, String framework, String category) - Create a new Regex Node")
+            "artemis.api.regex.create.node(String name, String[] regexes, String[] internalTypes, String framework, String category) - Create a new Regex Node")
     public Stream<RegexNodeResult> createRegexNode(@Name(value="Name") String name,
-                                                 @Name(value = "regexes") List<String> regexes ,
+                                                 @Name(value = "regexes") List<String> regexes,
+                                                 @Name(value = "InternalType") List<String> internalTypes,
                                                  @Name(value = "framework") String framework,
                                                  @Name(value = "category") String category) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            RegexNode rn = RegexNodeController.createRegexNode(nal, name, regexes, framework, category);
+            RegexNode rn = RegexNodeController.createRegexNode(nal, name, regexes, internalTypes, framework, category);
             return Stream.of(new RegexNodeResult(rn));
         } catch (Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
@@ -117,6 +115,21 @@ public class RegexNodeApiProcedure {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             Boolean op = RegexNodeController.removeRegexNodeById(nal, idNode);
             return Stream.of(new BooleanResult(op));
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "artemis.api.regex.flag", mode = Mode.WRITE)
+    @Description(
+            "artemis.api.regex.flag() - Flag the nodes matching the regex nodes using the demeter.")
+    public Stream<LongResult> flagNodes() throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            Long aLong = RegexNodeController.flagRegexNodes(nal);
+            return Stream.of(new LongResult(aLong));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);

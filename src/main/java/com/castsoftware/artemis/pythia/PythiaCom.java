@@ -167,6 +167,41 @@ public class PythiaCom {
     }
 
     /**
+     * Get the number of framework that will be pulled
+     * @return
+     */
+    public Long getPullForecast() throws Neo4jQueryException, Neo4jBadRequestException {
+        if(uri== null || uri.isEmpty()) return null;
+
+        NodeConfiguration nc = NodeConfiguration.getConfiguration(neo4jAL);
+
+        StringBuilder url = new StringBuilder();
+        url.append(this.uri).append("/api/repo/forecast/pull")
+                .append("?timestamp=").append(nc.getLastUpdate());
+
+        try {
+            HttpResponse<String> pResponse
+                    = Unirest.get(url.toString())
+                    .header("accept", "application/json")
+                    .header("Authorization", "Bearer "+token)
+                    .asString();
+
+            if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+                neo4jAL.logInfo(String.format("Response for the last pull forecast %s", pResponse.getBody()));
+                PythiaResponse pr = new PythiaResponse(pResponse.getBody());
+                Integer temp = (Integer) pr.data;
+                return temp.longValue();
+            } else {
+                neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with status %d", this.uri, pResponse.getStatus()));
+                return null;
+            }
+        } catch (Exception e) {
+            neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+            return null;
+        }
+    }
+
+    /**
      * Pull the list of the new frameworks into the database ( in case of conflict, the user data will not be overridden )
      * @return The list of framework retrieved
      */

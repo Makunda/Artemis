@@ -439,9 +439,9 @@ public class FrameworkController {
           throws Neo4jQueryException {
     String req =
             String.format(
-                    "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp RETURN COUNT(o) as numFramework",
-                    FrameworkNode.getLabel(), FrameworkNode.getCreationDateProperty());
-    Map<String, Object> params = Map.of("timestamp", limitTimestamp);
+                    "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp ADN o.%3$s=$type RETURN COUNT(DISTINCT o) as numFramework",
+                    FrameworkNode.getLabel(), FrameworkNode.getCreationDateProperty(), FrameworkNode.getTypeProperty());
+    Map<String, Object> params = Map.of("timestamp", limitTimestamp, "type", "Framework");
 
     Result res = neo4jAL.executeQuery(req, params);
     if (res.hasNext()) {

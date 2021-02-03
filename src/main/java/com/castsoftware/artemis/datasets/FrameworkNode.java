@@ -224,6 +224,10 @@ public class FrameworkNode {
     return CREATION_DATE_PROPERTY;
   }
 
+  public static String getTypeProperty() {
+    return TYPE_PROPERTY;
+  }
+
   /**
    * Create a FrameworkNode object from a Neo4j node
    *
@@ -291,7 +295,7 @@ public class FrameworkNode {
 
       // Assign current Date if the framework has no date
       Long timestamp = 0L;
-      if (n.hasProperty(CREATION_DATE_PROPERTY)) {
+      if (!n.hasProperty(CREATION_DATE_PROPERTY)) {
         timestamp = new Date().getTime();
         n.setProperty(CREATION_DATE_PROPERTY, timestamp);
       } else {

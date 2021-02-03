@@ -63,7 +63,7 @@ public abstract class ADetector {
   protected List<FrameworkNode> frameworkNodeList;
   protected NLPEngine nlpEngine;
   protected NLPSaver nlpSaver;
-  protected PythiaCom oracleCom;
+  protected PythiaCom pythiaCom;
 
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
@@ -116,14 +116,14 @@ public abstract class ADetector {
     }
 
     // If the Oracle communication is up, send the framework to the oracle
-    if (oracleCom.isConnected()) {
+    if (pythiaCom.isConnected() && fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
       try {
-        oracleCom.addFramework(fb);
+        pythiaCom.addFramework(fb);
       } catch (Exception e) {
         neo4jAL.logError("Failed to send the framework to the oracle.", e);
       }
     } else {
-      oracleCom.getStatus();
+      pythiaCom.getStatus();
     }
 
     return fb;
@@ -182,7 +182,7 @@ public abstract class ADetector {
     this.application = application;
     this.toInvestigateNodes = new ArrayList<>();
     this.nlpSaver = new NLPSaver(application);
-    this.oracleCom = PythiaCom.getInstance(neo4jAL);
+    this.pythiaCom = PythiaCom.getInstance(neo4jAL);
 
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);

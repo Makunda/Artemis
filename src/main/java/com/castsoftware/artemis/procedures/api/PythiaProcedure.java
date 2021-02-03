@@ -79,6 +79,25 @@ public class PythiaProcedure {
         }
     }
 
+    @Procedure(value = "artemis.api.pythia.pull.frameworks.forecast", mode = Mode.WRITE)
+    @Description(
+            "artemis.api.pythia.pull.frameworks.forecast() - Get a forecast of the pull")
+    public Stream<LongResult> pullFrameworksForecast() throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            boolean connected = PythiaComController.isOracleConnected(nal);
+            if(!connected) return Stream.empty();
+
+            Long numFramework = PythiaComController.pullFrameworksForecast(nal);
+            return Stream.of(new LongResult(numFramework));
+        } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
     @Procedure(value = "artemis.api.pythia.pull.frameworks", mode = Mode.WRITE)
     @Description(
             "artemis.api.pythia.pull.frameworks() - Check if Artemis is connected to the Pythia")

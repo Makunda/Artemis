@@ -25,12 +25,14 @@ public class RegexNode {
     private static final String LABEL = "ArtemisRegexFramework";
     private static final String NAME_PROPERTY = "Name"; // Mandatory
     private static final String REGEXES_PROPERTY = "Regexes"; // List of String // Mandatory
+    private static final String INTERNAL_TYPE_PROPERTY = "InternalTypes";
     private static final String FRAMEWORK_PROPERTY = "Framework";
     private static final String CATEGORY_PROPERTY = "Category";
 
     private Node node;
     private String name;
     private List<String> regexes;
+    private List<String> internalTypes;
     private String framework;
     private String category;
 
@@ -54,11 +56,16 @@ public class RegexNode {
         return category;
     }
 
-    public RegexNode(String name, List<String> regexes, String framework, String category) {
+    public List<String> getInternalTypes() {
+        return internalTypes;
+    }
+
+    public RegexNode(String name, List<String> regexes, List<String> internalTypes, String framework, String category) {
         this.name = name;
         this.regexes = regexes;
         this.framework = framework;
         this.category = category;
+        this.internalTypes = internalTypes;
         this.node = null;
     }
 
@@ -69,6 +76,7 @@ public class RegexNode {
         node.setProperty(REGEXES_PROPERTY, regexes);
         node.setProperty(FRAMEWORK_PROPERTY, framework);
         node.setProperty(CATEGORY_PROPERTY, category);
+        node.setProperty(INTERNAL_TYPE_PROPERTY, internalTypes);
         return n;
     }
 
@@ -82,6 +90,50 @@ public class RegexNode {
         Iterator<Relationship> itRel =  this.node.getRelationships(Direction.INCOMING, RelationshipType.withName("INCLUDES")).iterator();
         if(!itRel.hasNext()) return null;
         return itRel.next().getStartNodeId();
+    }
+
+    /**
+     * Get the list of roots ( not not having parent)
+     * @param neo4jAL Neo4j Access Layer
+     * @return
+     * @throws Neo4jQueryException
+     */
+    public static List<RegexNode> getRootRegexNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+        String req = String.format("MATCH (n:%1$s) WHERE NOT (n)<-[r:INCLUDES]-(m:%1$s) RETURN n as root", LABEL);
+
+        Result res = neo4jAL.executeQuery(req);
+        List<RegexNode> regexNodes = new ArrayList<>();
+        while(res.hasNext()) {
+            try{
+                RegexNode rn = new RegexNode((Node) res.next().get("root"));
+                regexNodes.add(rn);
+            } catch (Neo4jBadNodeFormatException e) {
+                neo4jAL.logError("Failed to instantiate a Regex node", e);
+            }
+
+        }
+
+        return regexNodes;
+    }
+
+    /**
+     * Get the children of this node
+     * @return
+     */
+    public List<RegexNode> getChildren() {
+        if(this.node == null) return new ArrayList<>();
+        Iterator<Relationship> itRel =  this.node.getRelationships(Direction.OUTGOING, RelationshipType.withName("INCLUDES")).iterator();
+
+        List<RegexNode> returnList = new ArrayList<>();
+        while(itRel.hasNext()) {
+            Node n = itRel.next().getEndNode();
+            try {
+                returnList.add(new RegexNode(n));
+            } catch (Neo4jBadNodeFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        return returnList;
     }
 
 
@@ -117,8 +169,8 @@ public class RegexNode {
      * @param category Category of the Frameworks
      * @return
      */
-    public static RegexNode createRegexNode(Neo4jAL neo4jAL, String name, List<String> regexes, String framework, String category) {
-        RegexNode rn = new RegexNode(name, regexes, framework, category);
+    public static RegexNode createRegexNode(Neo4jAL neo4jAL, String name, List<String> regexes, List<String> internalTypes, String framework, String category) {
+        RegexNode rn = new RegexNode(name, regexes, internalTypes, framework, category);
         Node node = neo4jAL.getTransaction().createNode(Label.label(LABEL));
         rn.initNode(node);
 

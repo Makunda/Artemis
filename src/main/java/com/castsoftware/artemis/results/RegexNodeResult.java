@@ -18,8 +18,10 @@ import org.neo4j.graphdb.Node;
 import java.util.List;
 
 public class RegexNodeResult {
+    public Long id;
     public String name;
     public List<String> regexes;
+    public List<String> internalTypes;
     public String framework;
     public String category;
     public Long parentId;
@@ -30,8 +32,12 @@ public class RegexNodeResult {
      * @param rn
      */
     public RegexNodeResult(RegexNode rn) {
+        assert rn.getNode() != null : "Cannot create a RegexNodeResult from a non-initialized node";
+        
+        this.id = rn.getId();
         this.name = rn.getName();
         this.regexes = rn.getRegexes();
+        this.internalTypes = rn.getInternalTypes();
         this.framework = rn.getFramework();
         this.category = rn.getCategory();
 

@@ -11,22 +11,27 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.RegexNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class RegexNodeController {
 
     /**
      * Create a Regex Node
-     * @see RegexNode#createRegexNode(Neo4jAL, String, List, String, String)
+     * @see RegexNode#createRegexNode(Neo4jAL, String, List, List,  String, String)
      */
-    public static RegexNode createRegexNode(Neo4jAL neo4jAL, String name, List<String> regexes, String framework, String category) {
-        return RegexNode.createRegexNode(neo4jAL, name, regexes, framework, category);
+    public static RegexNode createRegexNode(Neo4jAL neo4jAL, String name, List<String> regexes, List<String> internalTypes, String framework, String category) {
+        return RegexNode.createRegexNode(neo4jAL, name, regexes, internalTypes, framework, category);
     }
 
     /**
@@ -59,6 +64,50 @@ public class RegexNodeController {
      */
     public static boolean removeRegexNodeById(Neo4jAL neo4jAL, Long idNode) throws Neo4jQueryException {
         return RegexNode.removeRegexNode(neo4jAL, idNode);
+    }
+
+    /**
+     * Flag objects matching a regex node
+     * @param neo4jAL Neo4j Access Layer
+     * @param rn Regex Node
+     * @return
+     * @throws Neo4jQueryException
+     */
+    private static Long flagObjects(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
+        String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
+        String tagName = demeterPrefix+rn.getCategory();
+        String req = String.format("MATCH (o:Object) WHERE any( x IN $listRegex WHERE o.FullName~=x ) AND o.InternalType in $listInternalType " +
+                "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%1$s'] ELSE obj.Tags + '%1$s' " +
+                "END RETURN COUNT(DISTINCT o) as count", tagName);
+
+        Map<String, Object> params = Map.of("listRegex", rn.getChildren(), "listInternalType", rn.getInternalTypes());
+        Result res = neo4jAL.executeQuery(req, params);
+        if(!res.hasNext()) return 0L;
+        return (Long) res.next().get("count");
+    }
+
+    /**
+     * Flag all the nodes from the regex
+     * @param neo4jAL Neo4j Access Layer
+     * @return
+     * @throws Neo4jQueryException
+     */
+    public static Long flagRegexNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+        List<RegexNode> toVisit = RegexNode.getRootRegexNodes(neo4jAL);
+
+        Iterator<RegexNode> itr = toVisit.iterator();
+        Long regexMatched = 0L;
+
+        while (itr.hasNext()) {
+            RegexNode r = itr.next();
+            toVisit.addAll(r.getChildren()); // Add the children
+
+            // Get regex and find node matching them
+            regexMatched += flagObjects(neo4jAL, r);
+            itr.remove(); // Remove the node
+        }
+
+        return regexMatched;
     }
 
 

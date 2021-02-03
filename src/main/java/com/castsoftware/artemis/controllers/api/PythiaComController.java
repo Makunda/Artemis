@@ -47,4 +47,8 @@ public class PythiaComController {
     public static List<FrameworkNode> pullFrameworks(Neo4jAL neo4jAL) throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
         return PythiaCom.getInstance(neo4jAL).pullFrameworks();
     }
+
+    public static Long pullFrameworksForecast(Neo4jAL neo4jAL) throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
+        return PythiaCom.getInstance(neo4jAL).getPullForecast();
+    }
 }
