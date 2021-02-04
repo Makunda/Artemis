@@ -42,7 +42,8 @@ public class CustomFrameworkController {
             artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
         } else {
             artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
-            neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier found in the user configuration. Will use the default : '%s' tag", artemisFrameworkTag));
+            // if(!alreadyWarned) neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier found in the user configuration. Will use the default : '%s' tag", artemisFrameworkTag));
+
         }
 
 

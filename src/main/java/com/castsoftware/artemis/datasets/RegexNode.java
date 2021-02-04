@@ -73,10 +73,11 @@ public class RegexNode {
         assert(n != null) : "Cannot initialize a null node";
         this.node = n;
         node.setProperty(NAME_PROPERTY, name);
-        node.setProperty(REGEXES_PROPERTY, regexes);
+
+        node.setProperty(REGEXES_PROPERTY, regexes.toArray(new String[0]));
+        node.setProperty(INTERNAL_TYPE_PROPERTY, internalTypes.toArray(new String[0]));
         node.setProperty(FRAMEWORK_PROPERTY, framework);
         node.setProperty(CATEGORY_PROPERTY, category);
-        node.setProperty(INTERNAL_TYPE_PROPERTY, internalTypes);
         return n;
     }
 
@@ -145,6 +146,9 @@ public class RegexNode {
             this.name = (String) node.getProperty(NAME_PROPERTY);
             String[] tempRegexes = (String[]) node.getProperty(REGEXES_PROPERTY);
             this.regexes = List.of(tempRegexes);
+
+            String[] tempInternal = (String[]) node.getProperty(INTERNAL_TYPE_PROPERTY);
+            this.internalTypes = List.of(tempInternal);
 
             if(!node.hasProperty(FRAMEWORK_PROPERTY)){
                 node.setProperty(FRAMEWORK_PROPERTY, "");
@@ -223,10 +227,12 @@ public class RegexNode {
      * @param neo4jAL Neo4j Access Layer
      * @param idChild Id of the children
      * @param idParent Id of the parent
-     * @return The relationship or null if it failed to create it
+     * @return The relationship or null if it failed to create it. (Return null if you're trying to create a self-relationship)
      * @throws Neo4jQueryException
      */
     public static Relationship linkToParent(Neo4jAL neo4jAL, Long idChild, Long idParent) throws Neo4jQueryException {
+        if(idChild.equals(idParent)) return null;
+
         String req = String.format("MATCH (n:%1$s), (m:%1$s) WHERE ID(n)=$idChild AND ID(m)=$idParent MERGE (m)-[r:INCLUDES]->(n) RETURN r as rel", LABEL);
         Map<String, Object> params = Map.of("idChild", idChild, "idParent", idParent);
 
