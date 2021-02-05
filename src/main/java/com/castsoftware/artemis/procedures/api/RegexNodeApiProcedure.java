@@ -78,6 +78,7 @@ public class RegexNodeApiProcedure {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             RegexNode rn = RegexNodeController.updateById(nal, id, name, regexes, internalTypes, framework, category, parentID);
+            if(rn == null) return Stream.empty();
             return Stream.of(new RegexNodeResult(rn));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);

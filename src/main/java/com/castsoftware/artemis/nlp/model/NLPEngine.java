@@ -50,7 +50,6 @@ public class NLPEngine {
     private DoccatModel model = null;
     private SupportedLanguage language;
 
-    private Path modelFilePath;
     private Path trainDatasetFilePath;
     private Path testDatasetFilePath;
 
@@ -257,11 +256,11 @@ public class NLPEngine {
      */
     public Path checkIfModelExists() {
         Path modelFile = Workspace.getLanguageModelFile(this.language);
-        log.info("Checking the existence of the model file at '%s'.", modelFilePath);
+        log.info("Checking the existence of the model file at '%s'.", modelFile);
         if (Files.exists(modelFile)) {
             return modelFile;
         } else {
-            log.error("No model file found at '%s'.", modelFilePath);
+            log.error("No model file found at '%s'.", modelFile);
             return null;
         }
     }
@@ -286,7 +285,7 @@ public class NLPEngine {
         Path modelFile = checkIfModelExists();
 
         if(modelFile == null){
-            String message = String.format("No model file with name '%s' was found under workspace '%s'.", modelFilePath, Workspace.getWorkspacePath().toString());
+            String message = String.format("No model file with name '%s' was found under workspace '%s'.", modelFile, Workspace.getWorkspacePath().toString());
             throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
         }
 

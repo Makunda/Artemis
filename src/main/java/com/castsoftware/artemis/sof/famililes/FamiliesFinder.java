@@ -9,7 +9,7 @@
  *
  */
 
-package com.castsoftware.artemis.interactions.famililes;
+package com.castsoftware.artemis.sof.famililes;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;

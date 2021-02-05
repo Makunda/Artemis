@@ -25,11 +25,11 @@ import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.repositories.SPackage;
+import com.castsoftware.artemis.sof.utils.SofUtilities;
 import org.neo4j.graphdb.Node;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class JavaDetector extends ADetector {
 
@@ -43,11 +43,83 @@ public class JavaDetector extends ADetector {
 
         // Init properties
         List<FrameworkNode> returnList = new ArrayList<>();
-
+        FrameworkTree frameworkTree = new FrameworkTree();
         try {
 
-            // Build the framework tree
+            // Top Bottom approach
             for(Node n : toInvestigateNodes) {
+                if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+                String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+                String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
+                String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
+
+                neo4jAL.logInfo("Treating node with fullName : " + fullName);
+                frameworkTree.insert(fullName);
+
+            }
+
+            frameworkTree.print();
+            neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
+
+            List<FrameworkTreeLeaf> branchStarterList = new ArrayList<>(frameworkTree.getRoot().getChildren());
+
+            List<FrameworkTreeLeaf> toVisit = Collections.synchronizedList(branchStarterList);
+
+            for (ListIterator<FrameworkTreeLeaf> itRel = toVisit.listIterator(); itRel.hasNext();) {
+                FrameworkTreeLeaf treeLeaf = itRel.next();
+
+                String fullName = treeLeaf.getFullName();
+                neo4jAL.logInfo(String.format("\nNOW TREATING : %s with dpet \n\n", fullName) );
+
+                if(treeLeaf.getDepth() < 3) {
+                    // Add the children
+                    for(FrameworkTreeLeaf l : treeLeaf.getChildren())
+                        itRel.add(l);
+                }
+
+                if(treeLeaf.getDepth() < 2) continue;
+
+                try {
+
+                    if(googleParser != null && onlineMode) {
+                        GoogleResult gr = null;
+                            gr = googleParser.request(fullName);
+                        String requestResult = gr.getContent();
+                        NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
+                        neo4jAL.logInfo(
+                                " - Name of the package to search : "
+                                        + fullName
+                                        + "\n\t - Results : "
+                                        + gr.getNumberResult()
+                                        + "\n\t - Blacklisted : "
+                                        + gr.isBlacklisted() + " Results : " +  Arrays.toString(nlpResult.getProbabilities()));
+
+
+                    }
+                } catch (GoogleBadResponseCodeException | NLPBlankInputException e) {
+                    neo4jAL.logError(String.format("Failed to query node with name %s", fullName));
+                }
+
+                List<String> otherApplications = SofUtilities.getPresenceInOtherApplications(neo4jAL, application, fullName);
+                neo4jAL.logInfo(String.format("The package '%s' is present in %s applications", fullName, String.join(", ", otherApplications)));
+            }
+
+            neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
+            frameworkTree.print();
+            neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
+
+
+
+
+            // Clear residual nodes ( Understand if its a wrapper )
+
+
+            // Internal uses
+
+
+
+            // Build the framework tree
+           /* for(Node n : toInvestigateNodes) {
 
                 // Ignore object without a fullname property
                 if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
@@ -103,14 +175,14 @@ public class JavaDetector extends ADetector {
                         }
                     }
                 }
-            }
+            }*/
 
 
             // Analyze Framework tree
             neo4jAL.logInfo("Displaying framework tree.");
             ft.print();
 
-        } catch (Exception | Neo4jBadNodeFormatException | GoogleBadResponseCodeException | NLPBlankInputException e) {
+        } catch (Exception e) {
             neo4jAL.logError("An error occurred during the detection.", e);
         }
 

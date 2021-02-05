@@ -11,6 +11,8 @@
 
 package com.castsoftware.artemis.detector.java;
 
+import java.util.Arrays;
+
 public class FrameworkTree {
 
   private static String PACKAGE_DELIMITER = "\\.";
@@ -23,12 +25,19 @@ public class FrameworkTree {
    * @param leaf Leaf to insert the package
    * @param packageName Name of the package to insert
    */
-  private void recInsert(FrameworkTreeLeaf leaf, String packageName) {
+  private void recInsert(FrameworkTreeLeaf leaf, String packageName, String fullName,  Integer depth) {
     String[] splitPackageName = packageName.split(PACKAGE_DELIMITER, 2);
 
     // If the split contains for than one element continue
 
     String name = splitPackageName[0];
+
+    if(fullName.isEmpty()) {
+      fullName = name;
+    } else {
+      fullName = String.join(".", fullName, name);
+    }
+
     FrameworkTreeLeaf matchingLeaf = null;
 
     // Check if a package already exist or create it
@@ -41,13 +50,15 @@ public class FrameworkTree {
 
     // If a matching leaf wasn't found, create a new one
     if (matchingLeaf == null) {
-      matchingLeaf = new FrameworkTreeLeaf(name);
+      matchingLeaf = new FrameworkTreeLeaf(name, fullName);
       // Add the leaf to the tree
       leaf.addLeaf(matchingLeaf);
     }
 
+    matchingLeaf.setDepth(depth);
+
     if (splitPackageName.length > 1) {
-      recInsert(matchingLeaf, splitPackageName[1]);
+      recInsert(matchingLeaf, splitPackageName[1], fullName, depth+1);
     }
   }
 
@@ -57,21 +68,38 @@ public class FrameworkTree {
    * @param packageName Full name of the package to insert
    */
   public void insert(String packageName) {
-    this.recInsert(root, packageName);
+    this.recInsert(root, packageName, "", 1);
+  }
+
+  /**
+   * Get the root of the tree
+   * @return
+   */
+  public FrameworkTreeLeaf getRoot() {
+    return root;
   }
 
   /**
    * Recursive tree print
-   *
    * @param fl
    * @param level
    */
   private void printTree(FrameworkTreeLeaf fl, int level) {
-    System.out.print("|" + "__".repeat(level) + " : " + fl.getName() + "\n");
+    System.out.print(
+        "|"
+            + "__".repeat(level)
+            + " : "
+            + fl.getName()
+            + "  ::  "
+            + fl.getDepth()
+            + " :: "
+            + Arrays.toString(fl.getDetectionResults())
+            + "\n");
     for (FrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);
     }
   }
+
 
   /** Print the tree */
   public void print() {
@@ -79,6 +107,6 @@ public class FrameworkTree {
   }
 
   public FrameworkTree() {
-    this.root = new FrameworkTreeLeaf("");
+    this.root = new FrameworkTreeLeaf("", "");
   }
 }

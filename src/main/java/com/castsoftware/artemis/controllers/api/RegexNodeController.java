@@ -87,7 +87,6 @@ public class RegexNodeController {
      * @throws Neo4jBadNodeFormatException
      */
     public static RegexNode updateById(Neo4jAL neo4jAL, Long id, String name, List<String> regexes, List<String> internalTypes, String framework, String category, Long parentId) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        neo4jAL.logInfo("Updating node :"+id);
         RegexNode rn = getRegexNodeById(neo4jAL, id);
         if(rn == null || rn.getNode() == null) return null;
         // Create the new Regex node
@@ -97,7 +96,7 @@ public class RegexNodeController {
         rn.getNode().delete();
 
         if(parentId == -1) return newNode; // Ignore if parent is not set
-        RegexNode.linkToParent(neo4jAL, rn.getId(), parentId);
+        RegexNode.linkToParent(neo4jAL, newNode.getId(), parentId);
 
         // If parent fou,d
         return newNode;
@@ -125,6 +124,10 @@ public class RegexNodeController {
         return (Long) res.next().get("count");
     }
 
+    private static String arrayToList(List<String> array) {
+        return  "['" + String.join("','", array) + "']";
+    }
+
     /**
      * Test a regex expression and get the number of Result
      * @param neo4jAL Neo4j Access Layer
@@ -135,16 +138,18 @@ public class RegexNodeController {
     private static Long testRegex(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
         if(rn.getRegexes().isEmpty()) return 0L;
 
-        String debug ="MATCH (o:Object) WHERE any( x IN "+ String.join(",", rn.getRegexes()) +" WHERE o.FullName=~x ) AND o.InternalType in "+ String.join(",", rn.getInternalTypes()) +" " +
-                "RETURN COUNT(DISTINCT o) as count";
+        String req;
+        if(rn.getInternalTypes().isEmpty()) {
+            // Match all type
+            req = String.format("MATCH (o:Object) WHERE any( x IN %s WHERE o.FullName=~x ) RETURN COUNT(DISTINCT o) as count",  arrayToList(rn.getRegexes()));
+        } else {
+      // Match specified Type
+            req =
+            String.format(
+              "MATCH (o:Object) WHERE any( x IN %s WHERE o.FullName=~x ) WITH o WHERE o.InternalType in %s RETURN COUNT(DISTINCT o) as count", arrayToList(rn.getRegexes()), arrayToList(rn.getInternalTypes()));
+        }
 
-        neo4jAL.logInfo("Query : " + debug);
-
-        String req = String.format("MATCH (o:Object) WHERE any( x IN $listRegex WHERE o.FullName=~x ) AND o.InternalType in $listInternalType " +
-                "RETURN COUNT(DISTINCT o) as count");
-
-        Map<String, Object> params = Map.of("listRegex", rn.getRegexes(), "listInternalType", rn.getInternalTypes());
-        Result res = neo4jAL.executeQuery(req, params);
+        Result res = neo4jAL.executeQuery(req);
 
         if(!res.hasNext()) return 0L;
         return (Long) res.next().get("count");

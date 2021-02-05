@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.detector.cobol;
 
-import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.database.Neo4jAL;
@@ -22,8 +21,8 @@ import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
-import com.castsoftware.artemis.interactions.famililes.FamiliesFinder;
-import com.castsoftware.artemis.interactions.famililes.FamilyGroup;
+import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
+import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;

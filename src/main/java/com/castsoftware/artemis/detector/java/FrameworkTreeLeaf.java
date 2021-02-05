@@ -12,13 +12,37 @@
 package com.castsoftware.artemis.detector.java;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FrameworkTreeLeaf {
 
     private String name;
+    private String fullName;
     private List<FrameworkTreeLeaf> children;
+    private double[] detectionResults;
+    private Integer depth;
     private boolean framework;
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public double[] getDetectionResults() {
+        return detectionResults;
+    }
+
+    public void setDetectionResults(double[] detectionResults) {
+        this.detectionResults = detectionResults;
+    }
+
+    public Integer getDepth() {
+        return depth;
+    }
+
+    public void setDepth(Integer depth) {
+        this.depth = depth;
+    }
 
     public boolean isFramework() {
         return framework;
@@ -40,9 +64,12 @@ public class FrameworkTreeLeaf {
         this.children.add(leaf);
     }
 
-    public FrameworkTreeLeaf(String name) {
+    public FrameworkTreeLeaf(String name, String fullName) {
         this.name = name;
-        this.children = new ArrayList<>();
+        this.fullName = fullName;
+        this.children = Collections.synchronizedList(new ArrayList<>());
         this.framework = false;
+        this.detectionResults = new double[0];
+        this.depth = 0;
     }
 }

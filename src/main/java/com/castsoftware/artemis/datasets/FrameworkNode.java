@@ -228,6 +228,34 @@ public class FrameworkNode {
     return TYPE_PROPERTY;
   }
 
+  public static String getLocationProperty() {
+    return LOCATION_PROPERTY;
+  }
+
+  public static String getDescriptionProperty() {
+    return DESCRIPTION_PROPERTY;
+  }
+
+  public static String getNumberOfDetectionProperty() {
+    return NUMBER_OF_DETECTION_PROPERTY;
+  }
+
+  public static String getPercentageOfDetectionProperty() {
+    return PERCENTAGE_OF_DETECTION_PROPERTY;
+  }
+
+  public static String getConfirmedProperty() {
+    return CONFIRMED_PROPERTY;
+  }
+
+  public static String getCategoryProperty() {
+    return CATEGORY_PROPERTY;
+  }
+
+  public static String getUserCreatedProperty() {
+    return USER_CREATED_PROPERTY;
+  }
+
   /**
    * Create a FrameworkNode object from a Neo4j node
    *

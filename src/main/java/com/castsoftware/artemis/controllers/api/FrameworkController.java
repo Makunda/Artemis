@@ -429,6 +429,35 @@ public class FrameworkController {
   }
 
   /**
+   * Get the validated Frameworks but with missing category or description
+   * @param neo4jAL Neo4J Access Layer
+   * @return The list of Framework awaiting some properties
+   * @throws Neo4jQueryException
+   */
+  public static List<FrameworkNode> getToValidateFrameworks(Neo4jAL neo4jAL)
+          throws Neo4jQueryException {
+    String req =
+            String.format(
+                    "MATCH (o:%s) WHERE o.%s=$frameworkType AND ( o.%s='' OR o.%s='' ) RETURN o as framework",
+                    FrameworkNode.getLabel(), FrameworkNode.getTypeProperty(), FrameworkNode.getCategoryProperty(), FrameworkNode.getDescriptionProperty());
+    Map<String, Object> params = Map.of("frameworkType", "Framework");
+
+    Node n;
+    List<FrameworkNode> frameworkNodeList = new ArrayList<>();
+    Result res = neo4jAL.executeQuery(req, params);
+    while (res.hasNext()) {
+      n = (Node) res.next().get("framework");
+      try {
+        frameworkNodeList.add(FrameworkNode.fromNode(neo4jAL, n));
+      } catch (Neo4jBadNodeFormatException e) {
+        neo4jAL.logError("Failed to retrieve a framework.", e);
+      }
+    }
+
+    return frameworkNodeList;
+  }
+
+  /**
    * Get the number of frameworks younger than a certain timestamp
    * @param neo4jAL Neo4J Access Layer
    * @param limitTimestamp Timestamp

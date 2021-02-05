@@ -47,6 +47,8 @@ public class KeywordsManager {
      * @return
      */
     public static int getNumMatchKeywords(SupportedLanguage language, String text) {
+        if(!languageMap.containsKey(language)) return 0;
+
         String pattern = languageMap.get(language);
         int i = 0;
         Pattern p = Pattern.compile(pattern);

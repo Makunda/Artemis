@@ -13,20 +13,14 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
-import com.castsoftware.artemis.datasets.FrameworkNode;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
-import com.castsoftware.artemis.interactions.famililes.FamiliesFinder;
-import com.castsoftware.artemis.interactions.famililes.FamilyGroup;
+import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
+import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
-import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

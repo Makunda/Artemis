@@ -9,17 +9,13 @@
  *
  */
 
-package com.castsoftware.artemis.interactions.famililes;
+package com.castsoftware.artemis.sof.famililes;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.database.Neo4jAL;
-import org.apache.shiro.crypto.hash.Hash;
 import org.neo4j.graphdb.Node;
 import org.neo4j.logging.Log;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class FamilyTree {

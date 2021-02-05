@@ -96,6 +96,7 @@ public class Workspace {
             throw new IllegalArgumentException("No properties exists for language with name :".concat(language.toString()));
 
         Path modelFile = workspace.resolve(lp.getName());
+        System.out.printf("Workspace at %s and filename at %s and model file Name : %s", workspace.toString(), lp.getName(), lp.getModelFileName());
         return modelFile.resolve(lp.getModelFileName());
     }
 

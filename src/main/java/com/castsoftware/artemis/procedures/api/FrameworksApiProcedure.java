@@ -290,6 +290,24 @@ public class FrameworksApiProcedure {
     }
   }
 
+  @Procedure(value = "artemis.api.get.framework.to.validate", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.get.framework.to.validate() - Get the list of framework waiting a validation")
+  public Stream<FrameworkResult> getToValidateFrameworks() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<FrameworkNode> frameworkNodeList =  FrameworkController.getToValidateFrameworks(nal);
+      return frameworkNodeList.stream().map(FrameworkResult::new);
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
 
   @Procedure(value = "artemis.api.get.last.update", mode = Mode.WRITE)
   @Description(

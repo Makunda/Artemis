@@ -29,6 +29,7 @@ import java.util.*;
 public class CustomFrameworkController {
 
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private static Boolean alreadyWarned = false;
 
     /**
      * Create frameworks from the selected nodes
@@ -42,8 +43,8 @@ public class CustomFrameworkController {
             artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
         } else {
             artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
-            // if(!alreadyWarned) neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier found in the user configuration. Will use the default : '%s' tag", artemisFrameworkTag));
-
+            if(!alreadyWarned) neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier found in the user configuration. Will use the default : '%s' tag", artemisFrameworkTag));
+            alreadyWarned = true;
         }
 
 
@@ -117,7 +118,8 @@ public class CustomFrameworkController {
             artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
         }else {
             artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
-            neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier parameter found in the user configuration. Will use the default one '%s'.", artemisFrameworkTag));
+            if(!alreadyWarned)neo4jAL.logInfo(String.format("No artemis.tag.framework.identifier parameter found in the user configuration. Will use the default one '%s'.", artemisFrameworkTag));
+            alreadyWarned=true;
         }
 
         String req = "MATCH (o:Object) WHERE single( x in o.Tags WHERE x CONTAINS $tagArtemis) " +

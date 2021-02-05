@@ -233,9 +233,13 @@ public class RegexNode {
     public static Relationship linkToParent(Neo4jAL neo4jAL, Long idChild, Long idParent) throws Neo4jQueryException {
         if(idChild.equals(idParent)) return null;
 
+
+        // Merge the relationship between the two nodes
+        String delReq = String.format("MATCH (n:%1$s)<-[r:INCLUDES]-(:%1$s) WHERE ID(n)=$idChild DELETE r", LABEL);
         String req = String.format("MATCH (n:%1$s), (m:%1$s) WHERE ID(n)=$idChild AND ID(m)=$idParent MERGE (m)-[r:INCLUDES]->(n) RETURN r as rel", LABEL);
         Map<String, Object> params = Map.of("idChild", idChild, "idParent", idParent);
 
+        neo4jAL.executeQuery(delReq, params);
         Result res = neo4jAL.executeQuery(req, params);
 
         if(!res.hasNext()) return null;

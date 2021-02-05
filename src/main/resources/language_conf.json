@@ -12,7 +12,7 @@
   "JAVA" : {
     "name": "Java",
     "objects_internal_type": ["JV_CLASS", "JV_INTERFACE"],
-    "online_search": false,
+    "online_search": true,
     "interaction_detector": false,
     "package_delimiter": ".",
     "repository_search": ["Maven", "Github"],
