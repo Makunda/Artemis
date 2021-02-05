@@ -73,14 +73,7 @@ public class FrameworkController {
   public static Boolean deleteFrameworkByNameAndType(
       Neo4jAL neo4jAL, String name, String internalType)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
-
-    FrameworkNode fn = FrameworkNode.findFrameworkByNameAndType(neo4jAL, name, internalType);
-    if (fn != null) {
-      fn.delete();
-      return true;
-    }
-
-    return false;
+    return FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalType);
   }
 
   /**

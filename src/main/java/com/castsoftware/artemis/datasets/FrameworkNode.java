@@ -428,6 +428,22 @@ public class FrameworkNode {
     return FrameworkNode.fromNode(neo4jAL, n);
   }
 
+
+  public static Boolean deleteFrameworkByNameAndType(
+          Neo4jAL neo4jAL, String frameworkName, String internalType)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String matchReq =
+            String.format(
+                    "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalType DETACH DELETE n ;",
+                    LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+
+    Map<String, Object> params =
+            Map.of("frameworkName", frameworkName, "internalType", internalType);
+    Result res = neo4jAL.executeQuery(matchReq, params);
+    // Check if the query returned a correct result
+    return res.hasNext();
+  }
+
   /**
    * Update a framework in the database
    *
@@ -441,10 +457,8 @@ public class FrameworkNode {
   public static FrameworkNode updateFrameworkByName(
       Neo4jAL neo4jAL, String frameworkName, String internalType, FrameworkNode fn)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    FrameworkNode actualFn = findFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
-    if (actualFn == null) return null;
-
-    actualFn.delete();
+    Boolean res = deleteFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
+    if (!res) return null; // Failed to delete the node
     fn.createNode();
 
     return fn;
