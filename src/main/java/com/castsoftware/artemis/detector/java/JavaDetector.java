@@ -69,7 +69,7 @@ public class JavaDetector extends ADetector {
                 FrameworkTreeLeaf treeLeaf = itRel.next();
 
                 String fullName = treeLeaf.getFullName();
-                neo4jAL.logInfo(String.format("\nNOW TREATING : %s with dpet \n\n", fullName) );
+                neo4jAL.logInfo(String.format("\nNOW TREATING : %s with depth %d \n\n", fullName, treeLeaf.getDepth()) );
 
                 if(treeLeaf.getDepth() < 3) {
                     // Add the children
@@ -81,7 +81,7 @@ public class JavaDetector extends ADetector {
 
                 try {
 
-                    if(googleParser != null && onlineMode) {
+                    if(googleParser != null) {
                         GoogleResult gr = null;
                             gr = googleParser.request(fullName);
                         String requestResult = gr.getContent();

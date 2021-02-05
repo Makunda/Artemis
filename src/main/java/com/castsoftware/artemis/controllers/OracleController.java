@@ -11,9 +11,13 @@
 
 package com.castsoftware.artemis.controllers;
 
+import com.castsoftware.artemis.controllers.api.CategoryController;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.pythia.PythiaCom;
 
 import java.util.Date;
@@ -40,7 +44,7 @@ public class OracleController {
      * Return the status of the Oracle Communication
      * @return True if working, false otherwise
      */
-    public static boolean testOracleAddFramework(Neo4jAL neo4jAL) {
+    public static boolean testOracleAddFramework(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadNodeFormatException {
         // Dummy Framework node
         FrameworkNode fn =
                 new FrameworkNode(
@@ -52,7 +56,8 @@ public class OracleController {
                         0L,
                         .0,
                         new Date().getTime());
-        fn.setCategory("Test Category");
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, "Test Category");
+        fn.setCategory(cn);
         fn.setInternalType("Internal Type");
         fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 

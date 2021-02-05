@@ -11,15 +11,27 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.RegexNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 
 import java.util.List;
+import java.util.Map;
 
 public class CategoryController {
+
+    /**
+     * Get the default name category
+     * @return
+     */
+    public static String getDefaultName() {
+        return Configuration.getBestOfAllWorlds("artemis.default_category");
+    }
 
     /**
      * Create a Regex Node
@@ -27,6 +39,26 @@ public class CategoryController {
      */
     public static CategoryNode createNode(Neo4jAL neo4jAL, String name, String iconUrl) {
         return CategoryNode.createNode(neo4jAL, name, iconUrl);
+    }
+
+    /**
+     * Get a Node by its name, or create it if it doesn't exist
+     * @param neo4jAL Neo4j Access Layer
+     * @param name Name of the category
+     * @return
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadNodeFormatException
+     */
+    public static CategoryNode getOrCreateByName(Neo4jAL neo4jAL, String name) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+        String req = String.format("MATCH(o:%s) WHERE o.%s=$name RETURN o as cat", CategoryNode.getLABEL(), CategoryNode.getNameProperty());
+        Map<String, Object> params = Map.of("name", name);
+
+        Result res = neo4jAL.executeQuery(req, params);
+        if(res.hasNext()) {
+            return new CategoryNode((Node) res.next().get("cat"));
+        } else {
+            return CategoryNode.createNode(neo4jAL, name, "");
+        }
     }
 
     /**

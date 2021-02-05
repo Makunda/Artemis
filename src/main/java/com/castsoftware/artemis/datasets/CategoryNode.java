@@ -32,6 +32,14 @@ public class CategoryNode {
     private String name;
     private String iconUrl;
 
+    public static String getLABEL() {
+        return LABEL;
+    }
+
+    public static String getNameProperty() {
+        return NAME_PROPERTY;
+    }
+
     public Node getNode() {
         return node;
     }

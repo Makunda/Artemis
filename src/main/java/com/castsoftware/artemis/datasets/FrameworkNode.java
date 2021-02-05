@@ -12,19 +12,14 @@
 package com.castsoftware.artemis.datasets;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.controllers.api.CategoryController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FrameworkNode {
@@ -55,6 +50,9 @@ public class FrameworkNode {
   private static final String CREATION_DATE_PROPERTY =
       Configuration.get("artemis.frameworkNode.creation_date");
 
+  private static final String CATEGORY_RELATIONSHIP =
+      Configuration.get("artemis.category.to.frameworkNode");
+
   private static final String ERROR_PREFIX = "FRAMNx";
 
   // Neo4j Properties
@@ -66,7 +64,6 @@ public class FrameworkNode {
   private String discoveryDate;
   private String location = "";
   private String description = "";
-  private String category = "";
   private String internalType = "";
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
@@ -189,11 +186,24 @@ public class FrameworkNode {
   }
 
   public String getCategory() {
-    return category;
+    if(this.node == null) return null;
+    Iterator<Relationship> itCat = this.node.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP)).iterator();
+    if(!itCat.hasNext()) return CategoryController.getDefaultName(); // Default value
+
+    // Get the category node
+    Node category = itCat.next().getStartNode();
+    try {
+      CategoryNode cn = null;
+      cn = new CategoryNode(category);
+      return cn.getName();
+    } catch (Neo4jBadNodeFormatException e) {
+      return CategoryController.getDefaultName();
+    }
   }
 
-  public void setCategory(String category) {
-    this.category = category;
+  public void setCategory(CategoryNode cn) {
+    if(this.node == null || cn.getNode() == null) return;
+    cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
   }
 
   public String getInternalType() {
@@ -305,10 +315,10 @@ public class FrameworkNode {
 
       // Categories
       String category = "Externals";
-      if (n.hasProperty(CATEGORY_PROPERTY)) {
-        category = (String) n.getProperty(CATEGORY_PROPERTY);
-      } else {
-        n.setProperty(CATEGORY_PROPERTY, "");
+      Iterator<Relationship> itCat = n.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP)).iterator();
+      if(!itCat.hasNext()) {
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+        cn.getNode().createRelationshipTo(n, RelationshipType.withName(CATEGORY_RELATIONSHIP));
       }
 
       // User created
@@ -347,14 +357,13 @@ public class FrameworkNode {
               timestamp);
 
       fn.setFrameworkType(type);
-      fn.setCategory(category);
       fn.setInternalType(internalType);
       fn.setUserCreated(userCreated);
 
       fn.setNode(n);
 
       return fn;
-    } catch (Exception e) {
+    } catch (Exception | Neo4jQueryException e) {
       String msg =
           String.format("The Framework node with id: %d is not in a correct format", n.getId());
       throw new Neo4jBadNodeFormatException(msg, e, ERROR_PREFIX + "FRON2");
@@ -484,7 +493,6 @@ public class FrameworkNode {
     n.setProperty(NUMBER_OF_DETECTION_PROPERTY, getNumberOfDetection());
     n.setProperty(PERCENTAGE_OF_DETECTION_PROPERTY, getPercentageOfDetection().floatValue());
     n.setProperty(TYPE_PROPERTY, getFrameworkType().toString());
-    n.setProperty(CATEGORY_PROPERTY, getCategory());
     n.setProperty(INTERNAL_TYPE_PROPERTY, getInternalType());
     n.setProperty(USER_CREATED_PROPERTY, getUserCreated());
     n.setProperty(CREATION_DATE_PROPERTY, getCreationDate()); // Last modification
@@ -551,7 +559,7 @@ public class FrameworkNode {
         + description
         + '\"'
         + ", \"category\" : \""
-        + category
+        + getCategory()
         + '\"'
         + ", \"internalType\" : \""
         + internalType

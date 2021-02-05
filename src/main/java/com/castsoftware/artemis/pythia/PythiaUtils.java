@@ -11,16 +11,20 @@
 
 package com.castsoftware.artemis.pythia;
 
+import com.castsoftware.artemis.controllers.api.CategoryController;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.json.JSONObject;
 
 import java.util.Date;
 
 public class PythiaUtils {
 
-    public static FrameworkNode JSONtoFramework(Neo4jAL neo4jAL, JSONObject frameworkJson) {
+    public static FrameworkNode JSONtoFramework(Neo4jAL neo4jAL, JSONObject frameworkJson) throws Neo4jQueryException, Neo4jBadNodeFormatException {
         String name = frameworkJson.getString("name");
         String discoveryDate = frameworkJson.getString("discoveryDate");
         String location = frameworkJson.getString("location");
@@ -44,7 +48,8 @@ public class PythiaUtils {
                         numberOfDetection,
                         percentageDetection,
                         timestampCreation);
-        fn.setCategory(category);
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+        fn.setCategory(cn);
         fn.setInternalType(internalType);
         fn.setFrameworkType(frameworkType);
 

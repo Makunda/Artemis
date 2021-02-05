@@ -17,6 +17,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.utils.Workspace;
@@ -234,7 +235,7 @@ public class PythiaCom {
                 }
             }
 
-        } catch (JSONException ex) {
+        } catch (JSONException | Neo4jBadNodeFormatException ex) {
            neo4jAL.logError("Failed to pull frameworks from Pythia Incorrect response format.", ex);
         }
 
@@ -325,7 +326,7 @@ public class PythiaCom {
                 neo4jAL.logError(String.format("PYTHIA COM : Failed to retrieve framework with name : %s%n. Code : (%d)", frameworkName, pResponse.getStatus()));
                 return null;
             }
-        } catch (UnirestException e) {
+        } catch (UnirestException | Neo4jQueryException | Neo4jBadNodeFormatException e) {
             neo4jAL.logError(String.format("PYTHIA COM :  Failed to retrieve framework with name : %s. Error : %s", frameworkName, e.getMessage()));
             return null;
         }

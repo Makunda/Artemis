@@ -41,6 +41,15 @@ public class UserConfiguration {
         return PROPERTIES.get(key).toString();
     }
 
+    /**
+     * Verify if the key is present
+     * @param key
+     * @return
+     */
+    public static Boolean has(String key) {
+        return PROPERTIES.contains(key);
+    }
+
     public static String set(String key, String value) throws MissingFileException {
         if(PROPERTIES == null) {
             PROPERTIES = loadConfiguration();

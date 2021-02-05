@@ -15,6 +15,7 @@ import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
@@ -105,13 +106,15 @@ public class FrameworkController {
       String type,
       String category,
       String internalType)
-      throws Neo4jQueryException {
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     FrameworkNode fn =
         new FrameworkNode(
             neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
     fn.setInternalType(internalType);
-    fn.setCategory(category);
+
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
 
@@ -163,8 +166,10 @@ public class FrameworkController {
             numberOfDetection,
             percentageOfDetection,
             new Date().getTime());
+
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
     fn.setInternalType(internalType);
-    fn.setCategory(category);
     fn.setFrameworkType(FrameworkType.getType(type));
 
     return FrameworkNode.updateFrameworkByName(neo4jAL, oldName, oldInternalType, fn);
@@ -195,7 +200,7 @@ public class FrameworkController {
     String request =
         String.format(
             "MATCH(o:%s) RETURN o as framework ORDER BY o.%s SKIP $toSkip LIMIT $limit;",
-            FrameworkNode.getLabel(), FrameworkNode.getNameProperty(), startIndex, limit);
+            FrameworkNode.getLabel(), FrameworkNode.getNameProperty());
     Map<String, Object> params =
         Map.of(
             "toSkip", startIndex,
@@ -291,7 +296,7 @@ public class FrameworkController {
     String request =
         String.format(
             "MATCH(o:%s) WHERE o.%s=$internalType RETURN COUNT(o) as count;",
-            FrameworkNode.getLabel(), FrameworkNode.getInternalTypeProperty(), internalType);
+            FrameworkNode.getLabel(), FrameworkNode.getInternalTypeProperty());
     Map<String, Object> param = Map.of("internalType", internalType);
     Result res = neo4jAL.executeQuery(request, param);
 
@@ -377,10 +382,7 @@ public class FrameworkController {
    */
   public static List<String> getFrameworkInternalTypes(Neo4jAL neo4jAL) throws Neo4jQueryException {
     String request =
-        String.format(
-            "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;",
-            FrameworkNode.getLabel(),
-            FrameworkNode.getInternalTypeProperty());
+            "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;";
 
     Result res = neo4jAL.executeQuery(request);
 

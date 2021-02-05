@@ -13,7 +13,9 @@ package com.castsoftware.artemis.controllers.user.input;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
+import com.castsoftware.artemis.controllers.api.CategoryController;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
@@ -64,6 +66,7 @@ public class CustomFrameworkController {
         // Iterate over the results and flag the object as framework
         Node n;
         FrameworkNode fn;
+        CategoryNode cn;
         String category = "";
         String tag = "";
         while(res.hasNext()) {
@@ -83,7 +86,9 @@ public class CustomFrameworkController {
                 category = tag.replace(artemisFrameworkTag, "");
 
                 fn = new FrameworkNode(neo4jAL, name, strDate, "", "", 1L, 1.0, new Date().getTime());
-                fn.setCategory(category);
+
+                cn = CategoryController.getOrCreateByName(neo4jAL, category);
+                fn.setCategory(cn);
                 fn.setInternalType(internalType);
                 fn.setFrameworkType(FrameworkType.FRAMEWORK);
 

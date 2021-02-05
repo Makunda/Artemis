@@ -15,7 +15,9 @@ import com.castsoftware.artemis.controllers.OracleController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -76,7 +78,7 @@ public class StatusProcedure {
             boolean val = OracleController.testOracleAddFramework(nal);
 
             return Stream.of(new BooleanResult(val));
-        } catch (Exception | Neo4jConnectionError e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

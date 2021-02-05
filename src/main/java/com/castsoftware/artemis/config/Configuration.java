@@ -59,6 +59,15 @@ public class Configuration {
     }
 
     /**
+     * Check if a key is present in the Properties
+     * @param key
+     * @return
+     */
+    public static Boolean has(String key) {
+        return PROPERTIES.contains(key);
+    }
+
+    /**
      * Get the corresponding value for the specified key as a String
      * @param key
      * @see this.getAsObject to get the value as an object
@@ -66,6 +75,19 @@ public class Configuration {
      */
     public static String get(String key) {
         return PROPERTIES.get(key).toString();
+    }
+
+    /**
+     * Test if the property is present in the Configuration Node.
+     * Then test if the property is present in the UserConfiguration and then in the Classic configuration.
+     * @param property  key
+     * @return Return the value as String, null if it matches no key
+     */
+    public static String getBestOfAllWorlds(String property) {
+        // Add the Node configuration
+        if(UserConfiguration.has(property)) return UserConfiguration.get(property);
+        if(Configuration.has(property)) return Configuration.get(property);
+        return null;
     }
 
     /**

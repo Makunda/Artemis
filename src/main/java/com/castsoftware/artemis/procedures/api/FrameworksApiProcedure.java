@@ -59,7 +59,7 @@ public class FrameworksApiProcedure {
               nal, name, discoveryDate, location, description, type, category, internalType);
 
       return Stream.of(new FrameworkResult(addedFramework));
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadNodeFormatException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
