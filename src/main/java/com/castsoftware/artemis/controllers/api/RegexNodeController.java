@@ -134,6 +134,10 @@ public class RegexNodeController {
     return newNode;
   }
 
+  private static String arrayToList(List<String> array) {
+    return "['" + String.join("','", array) + "']";
+  }
+
   /**
    * Flag objects matching a regex node
    *
@@ -144,25 +148,31 @@ public class RegexNodeController {
    */
   private static Long flagObjects(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
     if (rn.getRegexes().isEmpty()) return 0L;
+    String req = getRequestRegex(rn);
 
-    String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
-    String tagName = demeterPrefix + rn.getCategory();
-    String req =
-        String.format(
-            "MATCH (o:Object) WHERE any( x IN $listRegex WHERE o.FullName~=x ) AND o.InternalType in $listInternalType "
-                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%1$s'] ELSE obj.Tags + '%1$s' "
-                + "END RETURN COUNT(DISTINCT o) as count",
-            tagName);
-
-    Map<String, Object> params =
-        Map.of("listRegex", rn.getRegexes(), "listInternalType", rn.getInternalTypes());
-    Result res = neo4jAL.executeQuery(req, params);
+    Result res = neo4jAL.executeQuery(req);
     if (!res.hasNext()) return 0L;
     return (Long) res.next().get("count");
   }
 
-  private static String arrayToList(List<String> array) {
-    return "['" + String.join("','", array) + "']";
+  /**
+   * Get te request related to the Regex Node
+   * @param rn Regex Node
+   * @return
+   */
+  private static String getRequestRegex(RegexNode rn) {
+
+    String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
+    String tagName = demeterPrefix + rn.getCategory();
+
+    String clauseInternalType = "";
+    if(!rn.getInternalTypes().isEmpty()) clauseInternalType = String.format("AND o.InternalType in %s ", arrayToList(rn.getInternalTypes()));
+
+    return String.format(
+            "MATCH (obj:Object) WHERE any( x IN %1$s WHERE o.FullName=~x ) %2$s " +
+                    "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%3$s'] ELSE [ x IN obj.Tags WHERE NOT x CONTAINS '%4$s' ] + '%3$s' " +
+                    "END RETURN COUNT(DISTINCT obj) as count",
+            arrayToList(rn.getRegexes()), clauseInternalType, tagName, demeterPrefix);
   }
 
   /**
@@ -213,6 +223,23 @@ public class RegexNodeController {
     if (rn == null) return null;
 
     return testRegex(neo4jAL, rn);
+  }
+
+
+  /**
+   * Get the cypher regex of request of a regex
+   * @param neo4jAL Neo4j access layer
+   * @param id Id if the regex node
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static String getRegexRequest (Neo4jAL neo4jAL, Long id)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    RegexNode rn = RegexNode.getRegexNodeById(neo4jAL, id);
+    if (rn == null) return "";
+
+    return getRequestRegex(rn);
   }
 
   /**

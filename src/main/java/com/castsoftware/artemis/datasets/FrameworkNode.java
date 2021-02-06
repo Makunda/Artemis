@@ -318,11 +318,11 @@ public class FrameworkNode {
     return FrameworkNode.fromNode(neo4jAL, n);
   }
 
-  public static Boolean deleteFrameworkByNameAndType(
+  public static void deleteFrameworkByNameAndType(
       Neo4jAL neo4jAL, String frameworkName, String internalType) throws Neo4jQueryException {
 
     String matchReq;
-    if (internalType.isEmpty()) {
+    if (internalType.isEmpty() || internalType.isBlank()) {
       matchReq =
           String.format(
               "MATCH (n:%s) WHERE n.%s=$frameworkName DETACH DELETE n ;",
@@ -341,9 +341,7 @@ public class FrameworkNode {
                 .replace("$internalType", internalType)));
     Map<String, Object> params =
         Map.of("frameworkName", frameworkName, "internalType", internalType);
-    Result res = neo4jAL.executeQuery(matchReq, params);
-    // Check if the query returned a correct result
-    return res.hasNext();
+    neo4jAL.executeQuery(matchReq, params);
   }
 
   /**
@@ -357,12 +355,14 @@ public class FrameworkNode {
    * @throws Neo4jBadNodeFormatException
    */
   public static FrameworkNode updateFrameworkByName(
-      Neo4jAL neo4jAL, String frameworkName, String internalType, FrameworkNode fn)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    Boolean res = deleteFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
-    if (!res) neo4jAL.logInfo("Failed to delete the node");
-    if (!res) return null; // Failed to delete the node
+      Neo4jAL neo4jAL, String frameworkName, String internalType, String category, FrameworkNode fn)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    deleteFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
     fn.createNode();
+
+    // Change the category
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
 
     return fn;
   }

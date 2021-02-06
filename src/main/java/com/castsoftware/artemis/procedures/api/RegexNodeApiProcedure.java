@@ -18,10 +18,7 @@ import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.results.BooleanResult;
-import com.castsoftware.artemis.results.LongResult;
-import com.castsoftware.artemis.results.RegexNodeResult;
-import com.castsoftware.artemis.results.RelationshipResult;
+import com.castsoftware.artemis.results.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -204,4 +201,23 @@ public class RegexNodeApiProcedure {
       throw ex;
     }
   }
+
+  @Procedure(value = "artemis.api.regex.get.request", mode = Mode.WRITE)
+  @Description("artemis.api.regex.get.request(Long idRegexNode) - Get the request associated to a node")
+  public Stream<OutputMessage> getRequest(@Name(value = "IdNode") Long idNode)
+          throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String req = RegexNodeController.getRegexRequest(nal, idNode);
+      return Stream.of(new OutputMessage(req));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException
+            | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
 }

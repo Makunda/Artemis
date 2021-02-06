@@ -70,10 +70,10 @@ public class FrameworkController {
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static Boolean deleteFrameworkByNameAndType(
+  public static void deleteFrameworkByNameAndType(
       Neo4jAL neo4jAL, String name, String internalType)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    return FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalType);
+      FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalType);
   }
 
   /**
@@ -105,11 +105,12 @@ public class FrameworkController {
         new FrameworkNode(
             neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
     fn.setInternalType(internalType);
-
-    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-    fn.setCategory(cn);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
+
+    // Set cateogry
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
 
     neo4jAL.logInfo(
         String.format("Framework with name %s has been inserted through API call", name));
@@ -160,12 +161,10 @@ public class FrameworkController {
             percentageOfDetection,
             new Date().getTime());
 
-    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-    fn.setCategory(cn);
     fn.setInternalType(internalType);
     fn.setFrameworkType(FrameworkType.getType(type));
 
-    return FrameworkNode.updateFrameworkByName(neo4jAL, oldName, oldInternalType, fn);
+    return FrameworkNode.updateFrameworkByName(neo4jAL, oldName, oldInternalType, category, fn);
   }
 
   /**
