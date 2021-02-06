@@ -22,33 +22,38 @@ import java.util.List;
 
 public class PythiaComController {
 
-    /**
-     * Get the status of the connection to the Oracle
-     * @param neo4jAL Neo4j Access Layer
-     * @return
-     */
-    public static boolean isOracleConnected(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL).getStatus();
-    }
+  /**
+   * Get the status of the connection to the Oracle
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   */
+  public static boolean isOracleConnected(Neo4jAL neo4jAL) {
+    return PythiaCom.getInstance(neo4jAL).getStatus();
+  }
 
-    /**
-     * Get the date of the last update
-     * @param neo4jAL Neo4j Access Layer
-     */
-    public static Long getLastUpdate(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL).getLastUpdate();
-    }
+  /**
+   * Get the date of the last update
+   *
+   * @param neo4jAL Neo4j Access Layer
+   */
+  public static Long getLastUpdate(Neo4jAL neo4jAL) {
+    return PythiaCom.getInstance(neo4jAL).getLastUpdate();
+  }
 
-    /**
-     * Pull the list of new frameworks
-     * @param neo4jAL Neo4j Access Layer
-     * @return The list of the frameworks pulled
-     */
-    public static List<FrameworkNode> pullFrameworks(Neo4jAL neo4jAL) throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
-        return PythiaCom.getInstance(neo4jAL).pullFrameworks();
-    }
+  /**
+   * Pull the list of new frameworks
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return The list of the frameworks pulled
+   */
+  public static List<FrameworkNode> pullFrameworks(Neo4jAL neo4jAL)
+      throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
+    return PythiaCom.getInstance(neo4jAL).pullFrameworks();
+  }
 
-    public static Long pullFrameworksForecast(Neo4jAL neo4jAL) throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
-        return PythiaCom.getInstance(neo4jAL).getPullForecast();
-    }
+  public static Long pullFrameworksForecast(Neo4jAL neo4jAL)
+      throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
+    return PythiaCom.getInstance(neo4jAL).getPullForecast();
+  }
 }

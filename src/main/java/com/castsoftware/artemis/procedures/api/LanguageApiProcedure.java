@@ -17,33 +17,32 @@ import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.*;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Procedure;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 public class LanguageApiProcedure {
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "artemis.get.supported.languages", mode = Mode.WRITE)
-    @Description(
-            "artemis.get.supported.languages() - Get the list of supported languages")
-    public Stream<OutputMessage> getSupportedLanguages() throws ProcedureException {
+  @Procedure(value = "artemis.get.supported.languages", mode = Mode.WRITE)
+  @Description("artemis.get.supported.languages() - Get the list of supported languages")
+  public Stream<OutputMessage> getSupportedLanguages() throws ProcedureException {
 
-        try {
-            List<String> languages = LanguageController.getSupportedLanguages();
-            return languages.stream().map(OutputMessage::new);
-        } catch (Exception e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    try {
+      List<String> languages = LanguageController.getSupportedLanguages();
+      return languages.stream().map(OutputMessage::new);
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
-
+  }
 }

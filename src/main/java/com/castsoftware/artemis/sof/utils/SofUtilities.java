@@ -23,50 +23,58 @@ import java.util.Map;
 
 public class SofUtilities {
 
-    /**
-     * Get the presence of a string in the fullname of the objects in other applications
-     * @param neo4jAL Neo4j Access Layer
-     * @param application Name of the current application (will be excluded of the results)
-     * @param toSearchFullName Full name to search ( can be a part of the Fullname)
-     * @return
-     * @throws Neo4jQueryException
-     */
-    public static List<String> getPresenceInOtherApplications(Neo4jAL neo4jAL, String application, String toSearchFullName) throws Neo4jQueryException {
-        String req = String.format("MATCH (o:Object) WHERE o.FullName CONTAINS $toSearchFullName AND NOT $nameApp IN LABELS(o) RETURN DISTINCT [x in LABELS(o) WHERE x<>'Object'][0] as application");
-        Map<String, Object> params = Map.of("toSearchFullName", toSearchFullName, "nameApp", application);
+  /**
+   * Get the presence of a string in the fullname of the objects in other applications
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the current application (will be excluded of the results)
+   * @param toSearchFullName Full name to search ( can be a part of the Fullname)
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<String> getPresenceInOtherApplications(
+      Neo4jAL neo4jAL, String application, String toSearchFullName) throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (o:Object) WHERE o.FullName CONTAINS $toSearchFullName AND NOT $nameApp IN LABELS(o) RETURN DISTINCT [x in LABELS(o) WHERE x<>'Object'][0] as application");
+    Map<String, Object> params =
+        Map.of("toSearchFullName", toSearchFullName, "nameApp", application);
 
-        Result res = neo4jAL.executeQuery(req, params);
-        List<String> applications = new ArrayList<>();
+    Result res = neo4jAL.executeQuery(req, params);
+    List<String> applications = new ArrayList<>();
 
-        while(res.hasNext()) {
-            applications.add((String) res.next().get("application"));
-        }
-
-        return applications;
+    while (res.hasNext()) {
+      applications.add((String) res.next().get("application"));
     }
 
-    /**
-     * Create a Sof Object
-     * @param neo4jAL Neo4j Access Layer
-     * @param sourceApplication Name of the source application
-     * @param targetApplication Name of the Targeted application
-     * @return The nod
-     * @throws Neo4jQueryException
-     */
-    public static Node createSofObject(Neo4jAL neo4jAL, String sourceApplication, String targetApplication) throws Neo4jQueryException {
-        Label levelLabel = Label.label("Level5");
-        Label applicationLabel = Label.label(sourceApplication);
+    return applications;
+  }
 
-        Node node = neo4jAL.createNode(levelLabel);
-        node.addLabel(applicationLabel);
+  /**
+   * Create a Sof Object
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param sourceApplication Name of the source application
+   * @param targetApplication Name of the Targeted application
+   * @return The nod
+   * @throws Neo4jQueryException
+   */
+  public static Node createSofObject(
+      Neo4jAL neo4jAL, String sourceApplication, String targetApplication)
+      throws Neo4jQueryException {
+    Label levelLabel = Label.label("Level5");
+    Label applicationLabel = Label.label(sourceApplication);
 
-        node.setProperty("Color", "rgb(233,66,53)");
-        node.setProperty("Concept", true);
-        node.setProperty("Count", 0L);
-        node.setProperty("FullName", "Services##Logic Services##Business Logic##Adobe##"+targetApplication);
-        node.setProperty("Color", "rgb(233,66,53)");
+    Node node = neo4jAL.createNode(levelLabel);
+    node.addLabel(applicationLabel);
 
-        return node;
-    }
+    node.setProperty("Color", "rgb(233,66,53)");
+    node.setProperty("Concept", true);
+    node.setProperty("Count", 0L);
+    node.setProperty(
+        "FullName", "Services##Logic Services##Business Logic##Adobe##" + targetApplication);
+    node.setProperty("Color", "rgb(233,66,53)");
 
+    return node;
+  }
 }

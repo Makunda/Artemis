@@ -14,14 +14,14 @@ package com.castsoftware.artemis.results;
 import com.castsoftware.artemis.datasets.CategoryNode;
 
 public class CategoryNodeResult {
-    public Long id;
-    public String name;
-    public String iconUrl;
+  public Long id;
+  public String name;
+  public String iconUrl;
 
-    public CategoryNodeResult(CategoryNode n) {
-        assert n.getNode() != null : "Cannot create a CategoryNodeResult from a non-initialized node";
-        this.id = n.getId();
-        this.name = n.getName();
-        this.iconUrl = n.getIconUrl();
-    }
+  public CategoryNodeResult(CategoryNode n) {
+    assert n.getNode() != null : "Cannot create a CategoryNodeResult from a non-initialized node";
+    this.id = n.getId();
+    this.name = n.getName();
+    this.iconUrl = n.getIconUrl();
+  }
 }

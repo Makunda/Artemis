@@ -14,20 +14,21 @@ package com.castsoftware.artemis.exceptions.file;
 import com.castsoftware.artemis.exceptions.ExtensionException;
 
 /**
- * The <code>FileNotFound</code> is thrown when the procedure can't access a file because it doesn't exist, or the path resolution failed.
- * FileNotFound
+ * The <code>FileNotFound</code> is thrown when the procedure can't access a file because it doesn't
+ * exist, or the path resolution failed. FileNotFound
  */
 public class MissingFileException extends ExtensionException {
 
-    private static final long serialVersionUID = 1676506597566629385L;
-    private static final String MESSAGE_PREFIX = "Error, file not found : ";
-    private static final String CODE_PREFIX = "FIL_NF_";
+  private static final long serialVersionUID = 1676506597566629385L;
+  private static final String MESSAGE_PREFIX = "Error, file not found : ";
+  private static final String CODE_PREFIX = "FIL_NF_";
 
-    public MissingFileException(String path, Throwable cause, String code) {
-        super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
-    }
+  public MissingFileException(String path, Throwable cause, String code) {
+    super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
+  }
 
-    public MissingFileException(String message, String path, String code) {
-        super(MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path), CODE_PREFIX.concat(code));
-    }
+  public MissingFileException(String message, String path, String code) {
+    super(
+        MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path), CODE_PREFIX.concat(code));
+  }
 }

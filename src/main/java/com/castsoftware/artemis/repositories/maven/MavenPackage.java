@@ -16,81 +16,80 @@ import org.json.JSONObject;
 
 public class MavenPackage implements SPackage {
 
-    private static final String TYPE = "MAVEN PACKAGE";
-    
-    private String groupId;
-    private String name;
-    private String fullName;
-    private String version;
-    private String[] tags;
+  private static final String TYPE = "MAVEN PACKAGE";
 
-    public String getGroupId() {
-        return groupId;
-    }
+  private String groupId;
+  private String name;
+  private String fullName;
+  private String version;
+  private String[] tags;
 
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
+  public MavenPackage(String groupId, String name, String fullName, String version) {
+    this.groupId = groupId;
+    this.name = name;
+    this.fullName = fullName;
+    this.version = version;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getGroupId() {
+    return groupId;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public void setGroupId(String groupId) {
+    this.groupId = groupId;
+  }
 
-    @Override
-    public String getFullName() {
-        return fullName;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getVersion() {
-        return version;
-    }
+  @Override
+  public String getFullName() {
+    return fullName;
+  }
 
-    public void setVersion(String version) {
-        this.version = version;
-    }
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
 
-    public String[] getTags() {
-        return tags;
-    }
+  public String getVersion() {
+    return version;
+  }
 
-    public void setTags(String[] tags) {
-        this.tags = tags;
-    }
+  public void setVersion(String version) {
+    this.version = version;
+  }
 
-    public Double getConfidence() {
-        return 0d;
-    }
+  public String[] getTags() {
+    return tags;
+  }
 
-    @Override
-    public String getLicence() {
-        return "No license information";
-    }
+  public void setTags(String[] tags) {
+    this.tags = tags;
+  }
 
-    @Override
-    public JSONObject toJson() {
-        JSONObject o = new JSONObject();
-        o.put("Type", TYPE);
-        o.put("FullName", this.getFullName());
-        o.put("Name", this.getName());
-        o.put("GroupId", this.getGroupId());
-        o.put("Version", this.getVersion());
-        o.put("Tags", this.getTags());
-        return o;
-    }
+  public Double getConfidence() {
+    return 0d;
+  }
 
+  @Override
+  public String getLicence() {
+    return "No license information";
+  }
 
-    public MavenPackage(String groupId, String name, String fullName, String version) {
-        this.groupId = groupId;
-        this.name = name;
-        this.fullName = fullName;
-        this.version = version;
-    }
+  @Override
+  public JSONObject toJson() {
+    JSONObject o = new JSONObject();
+    o.put("Type", TYPE);
+    o.put("FullName", this.getFullName());
+    o.put("Name", this.getName());
+    o.put("GroupId", this.getGroupId());
+    o.put("Version", this.getVersion());
+    o.put("Tags", this.getTags());
+    return o;
+  }
 }

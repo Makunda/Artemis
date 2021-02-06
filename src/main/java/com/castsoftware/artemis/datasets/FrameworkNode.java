@@ -118,118 +118,6 @@ public class FrameworkNode {
     return INTERNAL_TYPE_PROPERTY;
   }
 
-
-
-  // Getters and setters
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getDiscoveryDate() {
-    return discoveryDate;
-  }
-
-  public void setDiscoveryDate(String discoveryDate) {
-    this.discoveryDate = discoveryDate;
-  }
-
-  public String getLocation() {
-    return location;
-  }
-
-  public void setLocation(String location) {
-    this.location = location;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public Long getNumberOfDetection() {
-    return numberOfDetection;
-  }
-
-  public void setNumberOfDetection(Long numberOfDetection) {
-    this.numberOfDetection = numberOfDetection;
-  }
-
-  public Double getPercentageOfDetection() {
-    return percentageOfDetection;
-  }
-
-  public void setPercentageOfDetection(Double percentageOfDetection) {
-    this.percentageOfDetection = percentageOfDetection;
-  }
-
-  public FrameworkType getFrameworkType() {
-    return frameworkType;
-  }
-
-  public void setFrameworkType(FrameworkType frameworkType) {
-    this.frameworkType = frameworkType;
-  }
-
-  public Node getNode() {
-    return this.node;
-  }
-
-  public void setNode(Node n) {
-    this.node = n;
-  }
-
-  public String getCategory() {
-    if(this.node == null) return null;
-    Iterator<Relationship> itCat = this.node.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP)).iterator();
-    if(!itCat.hasNext()) return CategoryController.getDefaultName(); // Default value
-
-    // Get the category node
-    Node category = itCat.next().getStartNode();
-    try {
-      CategoryNode cn = null;
-      cn = new CategoryNode(category);
-      return cn.getName();
-    } catch (Neo4jBadNodeFormatException e) {
-      return CategoryController.getDefaultName();
-    }
-  }
-
-  public void setCategory(CategoryNode cn) {
-    if(this.node == null || cn.getNode() == null) return;
-    cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
-  }
-
-  public String getInternalType() {
-    return internalType;
-  }
-
-  public void setInternalType(String internalType) {
-    this.internalType = internalType;
-  }
-
-  public Boolean getUserCreated() {
-    return userCreated;
-  }
-
-  public void setUserCreated(Boolean userCreated) {
-    this.userCreated = userCreated;
-  }
-
-  public Long getCreationDate() {
-    return creationDate;
-  }
-
-  public void setCreationDate(Long creationDate) {
-    this.creationDate = creationDate;
-  }
-
   public static String getCreationDateProperty() {
     return CREATION_DATE_PROPERTY;
   }
@@ -315,8 +203,10 @@ public class FrameworkNode {
 
       // Categories
       String category = "Externals";
-      Iterator<Relationship> itCat = n.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP)).iterator();
-      if(!itCat.hasNext()) {
+      Iterator<Relationship> itCat =
+          n.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
+              .iterator();
+      if (!itCat.hasNext()) {
         CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
         cn.getNode().createRelationshipTo(n, RelationshipType.withName(CATEGORY_RELATIONSHIP));
       }
@@ -428,17 +318,29 @@ public class FrameworkNode {
     return FrameworkNode.fromNode(neo4jAL, n);
   }
 
-
   public static Boolean deleteFrameworkByNameAndType(
-          Neo4jAL neo4jAL, String frameworkName, String internalType)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    String matchReq =
-            String.format(
-                    "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalType DETACH DELETE n ;",
-                    LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+      Neo4jAL neo4jAL, String frameworkName, String internalType) throws Neo4jQueryException {
 
+    String matchReq;
+    if (internalType.isEmpty()) {
+      matchReq =
+          String.format(
+              "MATCH (n:%s) WHERE n.%s=$frameworkName DETACH DELETE n ;",
+              LABEL_PROPERTY, NAME_PROPERTY);
+    } else {
+      matchReq =
+          String.format(
+              "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalType DETACH DELETE n ;",
+              LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+    }
+    neo4jAL.logInfo(
+        String.format(
+            "Query : %s",
+            matchReq
+                .replace("$frameworkName", frameworkName)
+                .replace("$internalType", internalType)));
     Map<String, Object> params =
-            Map.of("frameworkName", frameworkName, "internalType", internalType);
+        Map.of("frameworkName", frameworkName, "internalType", internalType);
     Result res = neo4jAL.executeQuery(matchReq, params);
     // Check if the query returned a correct result
     return res.hasNext();
@@ -458,6 +360,7 @@ public class FrameworkNode {
       Neo4jAL neo4jAL, String frameworkName, String internalType, FrameworkNode fn)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     Boolean res = deleteFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
+    if (!res) neo4jAL.logInfo("Failed to delete the node");
     if (!res) return null; // Failed to delete the node
     fn.createNode();
 
@@ -486,7 +389,118 @@ public class FrameworkNode {
         .collect(Collectors.toList());
   }
 
+  // Getters and setters
+  public String getName() {
+    return name;
+  }
 
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getDiscoveryDate() {
+    return discoveryDate;
+  }
+
+  public void setDiscoveryDate(String discoveryDate) {
+    this.discoveryDate = discoveryDate;
+  }
+
+  public String getLocation() {
+    return location;
+  }
+
+  public void setLocation(String location) {
+    this.location = location;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public Long getNumberOfDetection() {
+    return numberOfDetection;
+  }
+
+  public void setNumberOfDetection(Long numberOfDetection) {
+    this.numberOfDetection = numberOfDetection;
+  }
+
+  public Double getPercentageOfDetection() {
+    return percentageOfDetection;
+  }
+
+  public void setPercentageOfDetection(Double percentageOfDetection) {
+    this.percentageOfDetection = percentageOfDetection;
+  }
+
+  public FrameworkType getFrameworkType() {
+    return frameworkType;
+  }
+
+  public void setFrameworkType(FrameworkType frameworkType) {
+    this.frameworkType = frameworkType;
+  }
+
+  public Node getNode() {
+    return this.node;
+  }
+
+  public void setNode(Node n) {
+    this.node = n;
+  }
+
+  public String getCategory() {
+    if (this.node == null) return null;
+    Iterator<Relationship> itCat =
+        this.node
+            .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
+            .iterator();
+    if (!itCat.hasNext()) return CategoryController.getDefaultName(); // Default value
+
+    // Get the category node
+    Node category = itCat.next().getStartNode();
+    try {
+      CategoryNode cn = null;
+      cn = new CategoryNode(category);
+      return cn.getName();
+    } catch (Neo4jBadNodeFormatException e) {
+      return CategoryController.getDefaultName();
+    }
+  }
+
+  public void setCategory(CategoryNode cn) {
+    if (this.node == null || cn.getNode() == null) return;
+    cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
+  }
+
+  public String getInternalType() {
+    return internalType;
+  }
+
+  public void setInternalType(String internalType) {
+    this.internalType = internalType;
+  }
+
+  public Boolean getUserCreated() {
+    return userCreated;
+  }
+
+  public void setUserCreated(Boolean userCreated) {
+    this.userCreated = userCreated;
+  }
+
+  public Long getCreationDate() {
+    return creationDate;
+  }
+
+  public void setCreationDate(Long creationDate) {
+    this.creationDate = creationDate;
+  }
 
   /**
    * Create a node based on the characteristics of the Framework

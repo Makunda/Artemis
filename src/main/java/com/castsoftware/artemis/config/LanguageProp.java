@@ -14,61 +14,81 @@ package com.castsoftware.artemis.config;
 import java.util.List;
 
 public class LanguageProp {
-    String name;
-    Boolean onlineSearch = false;
-    Boolean interactionDetector = false;
-    String packageDelimiter = "";
-    List<String> repositorySearch;
-    List<String> objectsInternalType;
-    String modelFileName;
+  String name;
+  Boolean onlineSearch = false;
+  Boolean interactionDetector = false;
+  String packageDelimiter = "";
+  List<String> repositorySearch;
+  List<String> objectsInternalType;
+  String modelFileName;
 
-    public String getName() { return name; }
+  public LanguageProp() {}
 
-    public Boolean getOnlineSearch() {
-        return onlineSearch;
-    }
+  public LanguageProp(
+      String name,
+      Boolean onlineSearch,
+      Boolean interactionDetector,
+      String packageDelimiter,
+      List<String> repositorySearch,
+      List<String> objectsInternalType,
+      String modelFileName) {
+    this.name = name;
+    this.onlineSearch = onlineSearch;
+    this.interactionDetector = interactionDetector;
+    this.packageDelimiter = packageDelimiter;
+    this.repositorySearch = repositorySearch;
+    this.objectsInternalType = objectsInternalType;
+    this.modelFileName = modelFileName;
+  }
 
-    public List<String> getObjectsInternalType() { return objectsInternalType; }
+  public String getName() {
+    return name;
+  }
 
-    public Boolean getInteractionDetector() {
-        return interactionDetector;
-    }
+  public Boolean getOnlineSearch() {
+    return onlineSearch;
+  }
 
-    public String getPackageDelimiter() {
-        return packageDelimiter;
-    }
+  public List<String> getObjectsInternalType() {
+    return objectsInternalType;
+  }
 
-    public List<String> getRepositorySearch() {
-        return repositorySearch;
-    }
+  public Boolean getInteractionDetector() {
+    return interactionDetector;
+  }
 
-    public String getModelFileName() {
-        return modelFileName;
-    }
+  public String getPackageDelimiter() {
+    return packageDelimiter;
+  }
 
-    public LanguageProp() {
-    }
+  public List<String> getRepositorySearch() {
+    return repositorySearch;
+  }
 
-    public LanguageProp(String name, Boolean onlineSearch, Boolean interactionDetector, String packageDelimiter, List<String> repositorySearch, List<String> objectsInternalType, String modelFileName) {
-        this.name = name;
-        this.onlineSearch = onlineSearch;
-        this.interactionDetector = interactionDetector;
-        this.packageDelimiter = packageDelimiter;
-        this.repositorySearch = repositorySearch;
-        this.objectsInternalType = objectsInternalType;
-        this.modelFileName = modelFileName;
-    }
+  public String getModelFileName() {
+    return modelFileName;
+  }
 
-    @Override
-    public String toString() {
-        return "LanguageProp{" +
-                "name='" + name + '\'' +
-                ", onlineSearch=" + onlineSearch +
-                ", interactionDetector=" + interactionDetector +
-                ", packageDelimiter='" + packageDelimiter + '\'' +
-                ", repositorySearch=" + String.join(" - ",repositorySearch) +
-                ", objectsInternalType=" + objectsInternalType +
-                ", modelFileName='" + modelFileName + '\'' +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "LanguageProp{"
+        + "name='"
+        + name
+        + '\''
+        + ", onlineSearch="
+        + onlineSearch
+        + ", interactionDetector="
+        + interactionDetector
+        + ", packageDelimiter='"
+        + packageDelimiter
+        + '\''
+        + ", repositorySearch="
+        + String.join(" - ", repositorySearch)
+        + ", objectsInternalType="
+        + objectsInternalType
+        + ", modelFileName='"
+        + modelFileName
+        + '\''
+        + '}';
+  }
 }

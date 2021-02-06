@@ -2,9 +2,9 @@
  * Copyright (C) 2020  Hugo JOBY
  *
  *  This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty ofnMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNUnLesser General Public License v3 for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public v3 License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
@@ -21,12 +21,12 @@ import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
-import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
-import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.sof.SystemOfFramework;
+import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
+import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
@@ -36,6 +36,11 @@ import java.util.List;
 
 /** Detector for COBOL */
 public class CobolDetector extends ADetector {
+
+  public CobolDetector(Neo4jAL neo4jAL, String application)
+      throws IOException, Neo4jQueryException {
+    super(neo4jAL, application, SupportedLanguage.COBOL);
+  }
 
   /**
    * Get the list of internal frameworks by matching the names
@@ -59,7 +64,9 @@ public class CobolDetector extends ADetector {
   }
 
   public void createSystemOfFrameworks(List<FrameworkNode> frameworkNodeList) {
-    SystemOfFramework sof = new SystemOfFramework(this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
+    SystemOfFramework sof =
+        new SystemOfFramework(
+            this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
     sof.run();
   }
 
@@ -78,7 +85,7 @@ public class CobolDetector extends ADetector {
         String.format("Investigation launched against %d objects.", toInvestigateNodes.size()));
 
     List<Node> notDetected = new ArrayList<>();
-     // Init the save
+    // Init the save
 
     try {
       for (Node n : toInvestigateNodes) {
@@ -102,16 +109,19 @@ public class CobolDetector extends ADetector {
           // the NLP Detection
           // Parse repositories
           // Parse NLP
-          if (fb == null && googleParser != null && onlineMode && languageProperties.getOnlineSearch()) {
+          if (fb == null
+              && googleParser != null
+              && onlineMode
+              && languageProperties.getOnlineSearch()) {
             GoogleResult gr = googleParser.request(objectName);
             String requestResult = gr.getContent();
             neo4jAL.logInfo(
-                    " - Name of the package to search : "
-                            + objectName
-                            + "\n\t - Results : "
-                            + gr.getNumberResult()
-                            + "\n\t - Blacklisted : "
-                            + gr.isBlacklisted());
+                " - Name of the package to search : "
+                    + objectName
+                    + "\n\t - Results : "
+                    + gr.getNumberResult()
+                    + "\n\t - Blacklisted : "
+                    + gr.isBlacklisted());
             NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
 
             // Apply a malus on Node with name containing number, exclude it
@@ -158,7 +168,6 @@ public class CobolDetector extends ADetector {
         }
       }
 
-
     } catch (TransactionTerminatedException e) {
       neo4jAL.logError("The detection was interrupted. Saving the results...", e);
     } finally {
@@ -168,16 +177,10 @@ public class CobolDetector extends ADetector {
 
     // Launch internal framework detector on remaining nodes
     if (languageProperties.getInteractionDetector()) {
-      //getInternalFramework(neo4jAL, notDetected);
+      // getInternalFramework(neo4jAL, notDetected);
       createSystemOfFrameworks(frameworkNodeList);
     }
 
-
     return frameworkNodeList;
-  }
-
-  public CobolDetector(Neo4jAL neo4jAL, String application)
-      throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.COBOL);
   }
 }

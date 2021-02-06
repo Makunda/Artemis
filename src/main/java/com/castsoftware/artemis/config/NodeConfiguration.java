@@ -23,125 +23,137 @@ import java.util.Map;
 
 public class NodeConfiguration {
 
-    private static final String NODE_LABEL = "ArtemisConfiguration";
-    private static final String LAST_UPDATE_PROP = "LastUpdate";
-    private static final String WORKSPACE_PROP = "Workspace";
+  private static final String NODE_LABEL = "ArtemisConfiguration";
+  private static final String LAST_UPDATE_PROP = "LastUpdate";
+  private static final String WORKSPACE_PROP = "Workspace";
 
-    private Node node;
-    private Long lastUpdate;
-    private String workspace;
+  private Node node;
+  private Long lastUpdate;
+  private String workspace;
 
-    public Long getLastUpdate() {
-        return lastUpdate;
+  private NodeConfiguration(Node node) {
+    this.node = node;
+
+    String workspace = Workspace.getWorkspacePath().toString();
+    Long lastUpdate = 0L;
+
+    if (!node.hasProperty(WORKSPACE_PROP)) {
+      node.setProperty(WORKSPACE_PROP, workspace);
+    } else {
+      workspace = (String) node.getProperty(WORKSPACE_PROP);
     }
 
-    public void setLastUpdate(Long lastUpdate) {
-        this.lastUpdate = lastUpdate;
+    if (!node.hasProperty(LAST_UPDATE_PROP)) {
+      node.setProperty(LAST_UPDATE_PROP, 0L);
+    } else {
+      lastUpdate = (Long) node.getProperty(LAST_UPDATE_PROP);
     }
 
-    public String getWorkspace() {
-        return workspace;
-    }
+    this.lastUpdate = lastUpdate;
+    this.workspace = workspace;
+  }
 
-    public void setWorkspace(String workspace) {
-        this.workspace = workspace;
-    }
+  /**
+   * Create a new Artemis configuration mode
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  private static NodeConfiguration createConfiguration(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    String workspace = Workspace.getWorkspacePath().toString();
+    Long lastUpdate = 0L;
 
-    /**
-     * Update the last timestamp value
-     * @return
-     */
-    public Long updateLastUpdate() {
-        Long timestamp = new Date().getTime();
-        this.node.setProperty(LAST_UPDATE_PROP, timestamp);
-        this.lastUpdate = timestamp;
-        return timestamp;
-    }
+    String req =
+        String.format(
+            "MERGE (o:%s) SET o.%s=$workspace SET o.%s=$lastUpdate RETURN o as node",
+            NODE_LABEL, WORKSPACE_PROP, LAST_UPDATE_PROP);
+    Map<String, Object> params = Map.of("workspace", workspace, "lastUpdate", lastUpdate);
 
-    /**
-     * Update the value of the workspace
-     * @param newWorkspace new workspace
-     * @return
-     */
-    public String updateWorkspace(String newWorkspace) {
-        this.node.setProperty(WORKSPACE_PROP, newWorkspace);
-        this.workspace = newWorkspace;
-        return workspace;
-    }
+    Result res = neo4jAL.executeQuery(req, params);
+    if (!res.hasNext())
+      throw new Neo4jBadRequestException(
+          "Failed to create the artemis configuration.", "NODECxCREAC1");
 
-    private NodeConfiguration(Node node) {
-        this.node = node;
+    Node n = (Node) res.next().get("node");
 
-        String workspace = Workspace.getWorkspacePath().toString();
-        Long lastUpdate = 0L;
+    return new NodeConfiguration(n);
+  }
 
-        if(!node.hasProperty(WORKSPACE_PROP)) {
-            node.setProperty(WORKSPACE_PROP, workspace);
-        } else {
-            workspace = (String) node.getProperty(WORKSPACE_PROP);
-        }
+  /**
+   * Delete and recreate a configuration
+   *
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static NodeConfiguration forceRecreateConfiguration(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    String req = String.format("MATCH (o:%s) DETACH DELETE o", NODE_LABEL);
+    neo4jAL.executeQuery(req);
 
-        if(!node.hasProperty(LAST_UPDATE_PROP)) {
-            node.setProperty(LAST_UPDATE_PROP, 0L);
-        } else {
-            lastUpdate = (Long) node.getProperty(LAST_UPDATE_PROP);
-        }
+    return createConfiguration(neo4jAL);
+  }
 
-        this.lastUpdate = lastUpdate;
-        this.workspace = workspace;
-    }
+  /**
+   * Get the configuration in the database. If no configuration is detected it will create a new one
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return The configuration
+   * @throws Neo4jQueryException
+   */
+  public static NodeConfiguration getConfiguration(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    String req = String.format("MATCH (o:%s) RETURN o as node LIMIT 1", NODE_LABEL);
+    Result res = neo4jAL.executeQuery(req);
 
-    /**
-     * Create a new Artemis configuration mode
-     * @param neo4jAL Neo4j Access Layer
-     * @return
-     * @throws Neo4jQueryException
-     */
-    private static NodeConfiguration createConfiguration(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
-        String workspace = Workspace.getWorkspacePath().toString();
-        Long lastUpdate = 0L;
+    // Create if not exists
+    if (!res.hasNext()) return createConfiguration(neo4jAL);
 
-        String req = String.format("MERGE (o:%s) SET o.%s=$workspace SET o.%s=$lastUpdate RETURN o as node", NODE_LABEL, WORKSPACE_PROP, LAST_UPDATE_PROP);
-        Map<String, Object> params = Map.of("workspace", workspace, "lastUpdate", lastUpdate);
+    // else get the parameters
+    Node n = (Node) res.next().get("node");
 
-        Result res = neo4jAL.executeQuery(req, params);
-        if(!res.hasNext()) throw new Neo4jBadRequestException("Failed to create the artemis configuration.", "NODECxCREAC1");
+    return new NodeConfiguration(n);
+  }
 
-        Node n = (Node) res.next().get("node");
+  public Long getLastUpdate() {
+    return lastUpdate;
+  }
 
-        return new NodeConfiguration(n);
-    }
+  public void setLastUpdate(Long lastUpdate) {
+    this.lastUpdate = lastUpdate;
+  }
 
-    /**
-     * Delete and recreate a configuration
-     * @param neo4jAL
-     * @return
-     * @throws Neo4jQueryException
-     */
-    public static NodeConfiguration forceRecreateConfiguration(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
-        String req = String.format("MATCH (o:%s) DETACH DELETE o", NODE_LABEL);
-        neo4jAL.executeQuery(req);
+  public String getWorkspace() {
+    return workspace;
+  }
 
-        return createConfiguration(neo4jAL);
-    }
+  public void setWorkspace(String workspace) {
+    this.workspace = workspace;
+  }
 
-    /**
-     * Get the configuration in the database. If no configuration is detected it will create a new one
-     * @param neo4jAL Neo4j Access Layer
-     * @return The configuration
-     * @throws Neo4jQueryException
-     */
-    public static NodeConfiguration getConfiguration(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
-        String req = String.format("MATCH (o:%s) RETURN o as node LIMIT 1", NODE_LABEL);
-        Result res = neo4jAL.executeQuery(req);
+  /**
+   * Update the last timestamp value
+   *
+   * @return
+   */
+  public Long updateLastUpdate() {
+    Long timestamp = new Date().getTime();
+    this.node.setProperty(LAST_UPDATE_PROP, timestamp);
+    this.lastUpdate = timestamp;
+    return timestamp;
+  }
 
-        // Create if not exists
-        if(!res.hasNext()) return createConfiguration(neo4jAL);
-
-        // else get the parameters
-        Node n = (Node) res.next().get("node");
-
-        return new NodeConfiguration(n);
-    }
-
+  /**
+   * Update the value of the workspace
+   *
+   * @param newWorkspace new workspace
+   * @return
+   */
+  public String updateWorkspace(String newWorkspace) {
+    this.node.setProperty(WORKSPACE_PROP, newWorkspace);
+    this.workspace = newWorkspace;
+    return workspace;
+  }
 }

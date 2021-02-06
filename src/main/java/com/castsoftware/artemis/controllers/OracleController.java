@@ -24,45 +24,48 @@ import java.util.Date;
 
 public class OracleController {
 
-    /**
-     * Return the status of the Oracle Communication
-     * @return True if working, false otherwise
-     */
-    public static Boolean getOracleComStatus(Neo4jAL neo4jAL) {
-        return PythiaCom.getInstance(neo4jAL).getStatus();
-    }
+  /**
+   * Return the status of the Oracle Communication
+   *
+   * @return True if working, false otherwise
+   */
+  public static Boolean getOracleComStatus(Neo4jAL neo4jAL) {
+    return PythiaCom.getInstance(neo4jAL).getStatus();
+  }
 
-    /**
-     * Return the status of the Oracle Communication
-     * @return True if working, false otherwise
-     */
-    public static FrameworkNode testOracleFindings(Neo4jAL neo4jAL, String frameworkName, String InternalType) {
-        return PythiaCom.getInstance(neo4jAL).findFramework(neo4jAL, frameworkName, InternalType);
-    }
+  /**
+   * Return the status of the Oracle Communication
+   *
+   * @return True if working, false otherwise
+   */
+  public static FrameworkNode testOracleFindings(
+      Neo4jAL neo4jAL, String frameworkName, String InternalType) {
+    return PythiaCom.getInstance(neo4jAL).findFramework(neo4jAL, frameworkName, InternalType);
+  }
 
-    /**
-     * Return the status of the Oracle Communication
-     * @return True if working, false otherwise
-     */
-    public static boolean testOracleAddFramework(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        // Dummy Framework node
-        FrameworkNode fn =
-                new FrameworkNode(
-                        neo4jAL,
-                        "Test Upload",
-                        "Now",
-                        "Test Location",
-                        "My description",
-                        0L,
-                        .0,
-                        new Date().getTime());
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, "Test Category");
-        fn.setCategory(cn);
-        fn.setInternalType("Internal Type");
-        fn.setFrameworkType(FrameworkType.NOT_KNOWN);
+  /**
+   * Return the status of the Oracle Communication
+   *
+   * @return True if working, false otherwise
+   */
+  public static boolean testOracleAddFramework(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    // Dummy Framework node
+    FrameworkNode fn =
+        new FrameworkNode(
+            neo4jAL,
+            "Test Upload",
+            "Now",
+            "Test Location",
+            "My description",
+            0L,
+            .0,
+            new Date().getTime());
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, "Test Category");
+    fn.setCategory(cn);
+    fn.setInternalType("Internal Type");
+    fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 
-
-        return PythiaCom.getInstance(neo4jAL).addFramework(fn);
-    }
-
+    return PythiaCom.getInstance(neo4jAL).addFramework(fn);
+  }
 }

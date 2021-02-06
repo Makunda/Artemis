@@ -13,23 +13,21 @@ package com.castsoftware.artemis.exceptions.neo4j;
 
 import com.castsoftware.artemis.exceptions.ExtensionException;
 
-
 /**
- * The <code>Neo4jConnectionError</code> is thrown when the connection between the procedure and the database fail.
- * Neo4jConnectionError
+ * The <code>Neo4jConnectionError</code> is thrown when the connection between the procedure and the
+ * database fail. Neo4jConnectionError
  */
 public class Neo4jConnectionError extends ExtensionException {
 
-    private static final long serialVersionUID = 7522702117300762310L;
-    private static final String MESSAGE_PREFIX = "Error, the connection with neo4j failed : ";
-    private static final String CODE_PREFIX = "NEO_CE_";
+  private static final long serialVersionUID = 7522702117300762310L;
+  private static final String MESSAGE_PREFIX = "Error, the connection with neo4j failed : ";
+  private static final String CODE_PREFIX = "NEO_CE_";
 
-    public Neo4jConnectionError(String message, Throwable cause, String code) {
-        super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
-    }
+  public Neo4jConnectionError(String message, Throwable cause, String code) {
+    super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
+  }
 
-    public Neo4jConnectionError(String message, String code) {
-        super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
-    }
-
+  public Neo4jConnectionError(String message, String code) {
+    super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
+  }
 }

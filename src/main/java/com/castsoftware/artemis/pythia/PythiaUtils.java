@@ -24,35 +24,44 @@ import java.util.Date;
 
 public class PythiaUtils {
 
-    public static FrameworkNode JSONtoFramework(Neo4jAL neo4jAL, JSONObject frameworkJson) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        String name = frameworkJson.getString("name");
-        String discoveryDate = frameworkJson.getString("discoveryDate");
-        String location = frameworkJson.getString("location");
-        String description = frameworkJson.has("description") ? frameworkJson.getString("description") : "";
-        String category = frameworkJson.has("category") ? frameworkJson.getString("category") : "";
-        String internalType = frameworkJson.getString("internalType");
-        Long numberOfDetection = frameworkJson.has("numberOfDetection") ? frameworkJson.getLong("numberOfDetection") : 0L;
-        Double percentageDetection = frameworkJson.has("percentageOfDetection") ? frameworkJson.getDouble("percentageOfDetection") : .0;
-        Long timestampCreation = frameworkJson.has("creationDate") ? frameworkJson.getLong("creationDate") : new Date().getTime();
+  public static FrameworkNode JSONtoFramework(Neo4jAL neo4jAL, JSONObject frameworkJson)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String name = frameworkJson.getString("name");
+    String discoveryDate = frameworkJson.getString("discoveryDate");
+    String location = frameworkJson.getString("location");
+    String description =
+        frameworkJson.has("description") ? frameworkJson.getString("description") : "";
+    String category = frameworkJson.has("category") ? frameworkJson.getString("category") : "";
+    String internalType = frameworkJson.getString("internalType");
+    Long numberOfDetection =
+        frameworkJson.has("numberOfDetection") ? frameworkJson.getLong("numberOfDetection") : 0L;
+    Double percentageDetection =
+        frameworkJson.has("percentageOfDetection")
+            ? frameworkJson.getDouble("percentageOfDetection")
+            : .0;
+    Long timestampCreation =
+        frameworkJson.has("creationDate")
+            ? frameworkJson.getLong("creationDate")
+            : new Date().getTime();
 
-        String frameworkTypeAsString = frameworkJson.getString("type");
-        FrameworkType frameworkType = FrameworkType.getType(frameworkTypeAsString);
+    String frameworkTypeAsString = frameworkJson.getString("type");
+    FrameworkType frameworkType = FrameworkType.getType(frameworkTypeAsString);
 
-        FrameworkNode fn =
-                new FrameworkNode(
-                        neo4jAL,
-                        name,
-                        discoveryDate,
-                        location,
-                        description,
-                        numberOfDetection,
-                        percentageDetection,
-                        timestampCreation);
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-        fn.setCategory(cn);
-        fn.setInternalType(internalType);
-        fn.setFrameworkType(frameworkType);
+    FrameworkNode fn =
+        new FrameworkNode(
+            neo4jAL,
+            name,
+            discoveryDate,
+            location,
+            description,
+            numberOfDetection,
+            percentageDetection,
+            timestampCreation);
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
+    fn.setInternalType(internalType);
+    fn.setFrameworkType(frameworkType);
 
-        return fn;
-    }
+    return fn;
+  }
 }

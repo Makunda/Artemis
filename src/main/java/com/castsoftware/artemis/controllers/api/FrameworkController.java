@@ -99,7 +99,7 @@ public class FrameworkController {
       String type,
       String category,
       String internalType)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     FrameworkNode fn =
         new FrameworkNode(
@@ -374,8 +374,7 @@ public class FrameworkController {
    * @throws Neo4jQueryException
    */
   public static List<String> getFrameworkInternalTypes(Neo4jAL neo4jAL) throws Neo4jQueryException {
-    String request =
-            "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;";
+    String request = "MATCH(o:Object) RETURN DISTINCT o.InternalType as internalType;";
 
     Result res = neo4jAL.executeQuery(request);
 
@@ -395,6 +394,7 @@ public class FrameworkController {
 
   /**
    * Get the frameworks younger than a certain timestamp
+   *
    * @param neo4jAL Neo4J Access Layer
    * @param limitTimestamp Timestamp
    * @return List of Framework youger than the timestamp provided
@@ -425,16 +425,20 @@ public class FrameworkController {
 
   /**
    * Get the validated Frameworks but with missing category or description
+   *
    * @param neo4jAL Neo4J Access Layer
    * @return The list of Framework awaiting some properties
    * @throws Neo4jQueryException
    */
   public static List<FrameworkNode> getToValidateFrameworks(Neo4jAL neo4jAL)
-          throws Neo4jQueryException {
+      throws Neo4jQueryException {
     String req =
-            String.format(
-                    "MATCH (o:%s) WHERE o.%s=$frameworkType AND ( o.%s='' OR o.%s='' ) RETURN o as framework",
-                    FrameworkNode.getLabel(), FrameworkNode.getTypeProperty(), FrameworkNode.getCategoryProperty(), FrameworkNode.getDescriptionProperty());
+        String.format(
+            "MATCH (o:%s) WHERE o.%s=$frameworkType AND ( o.%s='' OR o.%s='' ) RETURN o as framework",
+            FrameworkNode.getLabel(),
+            FrameworkNode.getTypeProperty(),
+            FrameworkNode.getCategoryProperty(),
+            FrameworkNode.getDescriptionProperty());
     Map<String, Object> params = Map.of("frameworkType", "Framework");
 
     Node n;
@@ -454,17 +458,19 @@ public class FrameworkController {
 
   /**
    * Get the number of frameworks younger than a certain timestamp
+   *
    * @param neo4jAL Neo4J Access Layer
-   * @param limitTimestamp Timestamp
-   * @ The number of frameworks youger
+   * @param limitTimestamp Timestamp @ The number of frameworks youger
    * @throws Neo4jQueryException
    */
   public static Long getFrameworkYoungerThanForecast(Neo4jAL neo4jAL, Long limitTimestamp)
-          throws Neo4jQueryException {
+      throws Neo4jQueryException {
     String req =
-            String.format(
-                    "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp ADN o.%3$s=$type RETURN COUNT(DISTINCT o) as numFramework",
-                    FrameworkNode.getLabel(), FrameworkNode.getCreationDateProperty(), FrameworkNode.getTypeProperty());
+        String.format(
+            "MATCH (o:%s) WHERE EXISTS(o.%2$s) AND o.%2$s > $timestamp ADN o.%3$s=$type RETURN COUNT(DISTINCT o) as numFramework",
+            FrameworkNode.getLabel(),
+            FrameworkNode.getCreationDateProperty(),
+            FrameworkNode.getTypeProperty());
     Map<String, Object> params = Map.of("timestamp", limitTimestamp, "type", "Framework");
 
     Result res = neo4jAL.executeQuery(req, params);
@@ -473,33 +479,31 @@ public class FrameworkController {
     } else {
       return 0L;
     }
-
   }
-
 
   /**
    * Get the timestamp of the last update in the Database
+   *
    * @param neo4jAL Neo4j Access Layer
    * @return The Last update timestamp
    * @throws Neo4jQueryException
    * @throws Neo4jBadRequestException
    */
-  public static Long getLastUpdate(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
+  public static Long getLastUpdate(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
     NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
     return nodeConf.getLastUpdate();
   }
 
   /**
    * Reformat the Framework nodes in the database ( Add default properties if they aren't present)
+   *
    * @param neo4jAL Neo4j Access Layer
    * @return
    * @throws Neo4jQueryException
    */
   public static Long reformatFrameworks(Neo4jAL neo4jAL) throws Neo4jQueryException {
-    String req =
-            String.format(
-                    "MATCH (o:%s) RETURN o as framework",
-                    FrameworkNode.getLabel());
+    String req = String.format("MATCH (o:%s) RETURN o as framework", FrameworkNode.getLabel());
 
     Node n;
     Long numFramework = 0L;
@@ -508,7 +512,7 @@ public class FrameworkController {
       n = (Node) res.next().get("framework");
       try {
         FrameworkNode.fromNode(neo4jAL, n);
-        numFramework ++;
+        numFramework++;
       } catch (Exception | Neo4jBadNodeFormatException e) {
         neo4jAL.logError("Failed to reformat a framework.", e);
       }
@@ -516,5 +520,4 @@ public class FrameworkController {
 
     return numFramework;
   }
-
 }

@@ -12,9 +12,9 @@
 package com.castsoftware.artemis.results;
 
 public class LongResult {
-    public Long value;
+  public Long value;
 
-    public LongResult(Long value) {
-        this.value = value;
-    }
+  public LongResult(Long value) {
+    this.value = value;
+  }
 }

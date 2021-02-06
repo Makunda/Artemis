@@ -19,15 +19,15 @@ import java.util.stream.Collectors;
 
 public class LanguageController {
 
-    /**
-     * Get the list of the languages by Artemis
-     * @return
-     */
-    public static List<String> getSupportedLanguages() {
-        LanguageConfiguration lc = LanguageConfiguration.getInstance();
-        return lc.getLanguageMap().values()
-                .stream()
-                .map(LanguageProp::getName)
-                .collect(Collectors.toList());
-    }
+  /**
+   * Get the list of the languages by Artemis
+   *
+   * @return
+   */
+  public static List<String> getSupportedLanguages() {
+    LanguageConfiguration lc = LanguageConfiguration.getInstance();
+    return lc.getLanguageMap().values().stream()
+        .map(LanguageProp::getName)
+        .collect(Collectors.toList());
+  }
 }

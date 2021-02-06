@@ -15,99 +15,101 @@ import org.neo4j.graphdb.Node;
 
 public class Neo4jTypeManager {
 
-    /**
-     * Get the value of a parameter as Double. If another value is detected, it will re-write the parameter of the node.
-     * @param node Node containing the value to be extracted
-     * @param property Name of the property
-     * @return Value of the return
-     */
-    public static Double getAsDouble(Node node, String property) {
-        Double val = .0;
-        if(!node.hasProperty(property)) {
-            node.setProperty(property, val);
-            return val;
-        }
-        Object valObject = node.getProperty(property);
+  /**
+   * Get the value of a parameter as Double. If another value is detected, it will re-write the
+   * parameter of the node.
+   *
+   * @param node Node containing the value to be extracted
+   * @param property Name of the property
+   * @return Value of the return
+   */
+  public static Double getAsDouble(Node node, String property) {
+    Double val = .0;
+    if (!node.hasProperty(property)) {
+      node.setProperty(property, val);
+      return val;
+    }
+    Object valObject = node.getProperty(property);
 
-        if(valObject instanceof Double) {
-            return (Double) valObject;
-        }
-
-        if(valObject instanceof Float) {
-            Float aFloat = (Float) node.getProperty(property);
-            val = aFloat.doubleValue();
-            node.setProperty(property, val);
-            return val;
-        }
-
-        if(valObject instanceof Long) {
-            Long aLong = (Long) node.getProperty(property);
-            val = aLong.doubleValue();
-            node.setProperty(property, val);
-        }
-
-        if(valObject instanceof Integer) {
-            Integer aInteger = (Integer) node.getProperty(property);
-            val = aInteger.doubleValue();
-            node.setProperty(property, val);
-            return val;
-        }
-
-        if(valObject instanceof String) {
-            String aString = (String) node.getProperty(property);
-            val = Double.parseDouble(aString);
-            node.setProperty(property, val);
-        }
-
-        return val;
+    if (valObject instanceof Double) {
+      return (Double) valObject;
     }
 
-    /**
-     * Get the value of a parameter as Long. If another value is detected, it will re-write the parameter of the node.
-     * @param node Node containing the value to be extracted
-     * @param property Name of the property
-     * @return Value of the return
-     */
-    public static Long getAsLong(Node node, String property) {
-        Long val = 0L;
-        if(!node.hasProperty(property)) {
-            node.setProperty(property, val);
-            return val;
-        }
-        Object valObject = node.getProperty(property);
-        if(valObject instanceof Long) {
-            val = (Long) valObject;
-            return val;
-        }
-
-        if(valObject instanceof Float)  {
-            Float aFloat = (Float) valObject;
-            val = aFloat.longValue();
-            node.setProperty(property, val);
-            return val;
-        }
-
-        if(valObject instanceof Double) {
-            Double aDouble = (Double) valObject;
-            val = aDouble.longValue();
-            node.setProperty(property, val);
-        }
-
-        if(valObject instanceof Integer) {
-            Integer aInteger = (Integer) valObject;
-            val = aInteger.longValue();
-            node.setProperty(property, val);
-            return val;
-        }
-
-        if(valObject instanceof String) {
-            String aString = (String) valObject;
-            val = Long.parseLong(aString);
-            node.setProperty(property, val);
-        }
-
-        return val;
+    if (valObject instanceof Float) {
+      Float aFloat = (Float) node.getProperty(property);
+      val = aFloat.doubleValue();
+      node.setProperty(property, val);
+      return val;
     }
 
+    if (valObject instanceof Long) {
+      Long aLong = (Long) node.getProperty(property);
+      val = aLong.doubleValue();
+      node.setProperty(property, val);
+    }
 
+    if (valObject instanceof Integer) {
+      Integer aInteger = (Integer) node.getProperty(property);
+      val = aInteger.doubleValue();
+      node.setProperty(property, val);
+      return val;
+    }
+
+    if (valObject instanceof String) {
+      String aString = (String) node.getProperty(property);
+      val = Double.parseDouble(aString);
+      node.setProperty(property, val);
+    }
+
+    return val;
+  }
+
+  /**
+   * Get the value of a parameter as Long. If another value is detected, it will re-write the
+   * parameter of the node.
+   *
+   * @param node Node containing the value to be extracted
+   * @param property Name of the property
+   * @return Value of the return
+   */
+  public static Long getAsLong(Node node, String property) {
+    Long val = 0L;
+    if (!node.hasProperty(property)) {
+      node.setProperty(property, val);
+      return val;
+    }
+    Object valObject = node.getProperty(property);
+    if (valObject instanceof Long) {
+      val = (Long) valObject;
+      return val;
+    }
+
+    if (valObject instanceof Float) {
+      Float aFloat = (Float) valObject;
+      val = aFloat.longValue();
+      node.setProperty(property, val);
+      return val;
+    }
+
+    if (valObject instanceof Double) {
+      Double aDouble = (Double) valObject;
+      val = aDouble.longValue();
+      node.setProperty(property, val);
+    }
+
+    if (valObject instanceof Integer) {
+      Integer aInteger = (Integer) valObject;
+      val = aInteger.longValue();
+      node.setProperty(property, val);
+      return val;
+    }
+
+    if (valObject instanceof String) {
+      String aString = (String) valObject;
+      val = Long.parseLong(aString);
+      node.setProperty(property, val);
+    }
+
+    return val;
+  }
 }

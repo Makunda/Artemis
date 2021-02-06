@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.procedures.api;
 
-import com.castsoftware.artemis.controllers.api.LanguageController;
 import com.castsoftware.artemis.controllers.api.PythiaComController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
@@ -22,7 +21,6 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.LongResult;
-import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -36,86 +34,79 @@ import java.util.stream.Stream;
 
 public class PythiaProcedure {
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "artemis.api.pythia.get.lastUpdate", mode = Mode.WRITE)
-    @Description(
-            "artemis.api.pythia.get.lastUpdate() - Get the last update of the oracle")
-    public Stream<LongResult> getLastUpdate() throws ProcedureException {
+  @Procedure(value = "artemis.api.pythia.get.lastUpdate", mode = Mode.WRITE)
+  @Description("artemis.api.pythia.get.lastUpdate() - Get the last update of the oracle")
+  public Stream<LongResult> getLastUpdate() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            if(!connected) return Stream.empty();
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      boolean connected = PythiaComController.isOracleConnected(nal);
+      if (!connected) return Stream.empty();
 
-            Long lastUpdate = PythiaComController.getLastUpdate(nal);
+      Long lastUpdate = PythiaComController.getLastUpdate(nal);
 
-            return Stream.of(new LongResult(lastUpdate));
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      return Stream.of(new LongResult(lastUpdate));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.api.pythia.get.connection", mode = Mode.WRITE)
-    @Description(
-            "artemis.api.pythia.get.connection() - Check if Artemis is connected to the Pythia")
-    public Stream<BooleanResult> getConnection() throws ProcedureException {
+  @Procedure(value = "artemis.api.pythia.get.connection", mode = Mode.WRITE)
+  @Description("artemis.api.pythia.get.connection() - Check if Artemis is connected to the Pythia")
+  public Stream<BooleanResult> getConnection() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            return Stream.of(new BooleanResult(connected));
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      boolean connected = PythiaComController.isOracleConnected(nal);
+      return Stream.of(new BooleanResult(connected));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.api.pythia.pull.frameworks.forecast", mode = Mode.WRITE)
-    @Description(
-            "artemis.api.pythia.pull.frameworks.forecast() - Get a forecast of the pull")
-    public Stream<LongResult> pullFrameworksForecast() throws ProcedureException {
+  @Procedure(value = "artemis.api.pythia.pull.frameworks.forecast", mode = Mode.WRITE)
+  @Description("artemis.api.pythia.pull.frameworks.forecast() - Get a forecast of the pull")
+  public Stream<LongResult> pullFrameworksForecast() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            if(!connected) return Stream.empty();
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      boolean connected = PythiaComController.isOracleConnected(nal);
+      if (!connected) return Stream.empty();
 
-            Long numFramework = PythiaComController.pullFrameworksForecast(nal);
-            return Stream.of(new LongResult(numFramework));
-        } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      Long numFramework = PythiaComController.pullFrameworksForecast(nal);
+      return Stream.of(new LongResult(numFramework));
+    } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.api.pythia.pull.frameworks", mode = Mode.WRITE)
-    @Description(
-            "artemis.api.pythia.pull.frameworks() - Check if Artemis is connected to the Pythia")
-    public Stream<FrameworkResult> pullFrameworks() throws ProcedureException {
+  @Procedure(value = "artemis.api.pythia.pull.frameworks", mode = Mode.WRITE)
+  @Description("artemis.api.pythia.pull.frameworks() - Check if Artemis is connected to the Pythia")
+  public Stream<FrameworkResult> pullFrameworks() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean connected = PythiaComController.isOracleConnected(nal);
-            if(!connected) return Stream.empty();
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      boolean connected = PythiaComController.isOracleConnected(nal);
+      if (!connected) return Stream.empty();
 
-            List<FrameworkNode> listFrameworks = PythiaComController.pullFrameworks(nal);
-            return listFrameworks.stream().map(FrameworkResult::new);
-        } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      List<FrameworkNode> listFrameworks = PythiaComController.pullFrameworks(nal);
+      return listFrameworks.stream().map(FrameworkResult::new);
+    } catch (Exception | Neo4jConnectionError | Neo4jBadRequestException | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
-
+  }
 }

@@ -14,30 +14,30 @@ package com.castsoftware.artemis.results;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 
 public class FrameworkResult {
-    public String name;
-    public String description;
-    public String category;
-    public String type;
-    public String internalType = "";
-    public String location = "";
-    public String discoveryDate = "";
-    public Double percentageOfDetection = .0;
+  public String name;
+  public String description;
+  public String category;
+  public String type;
+  public String internalType = "";
+  public String location = "";
+  public String discoveryDate = "";
+  public Double percentageOfDetection = .0;
 
-    public FrameworkResult(String name, String description, String category, String type) {
-        this.name = name;
-        this.category = category;
-        this.description = description;
-        this.type = type;
-    }
+  public FrameworkResult(String name, String description, String category, String type) {
+    this.name = name;
+    this.category = category;
+    this.description = description;
+    this.type = type;
+  }
 
-    public FrameworkResult(FrameworkNode fn) {
-        this.name = fn.getName();
-        this.category = fn.getCategory();
-        this.description = fn.getDescription();
-        this.type = fn.getFrameworkType().toString();
-        this.internalType = fn.getInternalType();
-        this.location = fn.getLocation();
-        this.discoveryDate = fn.getDiscoveryDate();
-        this.percentageOfDetection = fn.getPercentageOfDetection();
-    }
+  public FrameworkResult(FrameworkNode fn) {
+    this.name = fn.getName();
+    this.category = fn.getCategory();
+    this.description = fn.getDescription();
+    this.type = fn.getFrameworkType().toString();
+    this.internalType = fn.getInternalType();
+    this.location = fn.getLocation();
+    this.discoveryDate = fn.getDiscoveryDate();
+    this.percentageOfDetection = fn.getPercentageOfDetection();
+  }
 }

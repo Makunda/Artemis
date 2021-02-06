@@ -20,43 +20,44 @@ import java.util.List;
 
 public class Cleaner {
 
-    private static final List<String> LABEL_LIST = List.of(FrameworkNode.getLabel());
+  private static final List<String> LABEL_LIST = List.of(FrameworkNode.getLabel());
 
-    /**
-     * Remove Artemis nodes in the database
-     * @param neo4jAL Neo4j Access Layer
-     * @return
-     * @throws Neo4jQueryException
-     */
-    public static Long cleanNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        Long totalDeleted = 0L;
+  /**
+   * Remove Artemis nodes in the database
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static Long cleanNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    Long totalDeleted = 0L;
 
-        String templateReq = "MATCH (o:%s) DETACH DELETE o RETURN COUNT(o) as deleted";
-        String req;
-        Result res;
-        for(String label : LABEL_LIST) {
-            req = String.format(templateReq, label);
-            res = neo4jAL.executeQuery(req);
+    String templateReq = "MATCH (o:%s) DETACH DELETE o RETURN COUNT(o) as deleted";
+    String req;
+    Result res;
+    for (String label : LABEL_LIST) {
+      req = String.format(templateReq, label);
+      res = neo4jAL.executeQuery(req);
 
-            if(!res.hasNext()) continue;
-            totalDeleted += (Long) res.next().get("deleted");
-        }
-
-        return totalDeleted;
+      if (!res.hasNext()) continue;
+      totalDeleted += (Long) res.next().get("deleted");
     }
 
-    /**
-     * Remove Artemis nodes in the database
-     * @param neo4jAL Neo4j Access Layer
-     * @return
-     * @throws Neo4jQueryException
-     * TODO : complete the function
-     */
-    public static Long cleanFrameworks(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        Long totalDeleted = 0L;
+    return totalDeleted;
+  }
 
-        String req = String.format("MATCH (o:%s) WHERE o.Name=", FrameworkNode.getLabel());
+  /**
+   * Remove Artemis nodes in the database
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException TODO : complete the function
+   */
+  public static Long cleanFrameworks(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    Long totalDeleted = 0L;
 
-        return totalDeleted;
-    }
+    String req = String.format("MATCH (o:%s) WHERE o.Name=", FrameworkNode.getLabel());
+
+    return totalDeleted;
+  }
 }

@@ -12,10 +12,8 @@
 package com.castsoftware.artemis.procedures;
 
 import com.castsoftware.artemis.controllers.SmtpController;
-import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.OutputMessage;
@@ -28,70 +26,64 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class SmtpProcedure {
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "artemis.get.mailsRecipients", mode = Mode.WRITE)
-    @Description("artemis.get.mailsRecipients() - Get the current recipients for the mail campaign.")
-    public Stream<OutputMessage> getMailsRecipients() throws ProcedureException {
+  @Procedure(value = "artemis.get.mailsRecipients", mode = Mode.WRITE)
+  @Description("artemis.get.mailsRecipients() - Get the current recipients for the mail campaign.")
+  public Stream<OutputMessage> getMailsRecipients() throws ProcedureException {
 
-        try {
-            List<String> recipients = SmtpController.getMailsRecipients();
-            return recipients.stream().map(OutputMessage::new);
-        } catch (Exception e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+    try {
+      List<String> recipients = SmtpController.getMailsRecipients();
+      return recipients.stream().map(OutputMessage::new);
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.set.mailsRecipients", mode = Mode.WRITE)
-    @Description("artemis.set.mailsRecipients(String listRecipients) - Set the list of recipients used during Artemis's mail campaigns.")
-    public Stream<BooleanResult> setMailsRecipients(@Name(value = "ListRecipients") String listRecipients) throws ProcedureException {
+  @Procedure(value = "artemis.set.mailsRecipients", mode = Mode.WRITE)
+  @Description(
+      "artemis.set.mailsRecipients(String listRecipients) - Set the list of recipients used during Artemis's mail campaigns.")
+  public Stream<BooleanResult> setMailsRecipients(
+      @Name(value = "ListRecipients") String listRecipients) throws ProcedureException {
 
-        try {
-            Boolean success = SmtpController.setMailsRecipients(listRecipients);
-            return Stream.of(new BooleanResult(success));
-        } catch (Exception  e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+    try {
+      Boolean success = SmtpController.setMailsRecipients(listRecipients);
+      return Stream.of(new BooleanResult(success));
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.get.smtpConfiguration", mode = Mode.WRITE)
-    @Description("artemis.get.smtpConfiguration() - Get the configuration of the SMTP server.")
-    public Stream<OutputMessage> getMailConfiguration() throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            return SmtpController.getMailConfiguration(nal).stream().map(OutputMessage::new);
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+  @Procedure(value = "artemis.get.smtpConfiguration", mode = Mode.WRITE)
+  @Description("artemis.get.smtpConfiguration() - Get the configuration of the SMTP server.")
+  public Stream<OutputMessage> getMailConfiguration() throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      return SmtpController.getMailConfiguration(nal).stream().map(OutputMessage::new);
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.mail.testMailCampaign", mode = Mode.WRITE)
-    @Description("artemis.mail.testMailCampaign() - Get the configuration of the SMTP server.")
-    public void testMailCampaign() throws ProcedureException {
-        try {
-            SmtpController.testMailCampaign();
-        } catch (Exception e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+  @Procedure(value = "artemis.mail.testMailCampaign", mode = Mode.WRITE)
+  @Description("artemis.mail.testMailCampaign() - Get the configuration of the SMTP server.")
+  public void testMailCampaign() throws ProcedureException {
+    try {
+      SmtpController.testMailCampaign();
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
+  }
 }

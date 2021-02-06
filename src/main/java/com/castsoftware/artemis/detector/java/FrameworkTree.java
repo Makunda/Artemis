@@ -2,9 +2,9 @@
  * Copyright (C) 2020  Hugo JOBY
  *
  *  This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty ofnMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNUnLesser General Public License v3 for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public v3 License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
@@ -19,20 +19,25 @@ public class FrameworkTree {
 
   private FrameworkTreeLeaf root;
 
+  public FrameworkTree() {
+    this.root = new FrameworkTreeLeaf("", "");
+  }
+
   /**
    * Recursively insert the package in the tree
    *
    * @param leaf Leaf to insert the package
    * @param packageName Name of the package to insert
    */
-  private void recInsert(FrameworkTreeLeaf leaf, String packageName, String fullName,  Integer depth) {
+  private void recInsert(
+      FrameworkTreeLeaf leaf, String packageName, String fullName, Integer depth) {
     String[] splitPackageName = packageName.split(PACKAGE_DELIMITER, 2);
 
     // If the split contains for than one element continue
 
     String name = splitPackageName[0];
 
-    if(fullName.isEmpty()) {
+    if (fullName.isEmpty()) {
       fullName = name;
     } else {
       fullName = String.join(".", fullName, name);
@@ -58,7 +63,7 @@ public class FrameworkTree {
     matchingLeaf.setDepth(depth);
 
     if (splitPackageName.length > 1) {
-      recInsert(matchingLeaf, splitPackageName[1], fullName, depth+1);
+      recInsert(matchingLeaf, splitPackageName[1], fullName, depth + 1);
     }
   }
 
@@ -73,6 +78,7 @@ public class FrameworkTree {
 
   /**
    * Get the root of the tree
+   *
    * @return
    */
   public FrameworkTreeLeaf getRoot() {
@@ -81,6 +87,7 @@ public class FrameworkTree {
 
   /**
    * Recursive tree print
+   *
    * @param fl
    * @param level
    */
@@ -100,13 +107,8 @@ public class FrameworkTree {
     }
   }
 
-
   /** Print the tree */
   public void print() {
     printTree(root, 0);
-  }
-
-  public FrameworkTree() {
-    this.root = new FrameworkTreeLeaf("", "");
   }
 }

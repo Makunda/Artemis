@@ -15,7 +15,6 @@ import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
-import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
@@ -28,335 +27,386 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.logging.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class PythiaCom {
 
-    private static PythiaCom INSTANCE;
+  private static PythiaCom INSTANCE;
 
-    private Neo4jAL neo4jAL;
-    private String uri;
-    private String token;
-    private boolean connected;
+  private Neo4jAL neo4jAL;
+  private String uri;
+  private String token;
+  private boolean connected;
 
-    public String getUri() {
-        return uri;
+  private PythiaCom(Neo4jAL neo4jAL) {
+    this.neo4jAL = neo4jAL;
+
+    // If configuration is empty
+    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
+      neo4jAL.logInfo("The Oracle has not been set up. Please check your configuration");
     }
+    ;
 
-    /**
-     * Set a new URI for the Pythia
-     * @param newURI New URI
-     * @return
-     * @throws MissingFileException
-     */
-    public String setUri(String newURI) throws MissingFileException {
-        UserConfiguration.set("oracle.server", newURI);
-        UserConfiguration.saveAndReload();
-        this.uri = newURI;
+    // Else get the properties
+    this.uri = UserConfiguration.get("oracle.server");
+    this.token = UserConfiguration.get("oracle.token");
 
-        return UserConfiguration.get("oracle.server");
+    this.connected = pingApi();
+  }
+
+  /**
+   * Get the instance of the OracleCom
+   *
+   * @return
+   * @throws IOException
+   */
+  public static PythiaCom getInstance(Neo4jAL neo4jAL) {
+    if (INSTANCE == null) {
+      INSTANCE = new PythiaCom(neo4jAL);
     }
+    return INSTANCE;
+  }
 
-    /**
-     * Set a new token for the Pythia
-     * @param newToken New token
-     * @return
-     * @throws MissingFileException
-     */
-    public Boolean setToken(String newToken) throws MissingFileException {
-        UserConfiguration.set("oracle.token", newToken);
-        UserConfiguration.saveAndReload();
-        this.token = newToken;
+  public String getUri() {
+    return uri;
+  }
 
-        return newToken == UserConfiguration.get("oracle.token");
+  /**
+   * Set a new URI for the Pythia
+   *
+   * @param newURI New URI
+   * @return
+   * @throws MissingFileException
+   */
+  public String setUri(String newURI) throws MissingFileException {
+    UserConfiguration.set("oracle.server", newURI);
+    UserConfiguration.saveAndReload();
+    this.uri = newURI;
+
+    return UserConfiguration.get("oracle.server");
+  }
+
+  /**
+   * Set a new token for the Pythia
+   *
+   * @param newToken New token
+   * @return
+   * @throws MissingFileException
+   */
+  public Boolean setToken(String newToken) throws MissingFileException {
+    UserConfiguration.set("oracle.token", newToken);
+    UserConfiguration.saveAndReload();
+    this.token = newToken;
+
+    return newToken == UserConfiguration.get("oracle.token");
+  }
+
+  /**
+   * Check if a token is present in the configuration
+   *
+   * @return
+   */
+  public Boolean isTokenPresent() {
+    return (token != null && !token.isEmpty());
+  }
+
+  /**
+   * Ping the API
+   *
+   * @return True if the API is reachable, false otherwise
+   */
+  public boolean pingApi() {
+
+    // If configuration is empty
+    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
+      neo4jAL.logInfo(
+          String.format(
+              "The Oracle has not been set up. Please check your configuration at %s",
+              Workspace.getUserConfigPath().toString()));
+      if (!UserConfiguration.isKey("oracle.server"))
+        neo4jAL.logInfo("Missing oracle.server parameter.");
+      if (!UserConfiguration.isKey("oracle.token"))
+        neo4jAL.logInfo("Missing oracle.token parameter.");
+      return false;
     }
+    ;
 
-    /**
-     * Check if a token is present in the configuration
-     * @return
-     */
-    public Boolean isTokenPresent() {
-        return ( token != null && !token.isEmpty());
+    // Else get the properties
+    this.uri = UserConfiguration.get("oracle.server");
+    this.token = UserConfiguration.get("oracle.token");
+
+    if (uri == null || uri.isEmpty()) return false;
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri);
+
+    try {
+      HttpResponse<String> jsonResponse =
+          Unirest.get(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .asString();
+
+      if (jsonResponse.getStatus() == 200 || jsonResponse.getStatus() == 304) {
+        neo4jAL.logInfo(
+            String.format(
+                "PYTHIA COM : The API is online (%s). Message : %s",
+                this.uri, jsonResponse.getBody()));
+        return true;
+      } else {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                this.uri, jsonResponse.getStatus()));
+        return false;
+      }
+    } catch (Exception e) {
+      neo4jAL.logError(
+          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+      return false;
     }
+  }
 
-    /**
-     * Ping the API
-     * @return True if the API is reachable, false otherwise
-     */
-    public boolean pingApi()  {
+  /**
+   * Verify if the api is online
+   *
+   * @return
+   */
+  public boolean getStatus() {
+    connected = this.pingApi();
+    return connected;
+  }
 
-        // If configuration is empty
-        if(!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
-            neo4jAL.logInfo(String.format("The Oracle has not been set up. Please check your configuration at %s", Workspace.getUserConfigPath().toString()));
-            if(!UserConfiguration.isKey("oracle.server")) neo4jAL.logInfo("Missing oracle.server parameter.");
-            if(!UserConfiguration.isKey("oracle.token")) neo4jAL.logInfo("Missing oracle.token parameter.");
-            return false;
-        };
+  /**
+   * Get the last update of Pythia instance
+   *
+   * @return
+   */
+  public Long getLastUpdate() {
+    if (uri == null || uri.isEmpty()) return null;
 
-        // Else get the properties
-        this.uri = UserConfiguration.get("oracle.server");
-        this.token = UserConfiguration.get("oracle.token");
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri).append("/api/repo/lastUpdate");
 
-        if(uri== null || uri.isEmpty()) return false;
+    try {
+      HttpResponse<String> pResponse =
+          Unirest.get(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .asString();
 
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri);
-
-        try {
-            HttpResponse<String> jsonResponse
-                    = Unirest.get(url.toString())
-                    .header("accept", "application/json")
-                    .header("Authorization", "Bearer "+token)
-                    .asString();
-
-            if (jsonResponse.getStatus() == 200 || jsonResponse.getStatus() == 304) {
-                neo4jAL.logInfo(String.format("PYTHIA COM : The API is online (%s). Message : %s", this.uri, jsonResponse.getBody()));
-                return true;
-            } else {
-                neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with status %d", this.uri, jsonResponse.getStatus()));
-                return false;
-            }
-        } catch (Exception e) {
-            neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
-            return false;
-        }
-    }
-
-    /**
-     * Verify if the api is online
-     * @return
-     */
-    public boolean getStatus() {
-        connected = this.pingApi();
-        return connected;
-    }
-
-    /**
-     * Get the last update of Pythia instance
-     * @return
-     */
-    public Long getLastUpdate() {
-        if(uri== null || uri.isEmpty()) return null;
-
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri).append("/api/repo/lastUpdate");
-
-        try {
-            HttpResponse<String> pResponse
-                    = Unirest.get(url.toString())
-                    .header("accept", "application/json")
-                    .header("Authorization", "Bearer "+token)
-                    .asString();
-
-            if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
-                neo4jAL.logInfo(String.format("Response for the update %s", pResponse.getBody()));
-                 PythiaResponse pr = new PythiaResponse(pResponse.getBody());
-                 return (Long) pr.data;
-            } else {
-                neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with status %d", this.uri, pResponse.getStatus()));
-                return null;
-            }
-        } catch (Exception e) {
-            neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
-            return null;
-        }
-    }
-
-    /**
-     * Get the number of framework that will be pulled
-     * @return
-     */
-    public Long getPullForecast() throws Neo4jQueryException, Neo4jBadRequestException {
-        if(uri== null || uri.isEmpty()) return null;
-
-        NodeConfiguration nc = NodeConfiguration.getConfiguration(neo4jAL);
-
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri).append("/api/repo/forecast/pull")
-                .append("?timestamp=").append(nc.getLastUpdate());
-
-        try {
-            HttpResponse<String> pResponse
-                    = Unirest.get(url.toString())
-                    .header("accept", "application/json")
-                    .header("Authorization", "Bearer "+token)
-                    .asString();
-
-            if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
-                neo4jAL.logInfo(String.format("Response for the last pull forecast %s", pResponse.getBody()));
-                PythiaResponse pr = new PythiaResponse(pResponse.getBody());
-                Integer temp = (Integer) pr.data;
-                return temp.longValue();
-            } else {
-                neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with status %d", this.uri, pResponse.getStatus()));
-                return null;
-            }
-        } catch (Exception e) {
-            neo4jAL.logError(String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
-            return null;
-        }
-    }
-
-    /**
-     * Pull the list of the new frameworks into the database ( in case of conflict, the user data will not be overridden )
-     * @return The list of framework retrieved
-     */
-    public List<FrameworkNode> pullFrameworks() throws Neo4jQueryException, Neo4jBadRequestException, UnirestException {
-        NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
-        Long lastUpdate = nodeConf.getLastUpdate();
-
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri).append("/api/repo/pull?timestamp=").append(lastUpdate);
-
-        // Retrieve the list of frameworks younger than this timestamp
-        HttpResponse<String> pResponse
-                = Unirest.get(url.toString())
-                .header("accept", "application/json")
-                .header("Authorization", "Bearer "+token)
-                .asString();
-
-        // Treat list of Frameworks
-        List<FrameworkNode> pulledFrameworks = new ArrayList<>();
+      if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+        neo4jAL.logInfo(String.format("Response for the update %s", pResponse.getBody()));
         PythiaResponse pr = new PythiaResponse(pResponse.getBody());
-        try {
-            JSONArray jsonArr = new JSONArray((String) pr.data);
-            for(Object o: jsonArr){
-                if ( o instanceof JSONObject ) {
-                    FrameworkNode fn = PythiaUtils.JSONtoFramework(neo4jAL, (JSONObject) o);
-                    fn.createNode();
-                    pulledFrameworks.add(fn);
-                } else {
-                    neo4jAL.logError(String.format("Malformed Json entry skipped. Entry : %s", o.toString()));
-                }
-            }
+        return (Long) pr.data;
+      } else {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                this.uri, pResponse.getStatus()));
+        return null;
+      }
+    } catch (Exception e) {
+      neo4jAL.logError(
+          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+      return null;
+    }
+  }
 
-        } catch (JSONException | Neo4jBadNodeFormatException ex) {
-           neo4jAL.logError("Failed to pull frameworks from Pythia Incorrect response format.", ex);
+  /**
+   * Get the number of framework that will be pulled
+   *
+   * @return
+   */
+  public Long getPullForecast() throws Neo4jQueryException, Neo4jBadRequestException {
+    if (uri == null || uri.isEmpty()) return null;
+
+    NodeConfiguration nc = NodeConfiguration.getConfiguration(neo4jAL);
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri)
+        .append("/api/repo/forecast/pull")
+        .append("?timestamp=")
+        .append(nc.getLastUpdate());
+
+    try {
+      HttpResponse<String> pResponse =
+          Unirest.get(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .asString();
+
+      if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+        neo4jAL.logInfo(
+            String.format("Response for the last pull forecast %s", pResponse.getBody()));
+        PythiaResponse pr = new PythiaResponse(pResponse.getBody());
+        Integer temp = (Integer) pr.data;
+        return temp.longValue();
+      } else {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                this.uri, pResponse.getStatus()));
+        return null;
+      }
+    } catch (Exception e) {
+      neo4jAL.logError(
+          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+      return null;
+    }
+  }
+
+  /**
+   * Pull the list of the new frameworks into the database ( in case of conflict, the user data will
+   * not be overridden )
+   *
+   * @return The list of framework retrieved
+   */
+  public List<FrameworkNode> pullFrameworks()
+      throws Neo4jQueryException, Neo4jBadRequestException, UnirestException {
+    NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
+    Long lastUpdate = nodeConf.getLastUpdate();
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri).append("/api/repo/pull?timestamp=").append(lastUpdate);
+
+    // Retrieve the list of frameworks younger than this timestamp
+    HttpResponse<String> pResponse =
+        Unirest.get(url.toString())
+            .header("accept", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .asString();
+
+    // Treat list of Frameworks
+    List<FrameworkNode> pulledFrameworks = new ArrayList<>();
+    PythiaResponse pr = new PythiaResponse(pResponse.getBody());
+    try {
+      JSONArray jsonArr = new JSONArray((String) pr.data);
+      for (Object o : jsonArr) {
+        if (o instanceof JSONObject) {
+          FrameworkNode fn = PythiaUtils.JSONtoFramework(neo4jAL, (JSONObject) o);
+          fn.createNode();
+          pulledFrameworks.add(fn);
+        } else {
+          neo4jAL.logError(String.format("Malformed Json entry skipped. Entry : %s", o.toString()));
         }
+      }
 
-        // Update timestamp if some frameworks were pulled
-        if(!pulledFrameworks.isEmpty()) {
-            nodeConf.updateLastUpdate();
-        }
-
-        return pulledFrameworks;
+    } catch (JSONException | Neo4jBadNodeFormatException ex) {
+      neo4jAL.logError("Failed to pull frameworks from Pythia Incorrect response format.", ex);
     }
 
-    /**
-     * Check the status
-     * @return
-     */
-    public boolean isConnected() {
-        return connected;
+    // Update timestamp if some frameworks were pulled
+    if (!pulledFrameworks.isEmpty()) {
+      nodeConf.updateLastUpdate();
     }
 
-    /**
-     * Send a Framework to the oracle
-     * @param frameworkNode Framework to send to the Oracle
-     * @return
-     */
-    public boolean addFramework(FrameworkNode frameworkNode) {
+    return pulledFrameworks;
+  }
 
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri);
-        url.append("/api/artemis/frameworks");
+  /**
+   * Check the status
+   *
+   * @return
+   */
+  public boolean isConnected() {
+    return connected;
+  }
 
-        try {
-            HttpResponse<JsonNode> jsonResponse
-                    = Unirest.post(url.toString())
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer "+token)
-                    .body(frameworkNode.toJSON())
-                    .asJson();
+  /**
+   * Send a Framework to the oracle
+   *
+   * @param frameworkNode Framework to send to the Oracle
+   * @return
+   */
+  public boolean addFramework(FrameworkNode frameworkNode) {
 
-            if (jsonResponse.getStatus() != 201) {
-                neo4jAL.logError(String.format("PYTHIA COM : Failed to add the framework : %s", frameworkNode.toString()));
-                return false;
-            } else {
-                neo4jAL.logInfo(String.format("PYTHIA COM : The framework with name %s has been added", frameworkNode.toString()));
-                return true;
-            }
-        } catch (UnirestException e) {
-            neo4jAL.logError(String.format("PYTHIA COM : Failed to add the framework (%s) with error : %s", frameworkNode.toString(), e.getMessage()));
-            return false;
-        }
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri);
+    url.append("/api/artemis/frameworks");
+
+    try {
+      HttpResponse<JsonNode> jsonResponse =
+          Unirest.post(url.toString())
+              .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .body(frameworkNode.toJSON())
+              .asJson();
+
+      if (jsonResponse.getStatus() != 201) {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to add the framework : %s", frameworkNode.toString()));
+        return false;
+      } else {
+        neo4jAL.logInfo(
+            String.format(
+                "PYTHIA COM : The framework with name %s has been added",
+                frameworkNode.toString()));
+        return true;
+      }
+    } catch (UnirestException e) {
+      neo4jAL.logError(
+          String.format(
+              "PYTHIA COM : Failed to add the framework (%s) with error : %s",
+              frameworkNode.toString(), e.getMessage()));
+      return false;
+    }
+  }
+
+  /**
+   * Get a Framework from the oracle
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param frameworkName Name of the Framework to find
+   * @param frameworkInternalType Internal Type of the framework
+   * @return
+   */
+  public FrameworkNode findFramework(
+      Neo4jAL neo4jAL, String frameworkName, String frameworkInternalType) {
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri);
+    url.append("/api/artemis/frameworks/");
+    url.append(frameworkName);
+
+    if (!frameworkInternalType.isEmpty()) {
+      String sanitizedF = frameworkInternalType.replace(" ", "+");
+      url.append("?internalType=").append(sanitizedF);
     }
 
-    /**
-     * Get a Framework from the oracle
-     * @param neo4jAL Neo4j Access Layer
-     * @param frameworkName Name of the Framework to find
-     * @param frameworkInternalType Internal Type of the framework
-     * @return
-     */
-    public FrameworkNode findFramework(Neo4jAL neo4jAL, String frameworkName, String frameworkInternalType) {
+    try {
+      HttpResponse<String> pResponse =
+          Unirest.get(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .asString();
 
+      if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+        PythiaResponse pr = new PythiaResponse(pResponse.getBody());
 
-        StringBuilder url = new StringBuilder();
-        url.append(this.uri);
-        url.append("/api/artemis/frameworks/");
-        url.append(frameworkName);
+        neo4jAL.logInfo(
+            String.format(
+                "PYTHIA COM : Framework with name '%s' has been found : %s",
+                frameworkName, pr.toString()));
 
-        if(!frameworkInternalType.isEmpty()) {
-            String sanitizedF = frameworkInternalType.replace(" ", "+");
-            url.append("?internalType=").append(sanitizedF);
-        }
-
-        try {
-            HttpResponse<String> pResponse
-                    = Unirest.get(url.toString())
-                    .header("accept", "application/json")
-                    .header("Authorization", "Bearer "+token)
-                    .asString();
-
-
-
-            if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
-                PythiaResponse pr = new PythiaResponse(pResponse.getBody());
-
-                neo4jAL.logInfo(String.format("PYTHIA COM : Framework with name '%s' has been found : %s", frameworkName, pr.toString()));
-
-                return PythiaUtils.JSONtoFramework(neo4jAL, new JSONObject(pr.data));
-            } else {
-                neo4jAL.logError(String.format("PYTHIA COM : Failed to retrieve framework with name : %s%n. Code : (%d)", frameworkName, pResponse.getStatus()));
-                return null;
-            }
-        } catch (UnirestException | Neo4jQueryException | Neo4jBadNodeFormatException e) {
-            neo4jAL.logError(String.format("PYTHIA COM :  Failed to retrieve framework with name : %s. Error : %s", frameworkName, e.getMessage()));
-            return null;
-        }
+        return PythiaUtils.JSONtoFramework(neo4jAL, new JSONObject(pr.data));
+      } else {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to retrieve framework with name : %s%n. Code : (%d)",
+                frameworkName, pResponse.getStatus()));
+        return null;
+      }
+    } catch (UnirestException | Neo4jQueryException | Neo4jBadNodeFormatException e) {
+      neo4jAL.logError(
+          String.format(
+              "PYTHIA COM :  Failed to retrieve framework with name : %s. Error : %s",
+              frameworkName, e.getMessage()));
+      return null;
     }
-
-    /**
-     * Get the instance of the OracleCom
-     * @return
-     * @throws IOException
-     */
-    public static PythiaCom getInstance(Neo4jAL neo4jAL) {
-        if(INSTANCE == null) {
-            INSTANCE = new PythiaCom(neo4jAL);
-        }
-        return INSTANCE;
-    }
-
-    private PythiaCom(Neo4jAL neo4jAL) {
-        this.neo4jAL = neo4jAL;
-
-        // If configuration is empty
-        if(!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
-            neo4jAL.logInfo("The Oracle has not been set up. Please check your configuration");
-        };
-
-        // Else get the properties
-        this.uri = UserConfiguration.get("oracle.server");
-        this.token = UserConfiguration.get("oracle.token");
-
-        this.connected = pingApi();
-    }
-
+  }
 }

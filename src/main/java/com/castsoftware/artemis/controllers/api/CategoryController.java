@@ -14,7 +14,6 @@ package com.castsoftware.artemis.controllers.api;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.CategoryNode;
-import com.castsoftware.artemis.datasets.RegexNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
@@ -25,85 +24,96 @@ import java.util.Map;
 
 public class CategoryController {
 
-    /**
-     * Get the default name category
-     * @return
-     */
-    public static String getDefaultName() {
-        return Configuration.getBestOfAllWorlds("artemis.default_category");
+  /**
+   * Get the default name category
+   *
+   * @return
+   */
+  public static String getDefaultName() {
+    return Configuration.getBestOfAllWorlds("artemis.default_category");
+  }
+
+  /**
+   * Create a Regex Node
+   *
+   * @see CategoryNode#createNode(Neo4jAL, String, String)
+   */
+  public static CategoryNode createNode(Neo4jAL neo4jAL, String name, String iconUrl) {
+    return CategoryNode.createNode(neo4jAL, name, iconUrl);
+  }
+
+  /**
+   * Get a Node by its name, or create it if it doesn't exist
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param name Name of the category
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static CategoryNode getOrCreateByName(Neo4jAL neo4jAL, String name)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String req =
+        String.format(
+            "MATCH(o:%s) WHERE o.%s=$name RETURN o as cat",
+            CategoryNode.getLABEL(), CategoryNode.getNameProperty());
+    Map<String, Object> params = Map.of("name", name);
+
+    Result res = neo4jAL.executeQuery(req, params);
+    if (res.hasNext()) {
+      return new CategoryNode((Node) res.next().get("cat"));
+    } else {
+      return CategoryNode.createNode(neo4jAL, name, "");
     }
+  }
 
-    /**
-     * Create a Regex Node
-     * @see CategoryNode#createNode(Neo4jAL, String, String)
-     */
-    public static CategoryNode createNode(Neo4jAL neo4jAL, String name, String iconUrl) {
-        return CategoryNode.createNode(neo4jAL, name, iconUrl);
-    }
+  /**
+   * Get a specific Category Node
+   *
+   * @see CategoryNode#getNode() (Neo4jAL, Long)
+   */
+  public static CategoryNode getNodeById(Neo4jAL neo4jAL, Long idNode)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    return CategoryNode.getNode(neo4jAL, idNode);
+  }
 
-    /**
-     * Get a Node by its name, or create it if it doesn't exist
-     * @param neo4jAL Neo4j Access Layer
-     * @param name Name of the category
-     * @return
-     * @throws Neo4jQueryException
-     * @throws Neo4jBadNodeFormatException
-     */
-    public static CategoryNode getOrCreateByName(Neo4jAL neo4jAL, String name) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        String req = String.format("MATCH(o:%s) WHERE o.%s=$name RETURN o as cat", CategoryNode.getLABEL(), CategoryNode.getNameProperty());
-        Map<String, Object> params = Map.of("name", name);
+  /**
+   * Get all Category nodes
+   *
+   * @see CategoryNode#getAllNodes(Neo4jAL)
+   */
+  public static List<CategoryNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    return CategoryNode.getAllNodes(neo4jAL);
+  }
 
-        Result res = neo4jAL.executeQuery(req, params);
-        if(res.hasNext()) {
-            return new CategoryNode((Node) res.next().get("cat"));
-        } else {
-            return CategoryNode.createNode(neo4jAL, name, "");
-        }
-    }
+  /**
+   * Remove a regex node by its id
+   *
+   * @see CategoryNode#removeNode(Neo4jAL, Long)
+   */
+  public static boolean removeNodeById(Neo4jAL neo4jAL, Long idNode) throws Neo4jQueryException {
+    return CategoryNode.removeNode(neo4jAL, idNode);
+  }
 
-    /**
-     * Get a specific Category Node
-     * @see CategoryNode#getNode() (Neo4jAL, Long)
-     */
-    public static CategoryNode getNodeById(Neo4jAL neo4jAL, Long idNode) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        return CategoryNode.getNode(neo4jAL, idNode);
-    }
+  /**
+   * Update node by its ID
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param idNode Id of the node
+   * @param name New name
+   * @param iconUrl New Icon Url
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static CategoryNode updateById(Neo4jAL neo4jAL, Long idNode, String name, String iconUrl)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    CategoryNode cn = getNodeById(neo4jAL, idNode);
+    if (cn == null || cn.getNode() == null) return null;
 
-    /**
-     * Get all Category nodes
-     * @see CategoryNode#getAllNodes(Neo4jAL)
-     */
-    public static List<CategoryNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        return CategoryNode.getAllNodes(neo4jAL);
-    }
+    CategoryNode newNode = createNode(neo4jAL, name, iconUrl);
+    CategoryNode.removeNode(neo4jAL, cn.getId());
 
-    /**
-     * Remove a regex node by its id
-     * @see CategoryNode#removeNode(Neo4jAL, Long)
-     */
-    public static boolean removeNodeById(Neo4jAL neo4jAL, Long idNode) throws Neo4jQueryException {
-        return CategoryNode.removeNode(neo4jAL, idNode);
-    }
-
-    /**
-     * Update node by its ID
-     * @param neo4jAL Neo4j Access Layer
-     * @param idNode Id of the node
-     * @param name New name
-     * @param iconUrl New Icon Url
-     * @return
-     * @throws Neo4jQueryException
-     * @throws Neo4jBadNodeFormatException
-     */
-    public static CategoryNode updateById(Neo4jAL neo4jAL, Long idNode, String name, String iconUrl) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-        CategoryNode cn = getNodeById(neo4jAL, idNode);
-        if(cn == null || cn.getNode() == null) return null;
-
-        CategoryNode newNode = createNode(neo4jAL, name, iconUrl);
-        CategoryNode.removeNode(neo4jAL, cn.getId());
-
-        return newNode;
-    }
-
-
+    return newNode;
+  }
 }

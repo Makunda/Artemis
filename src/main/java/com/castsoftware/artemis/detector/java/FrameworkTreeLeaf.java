@@ -2,9 +2,9 @@
  * Copyright (C) 2020  Hugo JOBY
  *
  *  This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty ofnMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNUnLesser General Public License v3 for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public v3 License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
@@ -17,59 +17,59 @@ import java.util.List;
 
 public class FrameworkTreeLeaf {
 
-    private String name;
-    private String fullName;
-    private List<FrameworkTreeLeaf> children;
-    private double[] detectionResults;
-    private Integer depth;
-    private boolean framework;
+  private String name;
+  private String fullName;
+  private List<FrameworkTreeLeaf> children;
+  private double[] detectionResults;
+  private Integer depth;
+  private boolean framework;
 
-    public String getFullName() {
-        return fullName;
-    }
+  public FrameworkTreeLeaf(String name, String fullName) {
+    this.name = name;
+    this.fullName = fullName;
+    this.children = Collections.synchronizedList(new ArrayList<>());
+    this.framework = false;
+    this.detectionResults = new double[0];
+    this.depth = 0;
+  }
 
-    public double[] getDetectionResults() {
-        return detectionResults;
-    }
+  public String getFullName() {
+    return fullName;
+  }
 
-    public void setDetectionResults(double[] detectionResults) {
-        this.detectionResults = detectionResults;
-    }
+  public double[] getDetectionResults() {
+    return detectionResults;
+  }
 
-    public Integer getDepth() {
-        return depth;
-    }
+  public void setDetectionResults(double[] detectionResults) {
+    this.detectionResults = detectionResults;
+  }
 
-    public void setDepth(Integer depth) {
-        this.depth = depth;
-    }
+  public Integer getDepth() {
+    return depth;
+  }
 
-    public boolean isFramework() {
-        return framework;
-    }
+  public void setDepth(Integer depth) {
+    this.depth = depth;
+  }
 
-    public void setFramework(boolean framework) {
-        this.framework = framework;
-    }
+  public boolean isFramework() {
+    return framework;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public void setFramework(boolean framework) {
+    this.framework = framework;
+  }
 
-    public List<FrameworkTreeLeaf> getChildren() {
-        return children;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void addLeaf(FrameworkTreeLeaf leaf) {
-        this.children.add(leaf);
-    }
+  public List<FrameworkTreeLeaf> getChildren() {
+    return children;
+  }
 
-    public FrameworkTreeLeaf(String name, String fullName) {
-        this.name = name;
-        this.fullName = fullName;
-        this.children = Collections.synchronizedList(new ArrayList<>());
-        this.framework = false;
-        this.detectionResults = new double[0];
-        this.depth = 0;
-    }
+  public void addLeaf(FrameworkTreeLeaf leaf) {
+    this.children.add(leaf);
+  }
 }

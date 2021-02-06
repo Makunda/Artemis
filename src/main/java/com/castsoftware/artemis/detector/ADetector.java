@@ -68,6 +68,44 @@ public abstract class ADetector {
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
 
+  /**
+   * Detector constructor
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application
+   * @param language Language
+   * @throws IOException
+   * @throws Neo4jQueryException
+   */
+  public ADetector(Neo4jAL neo4jAL, String application, SupportedLanguage language)
+      throws IOException, Neo4jQueryException {
+    this.neo4jAL = neo4jAL;
+    this.application = application;
+    this.toInvestigateNodes = new ArrayList<>();
+    this.nlpSaver = new NLPSaver(application);
+    this.pythiaCom = PythiaCom.getInstance(neo4jAL);
+
+    // Shuffle nodes to avoid being bust by the google bot detector
+    Collections.shuffle(this.toInvestigateNodes);
+
+    // Make sure the nlp is trained, train it otherwise
+    this.nlpEngine = new NLPEngine(neo4jAL.getLogger(), language);
+
+    Path modelFile = this.nlpEngine.checkIfModelExists();
+    if (!Files.exists(modelFile)) {
+      this.nlpEngine.train();
+    }
+
+    this.reportGenerator = new ReportGenerator(application);
+    this.googleParser = new GoogleParser(neo4jAL.getLogger());
+    this.frameworkNodeList = new ArrayList<>();
+
+    LanguageConfiguration lc = LanguageConfiguration.getInstance();
+    this.languageProperties = lc.getLanguageProperties(language.toString());
+
+    getNodes();
+  }
+
   public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException;
 
   /**
@@ -106,7 +144,15 @@ public abstract class ADetector {
     }
 
     FrameworkNode fb =
-        new FrameworkNode(neo4jAL, name, strDate, "No location discovered", "", 1L, detectionScore, new Date().getTime());
+        new FrameworkNode(
+            neo4jAL,
+            name,
+            strDate,
+            "No location discovered",
+            "",
+            1L,
+            detectionScore,
+            new Date().getTime());
     fb.setFrameworkType(fType);
     fb.setInternalType(internalType);
 
@@ -165,43 +211,5 @@ public abstract class ADetector {
         }
       }
     }
-  }
-
-  /**
-   * Detector constructor
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param application Name of the application
-   * @param language Language
-   * @throws IOException
-   * @throws Neo4jQueryException
-   */
-  public ADetector(Neo4jAL neo4jAL, String application, SupportedLanguage language)
-      throws IOException, Neo4jQueryException {
-    this.neo4jAL = neo4jAL;
-    this.application = application;
-    this.toInvestigateNodes = new ArrayList<>();
-    this.nlpSaver = new NLPSaver(application);
-    this.pythiaCom = PythiaCom.getInstance(neo4jAL);
-
-    // Shuffle nodes to avoid being bust by the google bot detector
-    Collections.shuffle(this.toInvestigateNodes);
-
-    // Make sure the nlp is trained, train it otherwise
-    this.nlpEngine = new NLPEngine(neo4jAL.getLogger(), language);
-
-    Path modelFile = this.nlpEngine.checkIfModelExists();
-    if (!Files.exists(modelFile)) {
-      this.nlpEngine.train();
-    }
-
-    this.reportGenerator = new ReportGenerator(application);
-    this.googleParser = new GoogleParser(neo4jAL.getLogger());
-    this.frameworkNodeList = new ArrayList<>();
-
-    LanguageConfiguration lc = LanguageConfiguration.getInstance();
-    this.languageProperties = lc.getLanguageProperties(language.toString());
-
-    getNodes();
   }
 }

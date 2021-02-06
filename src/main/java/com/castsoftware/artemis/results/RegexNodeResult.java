@@ -13,38 +13,37 @@ package com.castsoftware.artemis.results;
 
 import com.castsoftware.artemis.datasets.RegexNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import org.neo4j.graphdb.Node;
 
 import java.util.List;
 
 public class RegexNodeResult {
-    public Long id;
-    public String name;
-    public List<String> regexes;
-    public List<String> internalTypes;
-    public String framework;
-    public String category;
-    public Long parentId;
+  public Long id;
+  public String name;
+  public List<String> regexes;
+  public List<String> internalTypes;
+  public String framework;
+  public String category;
+  public Long parentId;
 
+  /**
+   * Create a Regex Node result from a regex node
+   *
+   * @param rn
+   */
+  public RegexNodeResult(RegexNode rn) {
+    assert rn.getNode() != null : "Cannot create a RegexNodeResult from a non-initialized node";
 
-    /**
-     * Create a Regex Node result from  a regex node
-     * @param rn
-     */
-    public RegexNodeResult(RegexNode rn) {
-        assert rn.getNode() != null : "Cannot create a RegexNodeResult from a non-initialized node";
-        
-        this.id = rn.getId();
-        this.name = rn.getName();
-        this.regexes = rn.getRegexes();
-        this.internalTypes = rn.getInternalTypes();
-        this.framework = rn.getFramework();
-        this.category = rn.getCategory();
+    this.id = rn.getId();
+    this.name = rn.getName();
+    this.regexes = rn.getRegexes();
+    this.internalTypes = rn.getInternalTypes();
+    this.framework = rn.getFramework();
+    this.category = rn.getCategory();
 
-        try {
-            this.parentId = rn.getParentId();
-        } catch (Neo4jQueryException e) {
-            this.parentId = null;
-        }
+    try {
+      this.parentId = rn.getParentId();
+    } catch (Neo4jQueryException e) {
+      this.parentId = null;
     }
+  }
 }

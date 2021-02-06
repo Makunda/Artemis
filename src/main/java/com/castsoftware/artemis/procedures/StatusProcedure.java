@@ -28,60 +28,62 @@ import org.neo4j.procedure.*;
 import java.util.stream.Stream;
 
 public class StatusProcedure {
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "artemis.get.oracle.status", mode = Mode.WRITE)
-    @Description("artemis.get.oracle.status() - Get the status of the Oracle Communication  ")
-    public Stream<BooleanResult> getOracleStatus() throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            Boolean mode = OracleController.getOracleComStatus(nal);
-            return Stream.of(new BooleanResult(mode));
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+  @Procedure(value = "artemis.get.oracle.status", mode = Mode.WRITE)
+  @Description("artemis.get.oracle.status() - Get the status of the Oracle Communication  ")
+  public Stream<BooleanResult> getOracleStatus() throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = OracleController.getOracleComStatus(nal);
+      return Stream.of(new BooleanResult(mode));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.test.oracle.find", mode = Mode.WRITE)
-    @Description("artemis.test.oracle.find(String frameworkName, Optional String internalType) - Get the status of the Oracle Communication  ")
-    public Stream<FrameworkResult> testOracleFind(@Name(value = "FrameworkName") String frameworkName,
-                                                @Name(value = "InternalType", defaultValue = "") String internalType
-                                                ) throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            FrameworkNode fn = OracleController.testOracleFindings(nal, frameworkName, internalType);
+  @Procedure(value = "artemis.test.oracle.find", mode = Mode.WRITE)
+  @Description(
+      "artemis.test.oracle.find(String frameworkName, Optional String internalType) - Get the status of the Oracle Communication  ")
+  public Stream<FrameworkResult> testOracleFind(
+      @Name(value = "FrameworkName") String frameworkName,
+      @Name(value = "InternalType", defaultValue = "") String internalType)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      FrameworkNode fn = OracleController.testOracleFindings(nal, frameworkName, internalType);
 
-            if(fn == null) return Stream.empty();
+      if (fn == null) return Stream.empty();
 
-            return Stream.of(new FrameworkResult(fn));
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      return Stream.of(new FrameworkResult(fn));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "artemis.test.oracle.addFramework", mode = Mode.WRITE)
-    @Description("artemis.test.oracle.addFramework() - Send a test Framework to the Oracle")
-    public Stream<BooleanResult> testOracleAddFramework() throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean val = OracleController.testOracleAddFramework(nal);
+  @Procedure(value = "artemis.test.oracle.addFramework", mode = Mode.WRITE)
+  @Description("artemis.test.oracle.addFramework() - Send a test Framework to the Oracle")
+  public Stream<BooleanResult> testOracleAddFramework() throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      boolean val = OracleController.testOracleAddFramework(nal);
 
-            return Stream.of(new BooleanResult(val));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadNodeFormatException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      return Stream.of(new BooleanResult(val));
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 }

@@ -33,125 +33,137 @@ import java.util.List;
 import java.util.Map;
 
 public class DetectionController {
-    // Artemis properties
-    private static final String ARTEMIS_SEARCH_PREFIX = Configuration.get("artemis.tag.prefix_search");
-    private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
-    private static final String IMAGING_OBJECT_TAGS = Configuration.get("imaging.link.object_property.tags");
-    private static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
-    private static final String IMAGING_APPLICATION_LABEL = Configuration.get("imaging.application.label");
+  // Artemis properties
+  private static final String ARTEMIS_SEARCH_PREFIX =
+      Configuration.get("artemis.tag.prefix_search");
+  private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+  private static final String IMAGING_OBJECT_TAGS =
+      Configuration.get("imaging.link.object_property.tags");
+  private static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
+  private static final String IMAGING_APPLICATION_LABEL =
+      Configuration.get("imaging.application.label");
 
-    //
-    private static LanguageConfiguration languageConfiguration = LanguageConfiguration.getInstance();
+  //
+  private static LanguageConfiguration languageConfiguration = LanguageConfiguration.getInstance();
 
+  /**
+   * Get the list of detected framework inside the provided list of node
+   *
+   * @param neo4jAL Neo4j access Layer
+   * @param application Name of the application
+   * @param language Language of the detector
+   * @return The list of the framework detected
+   * @throws IOException
+   * @throws Neo4jQueryException
+   */
+  private static List<FrameworkNode> getFrameworkList(
+      Neo4jAL neo4jAL, String application, SupportedLanguage language)
+      throws IOException, Neo4jQueryException {
 
-    /**
-     * Get the list of detected framework inside the provided list of node
-     *
-     * @param neo4jAL     Neo4j access Layer
-     * @param application Name of the application
-     * @param language    Language of the detector
-     * @return The list of the framework detected
-     * @throws IOException
-     * @throws Neo4jQueryException
-     */
-    private static List<FrameworkNode> getFrameworkList(Neo4jAL neo4jAL, String application,
-                                                        SupportedLanguage language)
-            throws IOException, Neo4jQueryException {
+    ADetector aDetector;
+    switch (language) {
+      case COBOL:
+        aDetector = new CobolDetector(neo4jAL, application);
+        break;
+      case JAVA:
+        aDetector = new JavaDetector(neo4jAL, application);
+        break;
+      default:
+        throw new IllegalArgumentException(
+            String.format("The language is not currently supported %s", language.toString()));
+    }
+    return aDetector.launch();
+  }
 
-        ADetector aDetector;
-        switch (language) {
-            case COBOL:
-                aDetector = new CobolDetector(neo4jAL, application);
-                break;
-            case JAVA:
-                aDetector = new JavaDetector(neo4jAL, application);
-                break;
-            default:
-                throw new IllegalArgumentException(String.format("The language is not currently supported %s", language.toString()));
-        }
-        return aDetector.launch();
+  /**
+   * Launch the Artemis Detection against the specified application
+   *
+   * @param neo4jAL Neo4J Access Layer
+   * @param application Application used during the detection
+   * @param language Specify the language of the application to pick the correct dt
+   * @return The list of detected frameworks
+   * @throws Neo4jQueryException
+   * @throws IOException
+   */
+  public static List<FrameworkResult> launchDetection(
+      Neo4jAL neo4jAL, String application, String language, Boolean flagNodes)
+      throws Neo4jQueryException, IOException {
+
+    List<FrameworkNode> frameworkList =
+        getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language));
+    List<FrameworkResult> resultList = new ArrayList<>();
+
+    // Convert the framework detected to Framework Results
+    for (FrameworkNode fn : frameworkList) {
+      FrameworkResult fr = new FrameworkResult(fn);
+      resultList.add(fr);
     }
 
+    return resultList;
+  }
 
-    /**
-     * Launch the Artemis Detection against the specified application
-     *
-     * @param neo4jAL     Neo4J Access Layer
-     * @param application Application used during the detection
-     * @param language    Specify the language of the application to pick the correct dt
-     * @return The list of detected frameworks
-     * @throws Neo4jQueryException
-     * @throws IOException
-     */
-    public static List<FrameworkResult> launchDetection(Neo4jAL neo4jAL, String application, String language, Boolean flagNodes)
-            throws Neo4jQueryException, IOException {
+  /**
+   * Train the NLP engine of Artemis
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @throws IOException
+   * @throws NLPIncorrectConfigurationException
+   */
+  public static void trainArtemis(Neo4jAL neo4jAL)
+      throws IOException, NLPIncorrectConfigurationException {
+    NLPEngine nlpEngine = new NLPEngine(neo4jAL.getLogger(), SupportedLanguage.ALL);
+    nlpEngine.train();
+  }
 
-        List<FrameworkNode> frameworkList = getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language));
-        List<FrameworkResult> resultList = new ArrayList<>();
+  /**
+   * Launch a detection on all application present in the database
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param language Language used for the detection
+   */
+  @Deprecated
+  public static List<FrameworkResult> launchBulkDetection(
+      Neo4jAL neo4jAL, String language, Boolean flagNodes)
+      throws Neo4jQueryException, MissingFileException, IOException,
+          NLPIncorrectConfigurationException, GoogleBadResponseCodeException {
+    List<FrameworkResult> resultList = new ArrayList<>();
+    List<String> appNameList = new ArrayList<>();
 
-        // Convert the framework detected to Framework Results
-        for (FrameworkNode fn : frameworkList) {
-            FrameworkResult fr = new FrameworkResult(fn);
-            resultList.add(fr);
-        }
+    // Get language
+    SupportedLanguage sLanguage = SupportedLanguage.getLanguage(language);
+    neo4jAL.logInfo(
+        String.format("Starting Artemis bulk detection on language '%s'...", sLanguage.toString()));
 
-        return resultList;
+    String appNameRequest =
+        String.format(
+            "MATCH (a:%1$s) WITH a.Name as appName  MATCH (obj:%2$s) WHERE appName IN LABELS(obj)  AND  obj.Type CONTAINS '%3$s' RETURN appName, COUNT(obj) as countObj;",
+            IMAGING_APPLICATION_LABEL, IMAGING_OBJECT_LABEL, language);
+    neo4jAL.logInfo("Request to execute : " + appNameRequest);
+
+    // Get the List of application
+    Result resAppName = neo4jAL.executeQuery(appNameRequest);
+    while (resAppName.hasNext()) {
+      Map<String, Object> res = resAppName.next();
+      String app = (String) res.get("appName");
+      Long countObj = (Long) res.get("countObj");
+
+      neo4jAL.logInfo(
+          String.format(
+              "Application with name '%s' contains %d potential candidates.", app, countObj));
+
+      appNameList.add(app);
     }
 
-    /**
-     * Train the NLP engine of Artemis
-     *
-     * @param neo4jAL Neo4j Access Layer
-     * @throws IOException
-     * @throws NLPIncorrectConfigurationException
-     */
-    public static void trainArtemis(Neo4jAL neo4jAL) throws IOException, NLPIncorrectConfigurationException {
-        NLPEngine nlpEngine = new NLPEngine(neo4jAL.getLogger(), SupportedLanguage.ALL);
-        nlpEngine.train();
+    List<FrameworkNode> frameworkList = new ArrayList<>();
+    for (String name : appNameList) {
+      frameworkList.addAll(getFrameworkList(neo4jAL, name, sLanguage));
     }
 
-    /**
-     * Launch a detection on all application present in the database
-     *
-     * @param neo4jAL  Neo4j Access Layer
-     * @param language Language used for the detection
-     */
-    @Deprecated
-    public static List<FrameworkResult> launchBulkDetection(Neo4jAL neo4jAL, String language, Boolean flagNodes) throws Neo4jQueryException, MissingFileException, IOException, NLPIncorrectConfigurationException, GoogleBadResponseCodeException {
-        List<FrameworkResult> resultList = new ArrayList<>();
-        List<String> appNameList = new ArrayList<>();
-
-        // Get language
-        SupportedLanguage sLanguage = SupportedLanguage.getLanguage(language);
-        neo4jAL.logInfo(String.format("Starting Artemis bulk detection on language '%s'...", sLanguage.toString()));
-
-        String appNameRequest = String.format("MATCH (a:%1$s) WITH a.Name as appName  MATCH (obj:%2$s) WHERE appName IN LABELS(obj)  AND  obj.Type CONTAINS '%3$s' RETURN appName, COUNT(obj) as countObj;",
-                IMAGING_APPLICATION_LABEL, IMAGING_OBJECT_LABEL, language);
-        neo4jAL.logInfo("Request to execute : " + appNameRequest);
-
-        // Get the List of application
-        Result resAppName = neo4jAL.executeQuery(appNameRequest);
-        while (resAppName.hasNext()) {
-            Map<String, Object> res = resAppName.next();
-            String app = (String) res.get("appName");
-            Long countObj = (Long) res.get("countObj");
-
-            neo4jAL.logInfo(String.format("Application with name '%s' contains %d potential candidates.", app, countObj));
-
-            appNameList.add(app);
-        }
-
-        List<FrameworkNode> frameworkList = new ArrayList<>();
-        for (String name : appNameList) {
-            frameworkList.addAll(getFrameworkList(neo4jAL, name, sLanguage));
-        }
-
-
-        for (FrameworkNode fn : frameworkList) {
-            FrameworkResult fr = new FrameworkResult(fn);
-            resultList.add(fr);
-        }
-
-        return resultList;
+    for (FrameworkNode fn : frameworkList) {
+      FrameworkResult fr = new FrameworkResult(fn);
+      resultList.add(fr);
     }
+
+    return resultList;
+  }
 }
