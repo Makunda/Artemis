@@ -11,13 +11,15 @@
 
 package com.castsoftware.artemis.detector.java;
 
+
+import com.castsoftware.artemis.detector.ALeaf;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class FrameworkTreeLeaf {
+public class FrameworkTreeLeaf extends ALeaf {
 
-  private String name;
   private String fullName;
   private List<FrameworkTreeLeaf> children;
   private double[] detectionResults;
@@ -25,7 +27,7 @@ public class FrameworkTreeLeaf {
   private boolean framework;
 
   public FrameworkTreeLeaf(String name, String fullName) {
-    this.name = name;
+    super(name);
     this.fullName = fullName;
     this.children = Collections.synchronizedList(new ArrayList<>());
     this.framework = false;

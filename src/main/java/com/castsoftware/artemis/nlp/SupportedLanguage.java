@@ -34,8 +34,16 @@ public enum SupportedLanguage {
         return ft;
       }
     }
-
     return ALL;
+  }
+
+  /**
+   * Check the existence of a language
+   * @param language Language to search
+   * @return
+   */
+  public static Boolean has(String language) {
+    return getLanguage(language) != ALL;
   }
 
   @Override

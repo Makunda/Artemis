@@ -52,23 +52,9 @@ public class JavaDetector extends ADetector {
 
     // Init properties
     List<FrameworkNode> returnList = new ArrayList<>();
-    FrameworkTree frameworkTree = new FrameworkTree();
+
     try {
-
-      // Top Bottom approach
-      for (Node n : toInvestigateNodes) {
-        if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
-        String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-        String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
-        String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
-
-        neo4jAL.logInfo("Treating node with fullName : " + fullName);
-        frameworkTree.insert(fullName);
-      }
-
-      frameworkTree.print();
-      neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
-
+      FrameworkTree frameworkTree = getBreakdown();
       List<FrameworkTreeLeaf> branchStarterList =
           new ArrayList<>(frameworkTree.getRoot().getChildren());
 
@@ -125,64 +111,6 @@ public class JavaDetector extends ADetector {
 
       // Internal uses
 
-      // Build the framework tree
-      /* for(Node n : toInvestigateNodes) {
-
-          // Ignore object without a fullname property
-          if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
-          String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-          String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
-          String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
-
-          // Insert the package in the tree
-          ft.insert(fullName);
-
-          FrameworkNode fb = FrameworkNode.findFrameworkByName(neo4jAL, fullName);
-          if (fb != null) {
-              neo4jAL.logInfo(
-                      String.format(
-                              "The object with fullName '%s' is already known by Artemis as a '%s'.",
-                              fullName, fb.getFrameworkType()));
-          }
-
-          if(fb == null) {
-              // Parse repositories with object name
-              if (!languageProperties.getRepositorySearch().isEmpty()) {
-                  List<SPackage> sPackageList =
-                          RepositoriesController.getRepositoryMatches(
-                                  fullName, languageProperties.getRepositorySearch());
-                  for (SPackage sp : sPackageList) {
-                      neo4jAL.logInfo(
-                              String.format(
-                                      "Package detected for object with name '%s' : '%s'. ",
-                                      fullName, sp.toJson().toString()));
-                  }
-              }
-
-              // Parse google
-              if(googleParser != null && onlineMode && languageProperties.getOnlineSearch()) {
-                  String toSearch = String.format("%s %s", objectName, languageProperties.getName());
-                  GoogleResult gr = googleParser.request(toSearch);
-                  String requestResult = gr.getContent();
-                  neo4jAL.logInfo(
-                          " - Name of the package to search : "
-                                  + objectName
-                                  + "\n\t - Results : "
-                                  + gr.getNumberResult()
-                                  + "\n\t - Blacklisted : "
-                                  + gr.isBlacklisted());
-                  NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
-
-                  // Apply a malus on Node with name containing number, exclude it
-
-                  fb = saveFrameworkResult(objectName, nlpResult, internalType);
-
-                  if (learningMode) {
-                      nlpSaver.writeNLPResult(nlpResult.getCategory(), requestResult);
-                  }
-              }
-          }
-      }*/
 
       // Analyze Framework tree
       neo4jAL.logInfo("Displaying framework tree.");
@@ -195,5 +123,22 @@ public class JavaDetector extends ADetector {
     // Get the NLP results on undetected
 
     return returnList;
+  }
+
+  @Override
+  public FrameworkTree getBreakdown() {
+    FrameworkTree frameworkTree = new FrameworkTree();
+
+    // Top Bottom approach
+    for (Node n : toInvestigateNodes) {
+      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+      String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+      String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
+      String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
+
+      frameworkTree.insert(fullName);
+    }
+
+    return frameworkTree;
   }
 }

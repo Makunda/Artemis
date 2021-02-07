@@ -17,6 +17,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.ADetector;
+import com.castsoftware.artemis.detector.ATree;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
@@ -182,5 +183,10 @@ public class CobolDetector extends ADetector {
     }
 
     return frameworkNodeList;
+  }
+
+  @Override
+  public ATree getBreakdown() {
+    return null;
   }
 }

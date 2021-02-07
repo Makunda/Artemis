@@ -60,18 +60,7 @@ public class DetectionController {
       Neo4jAL neo4jAL, String application, SupportedLanguage language)
       throws IOException, Neo4jQueryException {
 
-    ADetector aDetector;
-    switch (language) {
-      case COBOL:
-        aDetector = new CobolDetector(neo4jAL, application);
-        break;
-      case JAVA:
-        aDetector = new JavaDetector(neo4jAL, application);
-        break;
-      default:
-        throw new IllegalArgumentException(
-            String.format("The language is not currently supported %s", language.toString()));
-    }
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language);
     return aDetector.launch();
   }
 

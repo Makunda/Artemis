@@ -18,6 +18,8 @@ import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.detector.cobol.CobolDetector;
+import com.castsoftware.artemis.detector.java.JavaDetector;
 import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
@@ -107,6 +109,8 @@ public abstract class ADetector {
   }
 
   public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException;
+  public abstract ATree getBreakdown();
+
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -212,4 +216,34 @@ public abstract class ADetector {
       }
     }
   }
+
+  /**
+   * Get the detector based on the language and the application
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application
+   * @param language Language of the detector
+   * @return
+   * @throws IOException
+   * @throws Neo4jQueryException
+   */
+  public static ADetector getDetector(
+          Neo4jAL neo4jAL, String application, SupportedLanguage language)
+          throws IOException, Neo4jQueryException {
+
+    ADetector aDetector;
+    switch (language) {
+      case COBOL:
+        aDetector = new CobolDetector(neo4jAL, application);
+        break;
+      case JAVA:
+        aDetector = new JavaDetector(neo4jAL, application);
+        break;
+      default:
+        throw new IllegalArgumentException(
+                String.format("The language is not currently supported %s", language.toString()));
+    }
+    return aDetector;
+  }
+
+
 }

@@ -11,9 +11,11 @@
 
 package com.castsoftware.artemis.detector.java;
 
+import com.castsoftware.artemis.detector.ATree;
+
 import java.util.Arrays;
 
-public class FrameworkTree {
+public class FrameworkTree extends ATree {
 
   private static String PACKAGE_DELIMITER = "\\.";
 
@@ -21,6 +23,10 @@ public class FrameworkTree {
 
   public FrameworkTree() {
     this.root = new FrameworkTreeLeaf("", "");
+  }
+
+  public String getDelimiterLeaves() {
+    return ".";
   }
 
   /**
