@@ -12,15 +12,21 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.LanguageConfiguration;
+import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.controllers.api.BreakdownController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.results.InteractionResult;
+import com.castsoftware.artemis.results.LeafResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
 import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,6 +44,7 @@ public class InteractionsController {
   public static final String IMAGING_APPLICATION_LABEL =
       Configuration.get("imaging.application.label");
 
+  @Deprecated
   public static List<OutputMessage> launchDetection(
       Neo4jAL neo4jAL, String applicationContext, String language, Boolean flagNodes)
       throws Neo4jQueryException {
@@ -96,5 +103,80 @@ public class InteractionsController {
                 new OutputMessage(
                     "Name : " + x.getCommonPrefix() + " . Number of match : " + x.getFamilySize()))
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the interaction with others applications along with the number of object matching it, and the externality of the objects
+   * @param neo4jAL Neo4J Access Layer
+   * @param applications List of application to search in
+   * @param language Language used for the internal type
+   * @param toSearchRegex Regex to search
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<InteractionResult> getInteraction(Neo4jAL neo4jAL, List<String> applications, String language, String toSearchRegex) throws Neo4jQueryException {
+    LanguageConfiguration lc = LanguageConfiguration.getInstance();
+    if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
+
+    LanguageProp lp = LanguageConfiguration.getInstance().getLanguageProperties(language);
+
+    String req = "MATCH (p:Object) WHERE any( x IN LABELS(p) WHERE x=~$appListRegex ) AND p.InternalType IN $internalTypes AND p.FullName=~$toSearch " +
+            "RETURN DISTINCT [ x in LABELS(p) WHERE NOT x='Object' ][0] as application, " +
+            "COUNT(p) as match, " +
+            "CASE WHEN all(x in COLLECT(p) WHERE x.External=True) THEN 'External' WHEN all(x in COLLECT(p) WHERE x.External=FALSE) THEN 'Internal' ELSE 'External/Internal' END as Externality";
+
+    List<InteractionResult> interactionResultList = new ArrayList<>();
+    String appListRegex = String.join("|", applications);
+    Map<String, Object> params = Map.of("appListRegex", appListRegex, "internalTypes", lp.getObjectsInternalType(), "toSearch", toSearchRegex);
+
+    Result res = neo4jAL.executeQuery(req, params);
+    while (res.hasNext()) {
+      Map<String, Object> record = res.next();
+      interactionResultList.add(new InteractionResult(toSearchRegex, (String) record.get("application"), (Long) record.get("match"), (String) record.get("Externality")));
+    }
+
+    return interactionResultList;
+  }
+
+  /**
+   * Get the interaction between
+   *
+   * @param neo4jAL
+   * @param application
+   * @param appToSearch
+   * @param language
+   * @param fullNameRegex
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<InteractionResult> getInteractionsTree(
+      Neo4jAL neo4jAL,
+      String application,
+      List<String> appToSearch,
+      String language,
+      String fullNameRegex)
+      throws Neo4jQueryException, IOException {
+    LanguageConfiguration lc = LanguageConfiguration.getInstance();
+    if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
+
+
+
+    // Get the breakdown of the application
+    List<LeafResult> flattenTree = BreakdownController.getBreakDown(neo4jAL, application, language);
+
+    // Parse the tree and assign applications matching the leaves
+
+    String req =
+        "MATCH (p:Object) WHERE any( x in LABELS(p) WHERE x=~$appListRegex ) "
+            + "AND p.InternalType IN $internalTypes AND p.FullName=~$toSearch "
+            + "RETURN DISTINCT p.FullName as fullName, COLLECT([ x in LABELS(p) WHERE NOT x='Object' ][0]) as applications;";
+
+    List<InteractionResult> interactionResultList = new ArrayList<>();
+
+    for (LeafResult leaf : flattenTree) {
+      interactionResultList.addAll(getInteraction(neo4jAL, appToSearch, language, leaf.name));
+    }
+
+    return interactionResultList;
   }
 }

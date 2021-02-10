@@ -14,6 +14,7 @@ package com.castsoftware.artemis.nlp;
 public enum SupportedLanguage {
   COBOL("Cobol"),
   JAVA("Java"),
+  NET("Net"),
   ALL("All");
 
   private String value;

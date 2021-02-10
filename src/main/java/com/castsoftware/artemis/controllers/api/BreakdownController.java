@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class BreakdownController {
 
 	/**
-	 * Get the breakdown of the structure o an application
+	 * Get the breakdown of the structure of an application, flatten as a list
 	 * @param neo4jAL Neo4j Access Layer
 	 * @param application Name of the application
 	 * @param language Language to be used
@@ -39,6 +39,21 @@ public class BreakdownController {
 	 */
 	public static List<LeafResult> getBreakDown(
 			Neo4jAL neo4jAL, String application, String language) throws IOException, Neo4jQueryException {
+		ATree tree = getBreakDownAsTree(neo4jAL, application, language);
+		return tree.flatten().stream().map(x -> new LeafResult(x, tree.getDelimiterLeaves())).collect(Collectors.toList());
+	}
+
+	/**
+	 * Get the breakdown of the structure of an application as tree
+	 * @param neo4jAL Neo4j Access Layer
+	 * @param application Name of the application
+	 * @param language Language to be used
+	 * @return
+	 * @throws IOException
+	 * @throws Neo4jQueryException
+	 */
+	public static ATree getBreakDownAsTree(
+			Neo4jAL neo4jAL, String application, String language) throws IOException, Neo4jQueryException {
 
 		if(!SupportedLanguage.has(language)) return null;
 		SupportedLanguage sl = SupportedLanguage.getLanguage(language);
@@ -47,6 +62,6 @@ public class BreakdownController {
 		ATree tree = aDetector.getBreakdown();
 		if(tree == null) return null;
 
-		return tree.flatten().stream().map(x -> new LeafResult(x, tree.getDelimiterLeaves())).collect(Collectors.toList());
+		return tree;
 	}
 }

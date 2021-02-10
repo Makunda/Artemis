@@ -20,6 +20,7 @@ import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.cobol.CobolDetector;
 import com.castsoftware.artemis.detector.java.JavaDetector;
+import com.castsoftware.artemis.detector.net.NetDetector;
 import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
@@ -237,6 +238,9 @@ public abstract class ADetector {
         break;
       case JAVA:
         aDetector = new JavaDetector(neo4jAL, application);
+        break;
+      case NET:
+        aDetector = new NetDetector(neo4jAL, application);
         break;
       default:
         throw new IllegalArgumentException(

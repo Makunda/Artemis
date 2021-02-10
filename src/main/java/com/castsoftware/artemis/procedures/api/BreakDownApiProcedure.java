@@ -36,9 +36,10 @@ public class BreakDownApiProcedure {
 	@Context public Log log;
 
 	@Procedure(value = "artemis.api.breakdown.get", mode = Mode.WRITE)
-	@Description("artemis.api.breakdown.get(String application, String language) - Get the breakdown of the package in an application")
+	@Description("artemis.api.breakdown.get(String application, String language, Optional Boolean externality) - Get the breakdown of the package in an application")
 	public Stream<LeafResult> getBreakDown(@Name(value = "Application") String application,
-												  @Name(value = "Language") String language) throws ProcedureException {
+										   @Name(value = "Language") String language,
+										   @Name(value = "Externality", defaultValue = "false") Boolean externality) throws ProcedureException {
 		try {
 			Neo4jAL nal = new Neo4jAL(db, transaction, log);
 			List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language);

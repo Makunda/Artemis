@@ -22,6 +22,7 @@ import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.sof.utils.SofUtilities;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
 import java.io.IOException;
@@ -103,10 +104,6 @@ public class JavaDetector extends ADetector {
                 fullName, String.join(", ", otherApplications)));
       }
 
-      neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
-      frameworkTree.print();
-      neo4jAL.logInfo("\n\n" + "----".repeat(15) + "\n\n");
-
       // Clear residual nodes ( Understand if its a wrapper )
 
       // Internal uses
@@ -114,7 +111,6 @@ public class JavaDetector extends ADetector {
 
       // Analyze Framework tree
       neo4jAL.logInfo("Displaying framework tree.");
-      ft.print();
 
     } catch (Exception e) {
       neo4jAL.logError("An error occurred during the detection.", e);
@@ -131,6 +127,11 @@ public class JavaDetector extends ADetector {
 
     // Top Bottom approach
     for (Node n : toInvestigateNodes) {
+
+      // Get node in Java Classes
+      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class"))
+        continue;
+
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
       String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
