@@ -20,6 +20,7 @@ import com.castsoftware.artemis.detector.cobol.CobolDetector;
 import com.castsoftware.artemis.detector.java.JavaDetector;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
@@ -58,7 +59,7 @@ public class DetectionController {
    */
   private static List<FrameworkNode> getFrameworkList(
       Neo4jAL neo4jAL, String application, SupportedLanguage language)
-      throws IOException, Neo4jQueryException {
+          throws IOException, Neo4jQueryException, Neo4jBadRequestException {
 
     ADetector aDetector = ADetector.getDetector(neo4jAL, application, language);
     return aDetector.launch();
@@ -76,7 +77,7 @@ public class DetectionController {
    */
   public static List<FrameworkResult> launchDetection(
       Neo4jAL neo4jAL, String application, String language, Boolean flagNodes)
-      throws Neo4jQueryException, IOException {
+          throws Neo4jQueryException, IOException, Neo4jBadRequestException {
 
     List<FrameworkNode> frameworkList =
         getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language));
@@ -113,8 +114,8 @@ public class DetectionController {
   @Deprecated
   public static List<FrameworkResult> launchBulkDetection(
       Neo4jAL neo4jAL, String language, Boolean flagNodes)
-      throws Neo4jQueryException, MissingFileException, IOException,
-          NLPIncorrectConfigurationException, GoogleBadResponseCodeException {
+          throws Neo4jQueryException, MissingFileException, IOException,
+          NLPIncorrectConfigurationException, GoogleBadResponseCodeException, Neo4jBadRequestException {
     List<FrameworkResult> resultList = new ArrayList<>();
     List<String> appNameList = new ArrayList<>();
 

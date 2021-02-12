@@ -98,6 +98,8 @@ public class GoogleParser {
 
     int responseCode = con.getResponseCode();
 
+
+
     if (responseCode != 200) {
       String respMessage = con.getResponseMessage();
       log.info("An unexpected behavior was detected during framework list gathering.");
@@ -105,6 +107,7 @@ public class GoogleParser {
         log.info(
             String.format("Header : %s Value : %s", en.getKey(), String.join(", ", en.getValue())));
       }
+
 
       throw new GoogleBadResponseCodeException(
           String.format(
@@ -122,6 +125,8 @@ public class GoogleParser {
       }
     }
 
+    //log.info("The request returned \n \n " + response.toString() + " \n \n ");
+
     StringBuilder fullResults = new StringBuilder();
 
     // Analyze response with JSOUP
@@ -131,6 +136,10 @@ public class GoogleParser {
 
     // Get the title and verify the presence of blacklisted words in the first 4 elements
     List<Element> titles = document.getElementsByClass("rc");
+    if(titles.isEmpty()) {
+      titles.addAll(document.getElementsByClass("g"));
+    }
+
     googleResult.setNumberResult(titles.size());
 
     int itTitle = 0;

@@ -13,6 +13,8 @@ package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
 
+import java.util.Arrays;
+
 /** Default result structure for NLP operations */
 public class NLPResults {
 
@@ -64,5 +66,15 @@ public class NLPResults {
 
   public double getProbability() {
     return probability;
+  }
+
+  @Override
+  public String toString() {
+    return "NLPResults{" +
+            "category=" + category +
+            ", confidence=" + confidence +
+            ", probability=" + probability +
+            ", probabilities=" + Arrays.toString(probabilities) +
+            '}';
   }
 }

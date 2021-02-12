@@ -67,6 +67,7 @@ public class FrameworkTree extends ATree {
     }
 
     matchingLeaf.setDepth(depth);
+    matchingLeaf.addOneChild();
 
     if (splitPackageName.length > 1) {
       recInsert(matchingLeaf, splitPackageName[1], fullName, depth + 1);
@@ -105,8 +106,8 @@ public class FrameworkTree extends ATree {
             + fl.getName()
             + "  ::  "
             + fl.getDepth()
-            + " :: "
-            + Arrays.toString(fl.getDetectionResults())
+            + " :: Num children "
+            + fl.getNumChildren()
             + "\n");
     for (FrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);

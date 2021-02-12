@@ -19,7 +19,13 @@
     "name": "Java",
     "objects_internal_type": [
       "JV_CLASS",
-      "JV_INTERFACE"
+      "JV_INTERFACE",
+      "JV_CLASS",
+      "JV_GENERIC_CLASS",
+      "JV_GENERIC_INTERFACE",
+      "JV_ENUM",
+      "JV_INTERFACE",
+      "JV_EJB_GROUP"
     ],
     "online_search": true,
     "interaction_detector": false,
@@ -31,7 +37,6 @@
     "keywords": "maven|stackoverflow|github",
     "nlp_model": "artemis_java_model.bin"
   },
-
   "NET": {
     "name": "Net",
     "objects_internal_type": [

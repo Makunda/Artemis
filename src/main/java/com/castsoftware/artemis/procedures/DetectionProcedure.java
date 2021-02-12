@@ -16,6 +16,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
@@ -54,7 +55,7 @@ public class DetectionProcedure {
           DetectionController.launchDetection(nal, applicationContext, language, flagNodes);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -75,12 +76,7 @@ public class DetectionProcedure {
           DetectionController.launchBulkDetection(nal, language, flagNodes);
 
       return detectedFrameworks.stream();
-    } catch (Exception
-        | Neo4jConnectionError
-        | Neo4jQueryException
-        | MissingFileException
-        | NLPIncorrectConfigurationException
-        | GoogleBadResponseCodeException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException | GoogleBadResponseCodeException | Neo4jBadRequestException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

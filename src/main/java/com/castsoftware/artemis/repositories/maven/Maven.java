@@ -79,24 +79,11 @@ public class Maven extends Crawler {
   public List<MavenPackage> getResults(String search, Integer limit) throws UnirestException {
     List<MavenPackage> packages = getMavenPackages(search);
 
-    if (packages == null || packages.isEmpty()) return null;
+    if (packages.isEmpty()) return packages;
     if (packages.size() < limit) limit = packages.size();
 
     return packages.subList(0, limit);
   }
 
-  /*@Override
-  public void setQuery(String fullName) throws MalformedResultException {
-      String[] matches = fullName.split("\\.");
-      if(matches.length >= 3) {
-          try {
-              this.name =  String.join("%20", Arrays.copyOfRange(matches, 0, 3));
-          } catch (Exception e ) {
-              throw new MalformedResultException("The result query is not in a valid format.", "MAV");
-          }
-      } else {
-          this.name = fullName;
-      }
-  }*/
 
 }

@@ -36,8 +36,6 @@ public abstract class Crawler {
    * @throws UnirestException If the query failed to execute
    */
   protected JsonNode getRequest(String request) throws UnirestException {
-    JsonNode response =
-        Unirest.get(request).header("Content-Type", "application/json").asJson().getBody();
-    return response;
+    return Unirest.get(request).header("Content-Type", "application/json").asJson().getBody();
   }
 }

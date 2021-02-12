@@ -22,6 +22,7 @@ import com.castsoftware.artemis.detector.cobol.CobolDetector;
 import com.castsoftware.artemis.detector.java.JavaDetector;
 import com.castsoftware.artemis.detector.net.NetDetector;
 import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPCategory;
@@ -109,7 +110,7 @@ public abstract class ADetector {
     getNodes();
   }
 
-  public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException;
+  public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException, Neo4jBadRequestException;
   public abstract ATree getBreakdown();
 
 
@@ -192,8 +193,7 @@ public abstract class ADetector {
     if (categories.isEmpty()) {
       String forgedRequest =
           String.format(
-              "MATCH (obj:%s:`%s`) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node",
-              IMAGING_OBJECT_LABEL, application, languageProperties.getName());
+              "MATCH (obj:Object:`%s`) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node", application, languageProperties.getName());
       res = neo4jAL.executeQuery(forgedRequest);
 
       while (res.hasNext()) {
@@ -202,19 +202,19 @@ public abstract class ADetector {
         toInvestigateNodes.add(node);
       }
     } else {
-      for (String type : categories) {
         String forgedRequest =
             String.format(
-                "MATCH (obj:%s:`%s`) WHERE  obj.InternalType='%s' AND obj.External=true RETURN obj as node",
-                IMAGING_OBJECT_LABEL, application, type);
-        res = neo4jAL.executeQuery(forgedRequest);
+                "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
+                application);
+        Map<String, Object> params = Map.of("internalTypes", categories);
+        res = neo4jAL.executeQuery(forgedRequest, params);
 
         while (res.hasNext()) {
           Map<String, Object> resMap = res.next();
           Node node = (Node) resMap.get("node");
           toInvestigateNodes.add(node);
         }
-      }
+
     }
   }
 
