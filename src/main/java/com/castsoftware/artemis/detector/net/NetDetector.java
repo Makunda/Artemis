@@ -42,7 +42,7 @@ public class NetDetector  extends ADetector  {
 	}
 
 	@Override
-	public ATree getBreakdown() {
+	public ATree getExternalBreakdown() {
 		FrameworkTree frameworkTree = new FrameworkTree();
 
 		// Top Bottom approach

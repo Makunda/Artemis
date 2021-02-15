@@ -13,17 +13,13 @@ package com.castsoftware.artemis.controllers.api;
 
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.ALeaf;
 import com.castsoftware.artemis.detector.ATree;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.results.LeafResult;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 public class BreakdownController {
@@ -59,7 +55,7 @@ public class BreakdownController {
 		SupportedLanguage sl = SupportedLanguage.getLanguage(language);
 
 		ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl);
-		ATree tree = aDetector.getBreakdown();
+		ATree tree = aDetector.getExternalBreakdown();
 		if(tree == null) return null;
 
 		return tree;

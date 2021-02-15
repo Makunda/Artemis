@@ -111,8 +111,19 @@ public abstract class ADetector {
   }
 
   public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException, Neo4jBadRequestException;
-  public abstract ATree getBreakdown();
+  public abstract ATree getExternalBreakdown();
 
+  public boolean getOnlineMode() {
+    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.onlineMode"));    // Get configuration
+  }
+
+  public boolean getLearningMode() {
+    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.learning_mode"));
+  }
+
+  public boolean getPersistentMode() {
+    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.persistent_mode"));
+  }
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -124,7 +135,6 @@ public abstract class ADetector {
    */
   protected FrameworkNode saveFrameworkResult(String name, NLPResults results, String internalType)
       throws Neo4jQueryException {
-    boolean persistentMode = Boolean.parseBoolean(UserConfiguration.get("artemis.persistent_mode"));
 
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     Date date = Calendar.getInstance().getTime();
@@ -163,7 +173,7 @@ public abstract class ADetector {
     fb.setInternalType(internalType);
 
     // Save the Node to the local database
-    if (persistentMode) {
+    if (getPersistentMode()) {
       fb.createNode();
     }
 

@@ -77,9 +77,6 @@ public class CobolDetector extends ADetector {
 
     int numTreated = 0;
 
-    // Get configuration
-    boolean onlineMode = Boolean.parseBoolean(UserConfiguration.get("artemis.onlineMode"));
-    boolean learningMode = Boolean.parseBoolean(UserConfiguration.get("artemis.learning_mode"));
 
     neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
     neo4jAL.logInfo(
@@ -112,7 +109,7 @@ public class CobolDetector extends ADetector {
           // Parse NLP
           if (fb == null
               && googleParser != null
-              && onlineMode
+              && getOnlineMode()
               && languageProperties.getOnlineSearch()) {
             GoogleResult gr = googleParser.request(objectName);
             String requestResult = gr.getContent();
@@ -129,7 +126,7 @@ public class CobolDetector extends ADetector {
 
             fb = saveFrameworkResult(objectName, nlpResult, internalType);
 
-            if (learningMode) {
+            if (getLearningMode()) {
               nlpSaver.writeNLPResult(nlpResult.getCategory(), requestResult);
             }
           }
@@ -186,7 +183,7 @@ public class CobolDetector extends ADetector {
   }
 
   @Override
-  public ATree getBreakdown() {
+  public ATree getExternalBreakdown() {
     return null;
   }
 }
