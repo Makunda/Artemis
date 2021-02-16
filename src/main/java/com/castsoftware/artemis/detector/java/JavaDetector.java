@@ -12,11 +12,13 @@
 package com.castsoftware.artemis.detector.java;
 
 import com.castsoftware.artemis.config.UserConfiguration;
+import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.ADetector;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
@@ -55,7 +57,7 @@ public class JavaDetector extends ADetector {
     this.ft = new FrameworkTree();
   }
 
-  public FrameworkNode assignResult(String name, NLPResults results, String internalType) {
+  public FrameworkNode assignResult(String name, NLPResults results) {
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     Date date = Calendar.getInstance().getTime();
     String strDate = dateFormat.format(date);
@@ -90,7 +92,7 @@ public class JavaDetector extends ADetector {
             detectionScore,
             new Date().getTime());
     fb.setFrameworkType(fType);
-    fb.setInternalType(internalType);
+    fb.setInternalType(languageProperties.getObjectsInternalType());
 
     // Save the Node to the local database
 
@@ -106,6 +108,42 @@ public class JavaDetector extends ADetector {
 
     // Init properties
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
+
+    // Iterate over node and check if they aren't well known frameworks
+    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
+    while(listIterator.hasNext()) {
+      Node n = listIterator.next();
+      if(!n.hasProperty("FullName") || !n.hasProperty("InternalType")) continue;
+      String internalType = (String) n.getProperty("InternalType");
+      String[] split =  ((String) n.getProperty("FullName")).split("\\.");
+
+      try { // Todo Industrialize this
+
+        if(split.length < 2) continue;
+        else {
+          String fullName2 = String.join(".", Arrays.copyOfRange(split, 0, 2));
+          FrameworkNode fn = FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName2, internalType);
+          if(fn != null) {
+            frameworkNodeList.add(fn);
+            listIterator.remove();
+          }
+        }
+
+        if(split.length < 3) continue;
+        else {
+          String fullName3 = String.join(".", Arrays.copyOfRange(split, 0, 3));
+          FrameworkNode fn = FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName3, internalType);
+          if(fn != null) {
+            frameworkNodeList.add(fn);
+            listIterator.remove();
+          }
+        }
+
+      } catch (Neo4jBadNodeFormatException e) {
+        neo4jAL.logError(String.format("Failed to discover the node with name %s", n.getProperty("FullName")));
+      }
+    }
+
 
     // Internal match
     FrameworkTree internalTree = getInternalBreakDown();
@@ -133,6 +171,87 @@ public class JavaDetector extends ADetector {
   }
 
   /**
+   * Explode leaf to extract the functional modules
+   *
+   * @param ftl
+   * @return
+   */
+  private List<FrameworkNode> explodeLeaf(FrameworkTreeLeaf ftl) throws Neo4jQueryException {
+    List<FrameworkNode> frameworkNodes = new ArrayList<>();
+
+    // Get base leaf detection rate
+    NLPResults res = getGoogleResult(ftl.getFullName());
+    MavenPackage candidate = parseMaven(ftl.getFullName());
+
+    // If the package on maven match the exact name or fullName, validate the Framework
+    if (candidate != null && ( candidate.getName().equals(ftl.getFullName())
+        || candidate.getFullName().equals(ftl.getName()))) { // Perfect Match on maven
+
+      neo4jAL.logInfo(String.format("Perfect match found on maven for package %s. Candidate : %s.", ftl.getFullName(), candidate.toString()));
+      FrameworkNode fb =
+          new FrameworkNode(
+              neo4jAL,
+              ftl.getFullName(),
+              new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
+              "Maven " + candidate.getFullName(),
+              candidate.getFullName(),
+              1L,
+              1.,
+              new Date().getTime());
+      fb.setFrameworkType(FrameworkType.FRAMEWORK);
+      fb.setInternalType(languageProperties.getObjectsInternalType());
+      return Collections.singletonList(fb); // Todo java internal type
+
+    } else if( res == null ){
+
+      return frameworkNodes; // The Google detection failed
+
+    } else if (ftl.getChildren().isEmpty()) { // No Children, take the result of the leaf
+      neo4jAL.logInfo(res.toString());
+
+      return Collections.singletonList(
+              assignResult(
+                      ftl.getFullName(),
+                      res));
+
+    } else {
+      int countBetterCandidate = 0;
+      Map<String, NLPResults> nlpResultsMap = new HashMap<>();
+
+      // Explode the children, if the functional modules has no link between each other
+      neo4jAL.logInfo("Entering in children of " + Arrays.toString(ftl.getChildren().toArray()));
+      for (FrameworkTreeLeaf leaf : ftl.getChildren()) {
+        NLPResults resLeaf = getGoogleResult(leaf.getFullName());
+        if(resLeaf == null) continue;
+
+        nlpResultsMap.put(ftl.getFullName(), resLeaf);
+
+        // Get the children with a better detection score
+        if (res.getProbabilities()[1] < resLeaf.getProbabilities()[1]) {
+          countBetterCandidate++;
+        }
+      }
+
+      // If there is a better confidence on more than half of the children, explode
+      if (countBetterCandidate >= ftl.getChildren().size() / 2) {
+        for (Map.Entry<String, NLPResults> resultsEntry : nlpResultsMap.entrySet()) {
+          frameworkNodes.add(
+              assignResult(
+                  resultsEntry.getKey(),
+                  resultsEntry.getValue()));
+        }
+      } else { // Keep the original leaf
+        frameworkNodes = Collections.singletonList(
+                assignResult(
+                        ftl.getFullName(),
+                        res));
+      }
+
+      return frameworkNodes;
+    }
+  }
+
+  /**
    * Treat the external nodes
    *
    * @return
@@ -147,25 +266,12 @@ public class JavaDetector extends ADetector {
 
     List<FrameworkNode> frameworkNodes = new ArrayList<>();
 
-    for (ListIterator<FrameworkTreeLeaf> itRel = packages.listIterator(); itRel.hasNext(); ) {
-      FrameworkTreeLeaf ftl = itRel.next();
-
-      // Parse repositories
-      neo4jAL.logInfo(
-          String.format(
-              "Querying Maven for : %s with children [ %s ] ",
-              ftl.getFullName(),
-                  ftl.getChildren().stream()
-                      .map(FrameworkTreeLeaf::getFullName)
-                      .collect(Collectors.joining(" "))));
-
-      parseMaven(ftl.getFullName());
-      if (getOnlineMode()) {
-        NLPResults res = getGoogleResult(ftl.getFullName());
-
-        if (res != null) {
-          frameworkNodes.add(assignResult(ftl.getFullName(), res, "Java"));
-        }
+    for (FrameworkTreeLeaf ftl : packages) {
+      try {
+        frameworkNodes.addAll(explodeLeaf(ftl)); // Explode the modules
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+                String.format("Failed to explode the functional leaf with name %s", ftl.getFullName()));
       }
     }
 
@@ -173,13 +279,13 @@ public class JavaDetector extends ADetector {
   }
 
   private NLPResults getGoogleResult(String name) {
-    GoogleResult gr = null;
     try {
+      GoogleResult gr = null;
       gr = googleParser.request(name);
       String requestResult = gr.getContent();
       NLPResults np = nlpEngine.getNLPResult(requestResult);
 
-      if (getLearningMode()) {
+      if(getLearningMode()) {
         nlpSaver.writeNLPResult(np.getCategory(), requestResult);
       }
 
@@ -197,21 +303,26 @@ public class JavaDetector extends ADetector {
    * @param name
    * @return
    */
-  private List<MavenPackage> parseMaven(String name) {
+  private MavenPackage parseMaven(String name) {
     Maven mvn = new Maven();
-    List<MavenPackage> mavenPackages = new ArrayList<>();
+    MavenPackage bestCandidate = null;
 
     try {
-      mavenPackages = mvn.getMavenPackages(name);
+      List<MavenPackage> mavenPackages = mvn.getMavenPackages(name);
 
       for (MavenPackage p : mavenPackages) {
         neo4jAL.logInfo(" Found : " + p.toString());
       }
+
+      if(mavenPackages.size() > 0) {
+        bestCandidate = mavenPackages.get(0);
+      }
+
     } catch (UnirestException e) {
       neo4jAL.logInfo(String.format("Failed to query Maven for package : %s ", name));
     }
 
-    return mavenPackages;
+    return bestCandidate;
   }
 
   /**

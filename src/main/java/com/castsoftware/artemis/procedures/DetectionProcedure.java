@@ -67,7 +67,7 @@ public class DetectionProcedure {
       "artemis.launch.bulkDetection(String Language) - Launch Detection for a specific language")
   public Stream<FrameworkResult> bulkDetection(
       @Name(value = "Language") String language,
-      @Name(value = "FlagNodes", defaultValue = "false") Boolean flagNodes)
+      @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes)
       throws ProcedureException {
 
     try {
@@ -76,7 +76,7 @@ public class DetectionProcedure {
           DetectionController.launchBulkDetection(nal, language, flagNodes);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException | NLPIncorrectConfigurationException | GoogleBadResponseCodeException | Neo4jBadRequestException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

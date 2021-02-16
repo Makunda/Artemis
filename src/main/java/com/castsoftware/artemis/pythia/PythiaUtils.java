@@ -20,6 +20,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.json.JSONObject;
 
+import java.util.Collections;
 import java.util.Date;
 
 public class PythiaUtils {
@@ -59,7 +60,7 @@ public class PythiaUtils {
             timestampCreation);
     CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
     fn.setCategory(cn);
-    fn.setInternalType(internalType);
+    fn.setInternalType(Collections.singletonList(internalType));
     fn.setFrameworkType(frameworkType);
 
     return fn;

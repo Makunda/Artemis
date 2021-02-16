@@ -29,9 +29,11 @@ public class NLPSaver implements Closeable {
 
   private FileWriter fileWriter;
   private String application;
+  private String language;
 
-  public NLPSaver(String application) throws IOException {
+  public NLPSaver(String application, String language) throws IOException {
     this.application = application;
+    this.language = language;
     init();
   }
 
@@ -50,6 +52,8 @@ public class NLPSaver implements Closeable {
     } else {
       fileWriter.write("NotFramework\t" + content + "\n");
     }
+
+    fileWriter.flush();
   }
 
   /**
@@ -71,10 +75,12 @@ public class NLPSaver implements Closeable {
             + application
             + "_on"
             + SDF.format(timestamp)
+            + "_" + language
             + ".txt";
 
     try {
       fileWriter = new FileWriter(fileLocation);
+      fileWriter.write(language + System.lineSeparator());
     } catch (IOException e) {
       System.err.println("Failed to create the NLP enrichment file.");
       e.printStackTrace();

@@ -86,7 +86,7 @@ public class FrameworkController {
    * @param description Description
    * @param type Framework category ( Framework, NotFramework, etc..)
    * @param category Category of the framework
-   * @param internalType Internal type of the object detected
+   * @param internalTypes Internal type of the object detected
    * @return The node created
    * @throws Neo4jQueryException
    */
@@ -98,13 +98,13 @@ public class FrameworkController {
       String description,
       String type,
       String category,
-      String internalType)
+      List<String> internalTypes)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     FrameworkNode fn =
         new FrameworkNode(
             neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
-    fn.setInternalType(internalType);
+    fn.setInternalType(internalTypes);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
 
@@ -147,7 +147,7 @@ public class FrameworkController {
       String category,
       Long numberOfDetection,
       Double percentageOfDetection,
-      String internalType)
+      List<String> internalType)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     FrameworkNode fn =
@@ -230,7 +230,7 @@ public class FrameworkController {
     Long limit = endIndex - startIndex;
     String request =
         String.format(
-            "MATCH(o:%s) WHERE o.%s=$internalType RETURN o as framework ORDER BY o.%s SKIP $toSkip LIMIT $limit;",
+            "MATCH(o:%s) WHERE $internalType in o.%s  RETURN o as framework ORDER BY o.%s SKIP $toSkip LIMIT $limit;",
             FrameworkNode.getLabel(),
             FrameworkNode.getInternalTypeProperty(),
             FrameworkNode.getNameProperty());
@@ -287,7 +287,7 @@ public class FrameworkController {
       throws Neo4jQueryException {
     String request =
         String.format(
-            "MATCH(o:%s) WHERE o.%s=$internalType RETURN COUNT(o) as count;",
+            "MATCH(o:%s) WHERE $internalType in o.%s RETURN COUNT(o) as count;",
             FrameworkNode.getLabel(), FrameworkNode.getInternalTypeProperty());
     Map<String, Object> param = Map.of("internalType", internalType);
     Result res = neo4jAL.executeQuery(request, param);

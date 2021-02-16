@@ -64,7 +64,7 @@ public class FrameworkNode {
   private String discoveryDate;
   private String location = "";
   private String description = "";
-  private String internalType = "";
+  private List<String> internalType = new ArrayList<>();
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
   private FrameworkType frameworkType = FrameworkType.NOT_KNOWN;
@@ -172,11 +172,22 @@ public class FrameworkNode {
       String name = (String) n.getProperty(NAME_PROPERTY);
       String discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
 
-      String internalType = "";
+      List<String> internalType = new ArrayList<String>();
       if (!n.hasProperty(INTERNAL_TYPE_PROPERTY)) {
-        n.setProperty(INTERNAL_TYPE_PROPERTY, "");
+        n.setProperty(INTERNAL_TYPE_PROPERTY, new ArrayList<String>());
       } else {
-        internalType = (String) n.getProperty(INTERNAL_TYPE_PROPERTY);
+        Object obj = n.getProperty(INTERNAL_TYPE_PROPERTY);
+        try {
+          if(obj instanceof List) {
+            internalType = (List<String>) obj;
+          } else if (obj instanceof String) {
+            internalType = Collections.singletonList((String) obj);
+          } else {
+            n.setProperty(INTERNAL_TYPE_PROPERTY, internalType);
+          }
+        } catch (ClassCastException e) {
+          n.setProperty(INTERNAL_TYPE_PROPERTY, internalType);
+        }
       }
 
       // Get or Set
@@ -303,7 +314,7 @@ public class FrameworkNode {
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
         String.format(
-            "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalType RETURN n as node LIMIT 1;",
+            "MATCH (n:%s) WHERE n.%s=$frameworkName AND $internalType in n.%s RETURN n as node LIMIT 1;",
             LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
 
     Map<String, Object> params =
@@ -478,11 +489,11 @@ public class FrameworkNode {
     cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
   }
 
-  public String getInternalType() {
+  public List<String> getInternalType() {
     return internalType;
   }
 
-  public void setInternalType(String internalType) {
+  public void setInternalType(List<String> internalType) {
     this.internalType = internalType;
   }
 

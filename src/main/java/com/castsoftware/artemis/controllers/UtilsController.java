@@ -208,6 +208,27 @@ public class UtilsController {
   }
 
   /**
+   * Set the value of the learning mode. In learning mode the query will be saved to be reprocessed
+   * @param active
+   * @return
+   * @throws MissingFileException
+   */
+  public static Boolean setLearningMode(Boolean active) throws MissingFileException {
+    Configuration.set("artemis.learning_mode", active.toString());
+    UserConfiguration.set("artemis.learning_mode", active.toString());
+    return Boolean.parseBoolean(UserConfiguration.get("artemis.learning_mode"));
+  }
+
+  /**
+   * Get the value of the Persistent mode parameter
+   *
+   * @return
+   */
+  public static Boolean getLearningMode() {
+    return Boolean.parseBoolean(UserConfiguration.get("artemis.learning_mode"));
+  }
+
+  /**
    * Install the extension
    *
    * @param neo4jAL Neo4j acces Layer

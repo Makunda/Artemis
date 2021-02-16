@@ -114,44 +114,22 @@ public class DetectionController {
   @Deprecated
   public static List<FrameworkResult> launchBulkDetection(
       Neo4jAL neo4jAL, String language, Boolean flagNodes)
-          throws Neo4jQueryException, MissingFileException, IOException,
-          NLPIncorrectConfigurationException, GoogleBadResponseCodeException, Neo4jBadRequestException {
+          throws Neo4jQueryException, IOException, Neo4jBadRequestException {
     List<FrameworkResult> resultList = new ArrayList<>();
+
+    // Application
+    String reqAppName = "MATCH (o:Object) RETURN DISTINCT [ x IN LABELS(o) WHERE NOT x='Object' ][0] as appName";
+    Result res = neo4jAL.executeQuery(reqAppName);
+
     List<String> appNameList = new ArrayList<>();
-
-    // Get language
-    SupportedLanguage sLanguage = SupportedLanguage.getLanguage(language);
-    neo4jAL.logInfo(
-        String.format("Starting Artemis bulk detection on language '%s'...", sLanguage.toString()));
-
-    String appNameRequest =
-        String.format(
-            "MATCH (a:%1$s) WITH a.Name as appName  MATCH (obj:%2$s) WHERE appName IN LABELS(obj)  AND  obj.Type CONTAINS '%3$s' RETURN appName, COUNT(obj) as countObj;",
-            IMAGING_APPLICATION_LABEL, IMAGING_OBJECT_LABEL, language);
-    neo4jAL.logInfo("Request to execute : " + appNameRequest);
-
-    // Get the List of application
-    Result resAppName = neo4jAL.executeQuery(appNameRequest);
-    while (resAppName.hasNext()) {
-      Map<String, Object> res = resAppName.next();
-      String app = (String) res.get("appName");
-      Long countObj = (Long) res.get("countObj");
-
-      neo4jAL.logInfo(
-          String.format(
-              "Application with name '%s' contains %d potential candidates.", app, countObj));
-
-      appNameList.add(app);
+    while (res.hasNext()) {
+      appNameList.add((String) res.next().get("appName"));
     }
 
-    List<FrameworkNode> frameworkList = new ArrayList<>();
-    for (String name : appNameList) {
-      frameworkList.addAll(getFrameworkList(neo4jAL, name, sLanguage));
-    }
+    neo4jAL.logInfo(String.format("Launching the analysis on applications : %s", String.join(", ", appNameList)));
 
-    for (FrameworkNode fn : frameworkList) {
-      FrameworkResult fr = new FrameworkResult(fn);
-      resultList.add(fr);
+    for(String appName : appNameList) {
+      resultList.addAll(launchDetection(neo4jAL, appName, language, flagNodes));
     }
 
     return resultList;

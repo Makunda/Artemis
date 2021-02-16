@@ -31,6 +31,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class PythiaCom {
 
@@ -172,12 +173,60 @@ public class PythiaCom {
 
   /**
    * Verify if the api is online
-   *
    * @return
    */
   public boolean getStatus() {
     connected = this.pingApi();
     return connected;
+  }
+
+  /**
+   * Find a framework
+   * @param name Name of the framework
+   * @param internalType Internal type of the framework
+   * @return
+   */
+  public FrameworkNode findFramework(String name, String internalType) {
+    if (uri == null || uri.isEmpty()) return null;
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri).append("/api/artemis/frameworks/find");
+
+    FrameworkNode fn = null;
+
+    try {
+      Map<String, Object> params = Map.of("name", name, "internalType", internalType);
+      HttpResponse<String> pResponse =
+              Unirest.post(url.toString())
+                      .header("accept", "application/json")
+                      .header("Authorization", "Bearer " + token)
+                      .body(params)
+                      .asString();
+
+      if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
+        neo4jAL.logInfo(String.format("Response for the update %s", pResponse.getBody()));
+        PythiaResponse pr = new PythiaResponse(pResponse.getBody());
+
+        if(pr.data == null) return null;
+
+        try {
+          fn = PythiaUtils.JSONtoFramework(neo4jAL, (JSONObject) pr.data);
+          fn.createNode();
+        } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
+          neo4jAL.logError("Failed to retrieve the frameworks from pythias.", e);
+        }
+      } else {
+        neo4jAL.logError(
+                String.format(
+                        "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                        this.uri, pResponse.getStatus()));
+      }
+    } catch (Exception e) {
+      neo4jAL.logError(
+              String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+    }
+
+    return fn;
   }
 
   /**

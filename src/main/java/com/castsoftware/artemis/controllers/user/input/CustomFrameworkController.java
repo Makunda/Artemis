@@ -95,7 +95,7 @@ public class CustomFrameworkController {
 
         cn = CategoryController.getOrCreateByName(neo4jAL, category);
         fn.setCategory(cn);
-        fn.setInternalType(internalType);
+        fn.setInternalType(Collections.singletonList(internalType));
         fn.setFrameworkType(FrameworkType.FRAMEWORK);
 
         // Update the framework if not exist in the database

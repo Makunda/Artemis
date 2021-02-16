@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.detector.cobol;
 
-import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
@@ -29,14 +28,18 @@ import com.castsoftware.artemis.sof.SystemOfFramework;
 import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
 import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /** Detector for COBOL */
 public class CobolDetector extends ADetector {
+
+  private final List<Node> unknownNonUtilities = new ArrayList<>();
+  private final List<Node> otherApps = new ArrayList<>();
+  private final List<Node> unknownApp = new ArrayList<>();
 
   public CobolDetector(Neo4jAL neo4jAL, String application)
       throws IOException, Neo4jQueryException {
@@ -64,19 +67,124 @@ public class CobolDetector extends ADetector {
     }
   }
 
-  public void createSystemOfFrameworks(List<FrameworkNode> frameworkNodeList) {
-    SystemOfFramework sof =
-        new SystemOfFramework(
-            this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
-    sof.run();
+  @Override
+  public ATree getExternalBreakdown() {
+    return null;
   }
 
-  /** Launch the detection */
   @Override
-  public List<FrameworkNode> launch() throws IOException, Neo4jQueryException {
+  public void extractUnknownNonUtilities() {
+    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+    while (itNode.hasNext()) {
+      Node n = itNode.next();
+      try {
+        UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Non Utilities");
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+            String.format("Failed to extract node with name %s to Unknown Non Utilities", e));
+      }
+      itNode.remove();
+    }
+  }
 
+  @Override
+  public void extractOtherApps() {
+
+    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+    while (itNode.hasNext()) {
+      try {
+
+        Node n = itNode.next();
+        if (!n.hasProperty("Name") || !n.hasProperty("InternalType")) continue;
+
+        String name = (String) n.getProperty("Name");
+        String internalType = (String) n.getProperty("InternalType");
+
+        String req =
+            "MATCH (o:Object) WHERE NOT $appName in LABELS(o) AND o.Name=$nodeName AND o.InternalType=$internalType "
+                + "RETURN [ x in LABELS(o) WHERE NOT x='Object'][0] as app";
+        Map<String, Object> params =
+            Map.of("appName", application, "nodeName", name, "internalType", internalType);
+
+        Result res = neo4jAL.executeQuery(req, params);
+        if (res.hasNext()) {
+          UtilsController.applyDemeterParentTag(neo4jAL, n, " : Unknowns other Applications");
+          itNode.remove();
+        }
+
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+            String.format("Failed to extract node with name %s to  Unknown other applications", e));
+      }
+    }
+  }
+
+  @Override
+  public void extractUnknownApp() {
+    try {
+      String corePrefix = getCoreApplication();
+      if (corePrefix.isBlank()) return;
+
+      // If the object match the Ngram
+      ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+      while (itNode.hasNext()) {
+        Node n = itNode.next();
+        if (!n.hasProperty("Name")) continue;
+
+        String name = (String) n.getProperty("Name");
+
+        // The name match the nGram
+        if (name.startsWith(corePrefix)) {
+          UtilsController.applyDemeterTag(neo4jAL, n, "Unknown app");
+          itNode.remove();
+        }
+      }
+
+    } catch (Neo4jQueryException e) {
+      neo4jAL.logError("Failed to retrieve the core of the application.", e);
+      return;
+    }
+  }
+
+  /** Get the name of the core of the application */
+  public String getCoreApplication() throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (o:Object:`%s`) WHERE o.InternalType in $internalType AND o.External=False "
+                + "RETURN o.Name as name",
+            application);
+    Map<String, Object> params =
+        Map.of("internalType", languageProperties.getObjectsInternalType());
+
+    Result result = neo4jAL.executeQuery(req, params);
+    Map<String, Integer> mapName = new HashMap<>();
+
+    int nGram = 3;
+    while (result.hasNext()) {
+      String name = (String) result.next().get("name");
+
+      String gram = name.substring(0, nGram);
+      if (!mapName.containsKey(gram)) mapName.put(gram, 0);
+      mapName.computeIfPresent(gram, (key, val) -> val + 1);
+    }
+
+    // Get the core name of the application
+    Integer max = 0;
+    String corePrefix = "";
+    for (Map.Entry<String, Integer> en : mapName.entrySet()) {
+      if (max < en.getValue()) corePrefix = en.getKey();
+    }
+
+    return corePrefix;
+  }
+
+  /**
+   * Process the external candidates
+   *
+   * @throws IOException
+   */
+  public List<FrameworkNode> treatExternals() throws IOException {
     int numTreated = 0;
-
 
     neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
     neo4jAL.logInfo(
@@ -85,8 +193,11 @@ public class CobolDetector extends ADetector {
     List<Node> notDetected = new ArrayList<>();
     // Init the save
 
+    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
     try {
-      for (Node n : toInvestigateNodes) {
+      while (listIterator.hasNext()) {
+
+        Node n = listIterator.next();
         // Ignore object without a name property
         if (!n.hasProperty(IMAGING_OBJECT_NAME)) continue;
         String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
@@ -111,15 +222,9 @@ public class CobolDetector extends ADetector {
               && googleParser != null
               && getOnlineMode()
               && languageProperties.getOnlineSearch()) {
+
             GoogleResult gr = googleParser.request(objectName);
             String requestResult = gr.getContent();
-            neo4jAL.logInfo(
-                " - Name of the package to search : "
-                    + objectName
-                    + "\n\t - Results : "
-                    + gr.getNumberResult()
-                    + "\n\t - Blacklisted : "
-                    + gr.isBlacklisted());
             NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
 
             // Apply a malus on Node with name containing number, exclude it
@@ -137,7 +242,9 @@ public class CobolDetector extends ADetector {
             if (fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
               String cat = fb.getCategory();
               UtilsController.applyDemeterTag(neo4jAL, n, cat);
+              listIterator.remove(); // Remove the node from the to investigate list
             } else {
+              unknownNonUtilities.add(n);
               notDetected.add(n);
             }
 
@@ -173,6 +280,25 @@ public class CobolDetector extends ADetector {
       nlpSaver.close();
     }
 
+    return frameworkNodeList;
+  }
+
+  public void createSystemOfFrameworks(List<FrameworkNode> frameworkNodeList) {
+    SystemOfFramework sof =
+        new SystemOfFramework(
+            this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
+    sof.run();
+  }
+
+  /** Launch the detection */
+  @Override
+  public List<FrameworkNode> launch() throws IOException, Neo4jQueryException {
+
+    List<FrameworkNode> frameworkNodes = treatExternals();
+    extractUnknownApp();
+    extractOtherApps();
+    extractUnknownNonUtilities();
+
     // Launch internal framework detector on remaining nodes
     if (languageProperties.getInteractionDetector()) {
       // getInternalFramework(neo4jAL, notDetected);
@@ -180,10 +306,5 @@ public class CobolDetector extends ADetector {
     }
 
     return frameworkNodeList;
-  }
-
-  @Override
-  public ATree getExternalBreakdown() {
-    return null;
   }
 }

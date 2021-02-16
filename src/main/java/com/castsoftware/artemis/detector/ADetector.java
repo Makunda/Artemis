@@ -86,7 +86,7 @@ public abstract class ADetector {
     this.neo4jAL = neo4jAL;
     this.application = application;
     this.toInvestigateNodes = new ArrayList<>();
-    this.nlpSaver = new NLPSaver(application);
+    this.nlpSaver = new NLPSaver(application, language.toString());
     this.pythiaCom = PythiaCom.getInstance(neo4jAL);
 
     // Shuffle nodes to avoid being bust by the google bot detector
@@ -113,17 +113,33 @@ public abstract class ADetector {
   public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException, Neo4jBadRequestException;
   public abstract ATree getExternalBreakdown();
 
+  /**
+   * Extract unknown non utilities
+   */
+  public abstract void extractUnknownNonUtilities();
+
+  /**
+   * Extract unknown non utilities
+   */
+  public abstract void extractOtherApps();
+
+  /**
+   * Extract unknown non utilities
+   */
+  public abstract void extractUnknownApp();
+
   public boolean getOnlineMode() {
-    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.onlineMode"));    // Get configuration
+    return  Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));    // Get configuration
   }
 
   public boolean getLearningMode() {
-    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.learning_mode"));
+    return  Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
   }
 
   public boolean getPersistentMode() {
-    return  Boolean.parseBoolean(Configuration.getBestOfAllWorlds("artemis.persistent_mode"));
+    return  Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
   }
+
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -170,7 +186,7 @@ public abstract class ADetector {
             detectionScore,
             new Date().getTime());
     fb.setFrameworkType(fType);
-    fb.setInternalType(internalType);
+    fb.setInternalType(languageProperties.getObjectsInternalType());
 
     // Save the Node to the local database
     if (getPersistentMode()) {
@@ -203,7 +219,7 @@ public abstract class ADetector {
     if (categories.isEmpty()) {
       String forgedRequest =
           String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.Type CONTAINS '%s' AND obj.External=true RETURN obj as node", application, languageProperties.getName());
+              "MATCH (obj:Object:`%s`) WHERE  obj.Type in '%s' AND obj.External=true RETURN obj as node", application, languageProperties.getName());
       res = neo4jAL.executeQuery(forgedRequest);
 
       while (res.hasNext()) {

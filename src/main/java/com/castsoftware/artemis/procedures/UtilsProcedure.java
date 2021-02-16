@@ -131,6 +131,33 @@ public class UtilsProcedure {
     }
   }
 
+  @Procedure(value = "artemis.set.learningMode", mode = Mode.WRITE)
+  @Description("artemis.set.learningMode(Boolean value) - Set the value of the learning mode.")
+  public Stream<BooleanResult> setLearningMode(
+          @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
+    try {
+      Boolean mode = UtilsController.setLearningMode(value);
+      return Stream.of(new BooleanResult(mode));
+    } catch (Exception | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.get.learningMode", mode = Mode.WRITE)
+  @Description("artemis.get.learningMode() - Get the value of learning mode.")
+  public Stream<BooleanResult> getLearningMode() throws ProcedureException {
+    try {
+      Boolean mode = UtilsController.getLearningMode();
+      return Stream.of(new BooleanResult(mode));
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
   @Procedure(value = "artemis.set.persistentMode", mode = Mode.WRITE)
   @Description("artemis.set.persistentMode(Boolean value) - Set the value of the persistent mode.")
   public Stream<BooleanResult> setPersistentMode(

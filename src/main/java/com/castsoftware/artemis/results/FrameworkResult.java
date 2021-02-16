@@ -13,12 +13,15 @@ package com.castsoftware.artemis.results;
 
 import com.castsoftware.artemis.datasets.FrameworkNode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FrameworkResult {
   public String name;
   public String description;
   public String category;
   public String type;
-  public String internalType = "";
+  public List<String> internalType = new ArrayList<>();
   public String location = "";
   public String discoveryDate = "";
   public Double percentageOfDetection = .0;

@@ -40,7 +40,7 @@ public class FrameworksApiProcedure {
 
   @Procedure(value = "artemis.api.add.framework", mode = Mode.WRITE)
   @Description(
-      "artemis.api.add.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, String InternalType) - Add a framework")
+      "artemis.api.add.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalType) - Add a framework")
   public Stream<FrameworkResult> addFramework(
       @Name(value = "Name") String name,
       @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
@@ -48,14 +48,14 @@ public class FrameworksApiProcedure {
       @Name(value = "Description", defaultValue = "") String description,
       @Name(value = "Type", defaultValue = "") String type,
       @Name(value = "Category", defaultValue = "") String category,
-      @Name(value = "InternalType", defaultValue = "") String internalType)
+      @Name(value = "InternalTypes", defaultValue = "[]") List<String> internalTypes)
       throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode addedFramework =
           FrameworkController.addFramework(
-              nal, name, discoveryDate, location, description, type, category, internalType);
+              nal, name, discoveryDate, location, description, type, category, internalTypes);
 
       return Stream.of(new FrameworkResult(addedFramework));
     } catch (Exception
@@ -80,7 +80,7 @@ public class FrameworksApiProcedure {
       @Name(value = "Description") String description,
       @Name(value = "Type") String type,
       @Name(value = "Category") String category,
-      @Name(value = "InternalType") String internalType,
+      @Name(value = "InternalTypes") List<String> internalTypes,
       @Name(value = "NumberOfDetection", defaultValue = "0") Long numberOfDetection,
       @Name(value = "PercentageOfDetection", defaultValue = "0") Double percentageOfDetection)
       throws ProcedureException {
@@ -100,7 +100,7 @@ public class FrameworksApiProcedure {
               category,
               numberOfDetection,
               percentageOfDetection,
-              internalType);
+              internalTypes);
       return Stream.of(new BooleanResult(addedFramework != null));
     } catch (Exception
         | Neo4jConnectionError
