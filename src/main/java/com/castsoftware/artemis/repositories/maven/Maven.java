@@ -26,6 +26,37 @@ public class Maven extends Crawler {
   private static final String OPTIONS = "&rows=5&wt=json";
 
   /**
+   * Get the results of the maven repository search with a size limit
+   *
+   * @param search Name of the packet to search
+   * @param limit Max return items
+   * @return The list of the Maven package detected
+   * @throws UnirestException
+   */
+  @Override
+  public List<MavenPackage> getResults(String search, Integer limit) throws UnirestException {
+    List<MavenPackage> packages = getMavenPackages(search);
+
+    if (packages.isEmpty()) return packages;
+    if (packages.size() < limit) limit = packages.size();
+
+    return packages.subList(0, limit);
+  }
+
+  /**
+   * Request the Maven repository and get a list of packets matching the search
+   *
+   * @param search Name of the package to search
+   * @return The list of best matching packets
+   * @throws UnirestException
+   */
+  public List<MavenPackage> getMavenPackages(String search) throws UnirestException {
+    StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
+    JSONObject jsonResult = this.getRequest(urlBuilder.toString()).getObject();
+    return buildPackageList((JSONArray) jsonResult.getJSONObject("response").get("docs"));
+  }
+
+  /**
    * Build a list of maven package from the JSON results
    *
    * @param jsonObject Json object containing the maven package
@@ -53,37 +84,4 @@ public class Maven extends Crawler {
     /** TODO Analyze result full name and return best candidate */
     return returnList;
   }
-
-  /**
-   * Request the Maven repository and get a list of packets matching the search
-   *
-   * @param search Name of the package to search
-   * @return The list of best matching packets
-   * @throws UnirestException
-   */
-  public List<MavenPackage> getMavenPackages(String search) throws UnirestException {
-    StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
-    JSONObject jsonResult = this.getRequest(urlBuilder.toString()).getObject();
-    return buildPackageList((JSONArray) jsonResult.getJSONObject("response").get("docs"));
-  }
-
-  /**
-   * Get the results of the maven repository search with a size limit
-   *
-   * @param search Name of the packet to search
-   * @param limit Max return items
-   * @return The list of the Maven package detected
-   * @throws UnirestException
-   */
-  @Override
-  public List<MavenPackage> getResults(String search, Integer limit) throws UnirestException {
-    List<MavenPackage> packages = getMavenPackages(search);
-
-    if (packages.isEmpty()) return packages;
-    if (packages.size() < limit) limit = packages.size();
-
-    return packages.subList(0, limit);
-  }
-
-
 }

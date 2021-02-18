@@ -33,7 +33,25 @@ public class MavenPackage implements SPackage {
     this.version = version;
   }
 
-  public String getGroupId() {
+  @Override
+  public String toString() {
+    return "MavenPackage{"
+        + "groupId='"
+        + groupId
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", fullName='"
+        + fullName
+        + '\''
+        + ", version='"
+        + version
+        + '\''
+        + ", tags="
+        + Arrays.toString(tags)
+        + "} \n";
+  }  public String getGroupId() {
     return groupId;
   }
 
@@ -95,14 +113,5 @@ public class MavenPackage implements SPackage {
     return o;
   }
 
-  @Override
-  public String toString() {
-    return "MavenPackage{" +
-            "groupId='" + groupId + '\'' +
-            ", name='" + name + '\'' +
-            ", fullName='" + fullName + '\'' +
-            ", version='" + version + '\'' +
-            ", tags=" + Arrays.toString(tags) +
-            "} \n";
-  }
+
 }

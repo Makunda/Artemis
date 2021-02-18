@@ -24,6 +24,16 @@ public enum SupportedLanguage {
   }
 
   /**
+   * Check the existence of a language
+   *
+   * @param language Language to search
+   * @return
+   */
+  public static Boolean has(String language) {
+    return getLanguage(language) != ALL;
+  }
+
+  /**
    * Get the Language based on the String provided
    *
    * @param type
@@ -36,15 +46,6 @@ public enum SupportedLanguage {
       }
     }
     return ALL;
-  }
-
-  /**
-   * Check the existence of a language
-   * @param language Language to search
-   * @return
-   */
-  public static Boolean has(String language) {
-    return getLanguage(language) != ALL;
   }
 
   @Override

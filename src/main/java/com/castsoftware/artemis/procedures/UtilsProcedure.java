@@ -134,7 +134,7 @@ public class UtilsProcedure {
   @Procedure(value = "artemis.set.learningMode", mode = Mode.WRITE)
   @Description("artemis.set.learningMode(Boolean value) - Set the value of the learning mode.")
   public Stream<BooleanResult> setLearningMode(
-          @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
+      @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
     try {
       Boolean mode = UtilsController.setLearningMode(value);
       return Stream.of(new BooleanResult(mode));

@@ -14,50 +14,49 @@ package com.castsoftware.artemis.detector;
 import java.util.List;
 
 public abstract class ALeaf {
-	protected Long id;
-	protected Long parentId;
-	protected String name;
+  protected Long id;
+  protected Long parentId;
+  protected String name;
 
-	public String getName() {
-		return name;
-	}
+  public ALeaf(String name) {
+    this.id = -1L;
+    this.parentId = -1L;
+    this.name = name;
+  }
 
-	public Long getId() {
-		return id;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+  public void setName(String name) {
+    this.name = name;
+  }
 
-	public Long getParentId() {
-		return parentId;
-	}
+  public Long getParentId() {
+    return parentId;
+  }
 
-	public void setParentId(Long parentId) {
-		this.parentId = parentId;
-	}
+  public void setParentId(Long parentId) {
+    this.parentId = parentId;
+  }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+  public Boolean hasChild(Long id) {
+    if (id < 0) return false; // Id cannot be negative
 
-	public abstract List<? extends ALeaf> getChildren();
+    for (ALeaf leaf : this.getChildren()) {
+      if (leaf.getId() == id) return true;
+    }
 
+    return false;
+  }
 
-	public Boolean hasChild(Long id) {
-		if(id < 0) return false; // Id cannot be negative
+  public abstract List<? extends ALeaf> getChildren();
 
-		for (ALeaf leaf : this.getChildren()) {
-			if(leaf.getId() == id) return true;
-		}
+  public Long getId() {
+    return id;
+  }
 
-		return false;
-	}
-
-	public ALeaf(String name) {
-		this.id = -1L;
-		this.parentId = -1L;
-		this.name = name;
-	}
+  public void setId(Long id) {
+    this.id = id;
+  }
 }

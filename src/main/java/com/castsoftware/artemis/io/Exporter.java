@@ -71,6 +71,72 @@ public class Exporter {
     this.createdFilenameList = new HashSet<>();
   }
 
+  public Stream<OutputMessage> save(
+      List<String> labelList,
+      String path,
+      String zipFileName,
+      Boolean saveRelationShip,
+      Boolean considerNeighbors)
+      throws ProcedureException {
+    MESSAGE_QUEUE.clear();
+
+    // Init parameters
+    considerNeighborsParams = considerNeighbors;
+    saveRelationshipParams = saveRelationShip;
+    pathParams = path;
+
+    // Init members
+    openLabelList = labelList.stream().map(Label::label).collect(Collectors.toList());
+
+    // openTransaction
+    try {
+      String targetName = zipFileName.concat(".zip");
+      log.info(String.format("Saving Configuration to %s ...", targetName));
+
+      saveNodes();
+      if (saveRelationshipParams) saveRelationships();
+
+      createZip(targetName);
+      MESSAGE_QUEUE.add(new OutputMessage("Saving done"));
+
+      return MESSAGE_QUEUE.stream();
+    } catch (FileIOException e) {
+      throw new ProcedureException(e);
+    }
+  }
+
+  /**
+   * Iterate through label list, find associated nodes and export them to a CSV file.
+   *
+   * @throws FileIOException
+   */
+  private void saveNodes() throws FileIOException {
+    while (!openLabelList.isEmpty()) {
+      Label toTreat = openLabelList.remove(0);
+
+      String content = "";
+
+      try {
+        content = exportLabelToCSV(toTreat);
+      } catch (Neo4jNoResult | Neo4jQueryException e) {
+        log.error("Error trying to save label : ".concat(toTreat.name()), e);
+        MESSAGE_QUEUE.add(
+            new OutputMessage("Error : No nodes found with label : ".concat(toTreat.name())));
+        continue;
+      }
+
+      String filename = NODE_PREFIX.concat(toTreat.name()).concat(EXTENSION);
+      createdFilenameList.add(filename);
+
+      try (FileWriter writer = new FileWriter(pathParams.concat(filename), true)) {
+        writer.write(content);
+      } catch (Exception e) {
+        throw new FileIOException(
+            "Error : Impossible to create/open file with name ".concat(filename), e, "SAVExSAVE01");
+      }
+    }
+  }
+
   /**
    * Save relationship between found nodes. The saving process will parse relationships a first time
    * to extract all possible properties. Then, it will create associated file, pushes the full set
@@ -177,22 +243,42 @@ public class Exporter {
   }
 
   /**
-   * Explore neighborhood of specified node and extract potentials neighbors' label. New labels will
-   * be added to the open list
+   * Appends all the files created during this process to the target zip. Every file appended will
+   * be remove once added to the zip.
    *
-   * @param n Node to study
+   * @param targetName Name of the ZipFile
+   * @throws IOException
    */
-  private void handleNeighbors(Node n) {
-    for (Relationship rel : n.getRelationships()) {
-      Node otherNode = rel.getOtherNode(n);
+  private void createZip(String targetName) throws FileIOException {
+    File f = new File(pathParams.concat(targetName));
+    log.info("Creating zip file..");
 
-      // Retrieve all neighbor's labels
-      for (Label l : otherNode.getLabels()) {
-        // If the label wasn't already visited or not already appended, add to open list
-        if (!closedLabelSet.contains(l) && !openLabelList.contains(l)) {
-          openLabelList.add(l);
+    try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(f))) {
+
+      for (String filename : createdFilenameList) {
+        File fileToZip = new File(pathParams.concat(filename));
+
+        try (FileInputStream fileStream = new FileInputStream(fileToZip)) {
+          ZipEntry e = new ZipEntry(filename);
+          zipOut.putNextEntry(e);
+
+          byte[] bytes = new byte[1024];
+          int length;
+          while ((length = fileStream.read(bytes)) >= 0) {
+            zipOut.write(bytes, 0, length);
+          }
+        } catch (Exception e) {
+          log.error("An error occurred trying to zip file with name : ".concat(filename), e);
         }
+
+        if (!fileToZip.delete())
+          log.error("Error trying to delete file with name : ".concat(filename));
       }
+
+    } catch (IOException e) {
+      log.error("An error occurred trying create zip file with name : ".concat(targetName), e);
+      throw new FileIOException(
+          "An error occurred trying create zip file with name.", e, "SAVExCZIP01");
     }
   }
 
@@ -270,108 +356,22 @@ public class Exporter {
   }
 
   /**
-   * Appends all the files created during this process to the target zip. Every file appended will
-   * be remove once added to the zip.
+   * Explore neighborhood of specified node and extract potentials neighbors' label. New labels will
+   * be added to the open list
    *
-   * @param targetName Name of the ZipFile
-   * @throws IOException
+   * @param n Node to study
    */
-  private void createZip(String targetName) throws FileIOException {
-    File f = new File(pathParams.concat(targetName));
-    log.info("Creating zip file..");
+  private void handleNeighbors(Node n) {
+    for (Relationship rel : n.getRelationships()) {
+      Node otherNode = rel.getOtherNode(n);
 
-    try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(f))) {
-
-      for (String filename : createdFilenameList) {
-        File fileToZip = new File(pathParams.concat(filename));
-
-        try (FileInputStream fileStream = new FileInputStream(fileToZip)) {
-          ZipEntry e = new ZipEntry(filename);
-          zipOut.putNextEntry(e);
-
-          byte[] bytes = new byte[1024];
-          int length;
-          while ((length = fileStream.read(bytes)) >= 0) {
-            zipOut.write(bytes, 0, length);
-          }
-        } catch (Exception e) {
-          log.error("An error occurred trying to zip file with name : ".concat(filename), e);
+      // Retrieve all neighbor's labels
+      for (Label l : otherNode.getLabels()) {
+        // If the label wasn't already visited or not already appended, add to open list
+        if (!closedLabelSet.contains(l) && !openLabelList.contains(l)) {
+          openLabelList.add(l);
         }
-
-        if (!fileToZip.delete())
-          log.error("Error trying to delete file with name : ".concat(filename));
       }
-
-    } catch (IOException e) {
-      log.error("An error occurred trying create zip file with name : ".concat(targetName), e);
-      throw new FileIOException(
-          "An error occurred trying create zip file with name.", e, "SAVExCZIP01");
-    }
-  }
-
-  /**
-   * Iterate through label list, find associated nodes and export them to a CSV file.
-   *
-   * @throws FileIOException
-   */
-  private void saveNodes() throws FileIOException {
-    while (!openLabelList.isEmpty()) {
-      Label toTreat = openLabelList.remove(0);
-
-      String content = "";
-
-      try {
-        content = exportLabelToCSV(toTreat);
-      } catch (Neo4jNoResult | Neo4jQueryException e) {
-        log.error("Error trying to save label : ".concat(toTreat.name()), e);
-        MESSAGE_QUEUE.add(
-            new OutputMessage("Error : No nodes found with label : ".concat(toTreat.name())));
-        continue;
-      }
-
-      String filename = NODE_PREFIX.concat(toTreat.name()).concat(EXTENSION);
-      createdFilenameList.add(filename);
-
-      try (FileWriter writer = new FileWriter(pathParams.concat(filename), true)) {
-        writer.write(content);
-      } catch (Exception e) {
-        throw new FileIOException(
-            "Error : Impossible to create/open file with name ".concat(filename), e, "SAVExSAVE01");
-      }
-    }
-  }
-
-  public Stream<OutputMessage> save(
-      List<String> labelList,
-      String path,
-      String zipFileName,
-      Boolean saveRelationShip,
-      Boolean considerNeighbors)
-      throws ProcedureException {
-    MESSAGE_QUEUE.clear();
-
-    // Init parameters
-    considerNeighborsParams = considerNeighbors;
-    saveRelationshipParams = saveRelationShip;
-    pathParams = path;
-
-    // Init members
-    openLabelList = labelList.stream().map(Label::label).collect(Collectors.toList());
-
-    // openTransaction
-    try {
-      String targetName = zipFileName.concat(".zip");
-      log.info(String.format("Saving Configuration to %s ...", targetName));
-
-      saveNodes();
-      if (saveRelationshipParams) saveRelationships();
-
-      createZip(targetName);
-      MESSAGE_QUEUE.add(new OutputMessage("Saving done"));
-
-      return MESSAGE_QUEUE.stream();
-    } catch (FileIOException e) {
-      throw new ProcedureException(e);
     }
   }
 }

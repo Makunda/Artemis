@@ -16,48 +16,50 @@ import java.util.List;
 import java.util.ListIterator;
 
 public abstract class ATree {
-	public abstract ALeaf getRoot();
-	public abstract String getDelimiterLeaves();
-	public abstract void print();
+  public abstract String getDelimiterLeaves();
 
-	public List<ALeaf> flatten() {
-		long id = 0L;
-		List<ALeaf> leafList = new ArrayList<>();
-		leafList.add(getRoot());
+  public List<ALeaf> flatten() {
+    long id = 0L;
+    List<ALeaf> leafList = new ArrayList<>();
+    leafList.add(getRoot());
 
-		this.print();
+    this.print();
 
-		// Assign IDs
-		for (ListIterator<ALeaf> iLeaf = leafList.listIterator(); iLeaf.hasNext(); ) {
-			ALeaf aLeaf = iLeaf.next();
-			aLeaf.setId(id);
+    // Assign IDs
+    for (ListIterator<ALeaf> iLeaf = leafList.listIterator(); iLeaf.hasNext(); ) {
+      ALeaf aLeaf = iLeaf.next();
+      aLeaf.setId(id);
 
-			for(ALeaf c : aLeaf.getChildren()) {
-				// Only add if it's not the last leaf
-				if(!c.getChildren().isEmpty()) {
-					iLeaf.add(c); // Add children to list
-					iLeaf.previous(); // Go one step back to iterate over it
-				}
-			}
-			id += 1L;
-		}
+      for (ALeaf c : aLeaf.getChildren()) {
+        // Only add if it's not the last leaf
+        if (!c.getChildren().isEmpty()) {
+          iLeaf.add(c); // Add children to list
+          iLeaf.previous(); // Go one step back to iterate over it
+        }
+      }
+      id += 1L;
+    }
 
-		// Assign parent id
-		ALeaf temp;
-		ALeaf aLeaf;
-		for (ListIterator<ALeaf> iLeaf = leafList.listIterator(); iLeaf.hasNext(); ) {
-			aLeaf = iLeaf.next();
+    // Assign parent id
+    ALeaf temp;
+    ALeaf aLeaf;
+    for (ListIterator<ALeaf> iLeaf = leafList.listIterator(); iLeaf.hasNext(); ) {
+      aLeaf = iLeaf.next();
 
-			// Parse list and find parent
-			for(ListIterator<ALeaf> it2 = leafList.listIterator(); it2.hasNext();) {
-				temp = it2.next();
-				if(temp.hasChild(aLeaf.getId())) {
-					aLeaf.setParentId(temp.getId());
-					break; // Exit, parent found
-				}
-			}
-		}
+      // Parse list and find parent
+      for (ListIterator<ALeaf> it2 = leafList.listIterator(); it2.hasNext(); ) {
+        temp = it2.next();
+        if (temp.hasChild(aLeaf.getId())) {
+          aLeaf.setParentId(temp.getId());
+          break; // Exit, parent found
+        }
+      }
+    }
 
-		return leafList;
-	}
+    return leafList;
+  }
+
+  public abstract ALeaf getRoot();
+
+  public abstract void print();
 }

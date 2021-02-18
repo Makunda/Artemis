@@ -64,7 +64,7 @@ public class OracleController {
             new Date().getTime());
     CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, "Test Category");
     fn.setCategory(cn);
-    fn.setInternalType(Collections.singletonList("Internal Type"));
+    fn.setInternalTypes(Collections.singletonList("Internal Type"));
     fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 
     return PythiaCom.getInstance(neo4jAL).addFramework(fn);

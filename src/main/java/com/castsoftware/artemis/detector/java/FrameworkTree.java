@@ -13,8 +13,6 @@ package com.castsoftware.artemis.detector.java;
 
 import com.castsoftware.artemis.detector.ATree;
 
-import java.util.Arrays;
-
 public class FrameworkTree extends ATree {
 
   private static String PACKAGE_DELIMITER = "\\.";
@@ -23,10 +21,6 @@ public class FrameworkTree extends ATree {
 
   public FrameworkTree() {
     this.root = new FrameworkTreeLeaf("", "");
-  }
-
-  public String getDelimiterLeaves() {
-    return ".";
   }
 
   /**
@@ -92,6 +86,15 @@ public class FrameworkTree extends ATree {
     return root;
   }
 
+  public String getDelimiterLeaves() {
+    return ".";
+  }
+
+  /** Print the tree */
+  public void print() {
+    printTree(root, 0);
+  }
+
   /**
    * Recursive tree print
    *
@@ -112,10 +115,5 @@ public class FrameworkTree extends ATree {
     for (FrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);
     }
-  }
-
-  /** Print the tree */
-  public void print() {
-    printTree(root, 0);
   }
 }

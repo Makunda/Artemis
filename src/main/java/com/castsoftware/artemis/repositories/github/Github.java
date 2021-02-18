@@ -28,6 +28,27 @@ public class Github extends Crawler {
 
   private List<SPackage> resultPackages;
 
+  @Override
+  public List<GithubPackage> getResults(String search, Integer limit) throws UnirestException {
+    List<GithubPackage> packages = getGithubPackages(search);
+
+    if (packages == null || packages.isEmpty()) return null;
+    if (packages.size() < limit) limit = packages.size();
+
+    return packages.subList(0, limit);
+  }
+
+  /**
+   * Get the results for this specific instance
+   *
+   * @return
+   */
+  public List<GithubPackage> getGithubPackages(String search) throws UnirestException {
+    StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
+    JSONObject jsonResult = getRequest(urlBuilder.toString()).getObject();
+    return buildPackageList((JSONArray) jsonResult.get("items"));
+  }
+
   /**
    * Build the package list from the result of the query
    *
@@ -60,26 +81,5 @@ public class Github extends Crawler {
     }
     /** TODO Analyze result full name and return best candidate */
     return returnList;
-  }
-
-  /**
-   * Get the results for this specific instance
-   *
-   * @return
-   */
-  public List<GithubPackage> getGithubPackages(String search) throws UnirestException {
-    StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
-    JSONObject jsonResult = getRequest(urlBuilder.toString()).getObject();
-    return buildPackageList((JSONArray) jsonResult.get("items"));
-  }
-
-  @Override
-  public List<GithubPackage> getResults(String search, Integer limit) throws UnirestException {
-    List<GithubPackage> packages = getGithubPackages(search);
-
-    if (packages == null || packages.isEmpty()) return null;
-    if (packages.size() < limit) limit = packages.size();
-
-    return packages.subList(0, limit);
   }
 }

@@ -50,20 +50,17 @@ public class Mailer {
     return Session.getDefaultInstance(props);
   }
 
-  private static Message buildMessage(Session session, String to, String subject, String body)
-      throws Exception {
-    // Create a message with the specified information.
-    MimeMessage msg = new MimeMessage(session);
-    msg.setFrom(new InternetAddress(FROM, FROMNAME));
-    msg.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
-    msg.setSubject(subject);
-    msg.setContent(body, "text/html");
+  public static void bulkMail() throws Exception {
+    if (RECIPIENT_LIST == null) {
+      return;
+    }
 
-    // Add a configuration set header. Comment or delete the
-    // next line if you are not using a configuration set
-    msg.setHeader("X-SES-CONFIGURATION-SET", CONFIGSET);
-
-    return msg;
+    String subject = "Failed to analyze application : Wealthcare";
+    String body = MailerTemplate.generateFailureMail("Wealthcare", new Exception("Test"));
+    String[] recipientList = RECIPIENT_LIST.split(",");
+    for (String recipient : recipientList) {
+      sendMail(recipient, subject, body);
+    }
   }
 
   public static void sendMail(String to, String subject, String body) throws Exception {
@@ -95,16 +92,19 @@ public class Mailer {
     }
   }
 
-  public static void bulkMail() throws Exception {
-    if (RECIPIENT_LIST == null) {
-      return;
-    }
+  private static Message buildMessage(Session session, String to, String subject, String body)
+      throws Exception {
+    // Create a message with the specified information.
+    MimeMessage msg = new MimeMessage(session);
+    msg.setFrom(new InternetAddress(FROM, FROMNAME));
+    msg.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
+    msg.setSubject(subject);
+    msg.setContent(body, "text/html");
 
-    String subject = "Failed to analyze application : Wealthcare";
-    String body = MailerTemplate.generateFailureMail("Wealthcare", new Exception("Test"));
-    String[] recipientList = RECIPIENT_LIST.split(",");
-    for (String recipient : recipientList) {
-      sendMail(recipient, subject, body);
-    }
+    // Add a configuration set header. Comment or delete the
+    // next line if you are not using a configuration set
+    msg.setHeader("X-SES-CONFIGURATION-SET", CONFIGSET);
+
+    return msg;
   }
 }

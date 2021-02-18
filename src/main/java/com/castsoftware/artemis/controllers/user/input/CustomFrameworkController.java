@@ -60,8 +60,6 @@ public class CustomFrameworkController {
             + "RETURN o as object, [x in o.Tags WHERE x CONTAINS $tagArtemis ][0] as tag";
     Map<String, Object> params = Map.of("tagArtemis", artemisFrameworkTag);
 
-    neo4jAL.logInfo("DEBUG :: " + req);
-
     Result res = neo4jAL.executeQuery(req, params);
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
 
@@ -95,7 +93,7 @@ public class CustomFrameworkController {
 
         cn = CategoryController.getOrCreateByName(neo4jAL, category);
         fn.setCategory(cn);
-        fn.setInternalType(Collections.singletonList(internalType));
+        fn.setInternalTypes(Collections.singletonList(internalType));
         fn.setFrameworkType(FrameworkType.FRAMEWORK);
 
         // Update the framework if not exist in the database

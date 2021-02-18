@@ -130,6 +130,18 @@ public class RegexNode {
     return rn;
   }
 
+  private Node initNode(Node n) {
+    assert (n != null) : "Cannot initialize a null node";
+    this.node = n;
+    node.setProperty(NAME_PROPERTY, name);
+
+    node.setProperty(REGEXES_PROPERTY, regexes.toArray(new String[0]));
+    node.setProperty(INTERNAL_TYPE_PROPERTY, internalTypes.toArray(new String[0]));
+    node.setProperty(FRAMEWORK_PROPERTY, framework);
+    node.setProperty(CATEGORY_PROPERTY, category);
+    return n;
+  }
+
   /**
    * Get the Id of the parent node (return -1 if no parent was found)
    *
@@ -262,18 +274,6 @@ public class RegexNode {
 
   public List<String> getInternalTypes() {
     return internalTypes;
-  }
-
-  private Node initNode(Node n) {
-    assert (n != null) : "Cannot initialize a null node";
-    this.node = n;
-    node.setProperty(NAME_PROPERTY, name);
-
-    node.setProperty(REGEXES_PROPERTY, regexes.toArray(new String[0]));
-    node.setProperty(INTERNAL_TYPE_PROPERTY, internalTypes.toArray(new String[0]));
-    node.setProperty(FRAMEWORK_PROPERTY, framework);
-    node.setProperty(CATEGORY_PROPERTY, category);
-    return n;
   }
 
   /**

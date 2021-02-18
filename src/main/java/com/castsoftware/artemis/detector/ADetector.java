@@ -14,7 +14,6 @@ package com.castsoftware.artemis.detector;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
-import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -67,10 +66,14 @@ public abstract class ADetector {
   protected List<FrameworkNode> frameworkNodeList;
   protected NLPEngine nlpEngine;
   protected NLPSaver nlpSaver;
+
+  /** Pythia communication * */
   protected PythiaCom pythiaCom;
 
+  protected boolean isPythiaUp = false;
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
+  private List<FrameworkNode> pythiaFrameworks;
 
   /**
    * Detector constructor
@@ -85,14 +88,24 @@ public abstract class ADetector {
       throws IOException, Neo4jQueryException {
     this.neo4jAL = neo4jAL;
     this.application = application;
-    this.toInvestigateNodes = new ArrayList<>();
-    this.nlpSaver = new NLPSaver(application, language.toString());
-    this.pythiaCom = PythiaCom.getInstance(neo4jAL);
 
+    // To investigate nodes
+    this.toInvestigateNodes = new ArrayList<>();
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);
 
+    // Pythia Initialization
+    this.pythiaCom = PythiaCom.getInstance(neo4jAL);
+    this.pythiaFrameworks = new ArrayList<>();
+    this.isPythiaUp = this.pythiaCom.pingApi();
+    if (!this.isPythiaUp) {
+      neo4jAL.logInfo(
+          String.format("Failed to reach Pythia with status %s", pythiaCom.getStatus()));
+    }
+
+    // NLP
     // Make sure the nlp is trained, train it otherwise
+    this.nlpSaver = new NLPSaver(application, language.toString());
     this.nlpEngine = new NLPEngine(neo4jAL.getLogger(), language);
 
     Path modelFile = this.nlpEngine.checkIfModelExists();
@@ -104,42 +117,164 @@ public abstract class ADetector {
     this.googleParser = new GoogleParser(neo4jAL.getLogger());
     this.frameworkNodeList = new ArrayList<>();
 
+    // Configuration
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     this.languageProperties = lc.getLanguageProperties(language.toString());
 
     getNodes();
   }
 
-  public abstract List<FrameworkNode> launch() throws IOException, Neo4jQueryException, Neo4jBadRequestException;
+  /**
+   * Get candidates nodes for the detection
+   *
+   * @throws Neo4jQueryException
+   */
+  public void getNodes() throws Neo4jQueryException {
+    List<String> categories = languageProperties.getObjectsInternalType();
+    Result res;
+
+    if (categories.isEmpty()) {
+      String forgedRequest =
+          String.format(
+              "MATCH (obj:Object:`%s`) WHERE  obj.Type in '%s' AND obj.External=true RETURN obj as node",
+              application, languageProperties.getName());
+      res = neo4jAL.executeQuery(forgedRequest);
+
+      while (res.hasNext()) {
+        Map<String, Object> resMap = res.next();
+        Node node = (Node) resMap.get("node");
+        toInvestigateNodes.add(node);
+      }
+    } else {
+      String forgedRequest =
+          String.format(
+              "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
+              application);
+      Map<String, Object> params = Map.of("internalTypes", categories);
+      res = neo4jAL.executeQuery(forgedRequest, params);
+
+      while (res.hasNext()) {
+        Map<String, Object> resMap = res.next();
+        Node node = (Node) resMap.get("node");
+        toInvestigateNodes.add(node);
+      }
+    }
+  }
+
+  /**
+   * Get the detector based on the language and the application
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application
+   * @param language Language of the detector
+   * @return
+   * @throws IOException
+   * @throws Neo4jQueryException
+   */
+  public static ADetector getDetector(
+      Neo4jAL neo4jAL, String application, SupportedLanguage language)
+      throws IOException, Neo4jQueryException {
+
+    ADetector aDetector;
+    switch (language) {
+      case COBOL:
+        aDetector = new CobolDetector(neo4jAL, application);
+        break;
+      case JAVA:
+        aDetector = new JavaDetector(neo4jAL, application);
+        break;
+      case NET:
+        aDetector = new NetDetector(neo4jAL, application);
+        break;
+      default:
+        throw new IllegalArgumentException(
+            String.format("The language is not currently supported %s", language.toString()));
+    }
+    return aDetector;
+  }
+
   public abstract ATree getExternalBreakdown();
 
-  /**
-   * Extract unknown non utilities
-   */
-  public abstract void extractUnknownNonUtilities();
-
-  /**
-   * Extract unknown non utilities
-   */
-  public abstract void extractOtherApps();
-
-  /**
-   * Extract unknown non utilities
-   */
-  public abstract void extractUnknownApp();
-
   public boolean getOnlineMode() {
-    return  Boolean.parseBoolean(Configuration.get("artemis.onlineMode"));    // Get configuration
+    return Boolean.parseBoolean(Configuration.get("artemis.onlineMode")); // Get configuration
   }
 
   public boolean getLearningMode() {
-    return  Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
+    return Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
   }
 
-  public boolean getPersistentMode() {
-    return  Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+  /**
+   * Launch the detection in the Application
+   *
+   * @return
+   * @throws IOException
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadRequestException
+   */
+  public final List<FrameworkNode> launch()
+      throws IOException, Neo4jQueryException, Neo4jBadRequestException {
+
+    List<FrameworkNode> frameworkNodes = extractUtilities();
+    extractUnknownApp();
+    extractOtherApps();
+    extractUnknownNonUtilities();
+
+    uploadResultToPythia();
+
+    return frameworkNodes;
   }
 
+  /**
+   * Extract utilities
+   *
+   * @return List of findings
+   */
+  public abstract List<FrameworkNode> extractUtilities()
+      throws IOException, Neo4jQueryException;
+
+  /** Extract unknown non utilities */
+  public abstract void extractUnknownApp();
+
+  /** Extract unknown non utilities */
+  public abstract void extractOtherApps();
+
+  /** Extract unknown non utilities */
+  public abstract void extractUnknownNonUtilities();
+
+  /** Upload the finding to Pythia */
+  private void uploadResultToPythia() {
+    if (!isPythiaUp) {
+      neo4jAL.logInfo("Pythia is unreachable. The upload of the result was skipped.");
+      return;
+    };
+
+    // Filter the frameworks discovered by Pythia
+    for (FrameworkNode fn : frameworkNodeList) {
+      if (!pythiaFrameworks.contains(fn)) { // Upload only new ones
+        pythiaCom.addFramework(fn);
+      }
+    }
+  }
+
+  /**
+   * Parse pythia to find if the object matches the name and the internal type of an existing
+   * framework
+   *
+   * @param name
+   * @param internalType
+   * @return
+   */
+  protected FrameworkNode findFrameworkOnPythia(String name, String internalType) {
+    if (!isPythiaUp) return null;
+
+    FrameworkNode fn = pythiaCom.findFramework(name, internalType);
+
+    if (fn != null) {
+      pythiaFrameworks.add(fn);
+    }
+
+    return fn;
+  }
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -186,94 +321,17 @@ public abstract class ADetector {
             detectionScore,
             new Date().getTime());
     fb.setFrameworkType(fType);
-    fb.setInternalType(languageProperties.getObjectsInternalType());
+    fb.setInternalTypes(languageProperties.getObjectsInternalType());
 
     // Save the Node to the local database
     if (getPersistentMode()) {
       fb.createNode();
     }
 
-    // If the Oracle communication is up, send the framework to the oracle
-    if (pythiaCom.isConnected() && fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
-      try {
-        pythiaCom.addFramework(fb);
-      } catch (Exception e) {
-        neo4jAL.logError("Failed to send the framework to the oracle.", e);
-      }
-    } else {
-      pythiaCom.getStatus();
-    }
-
     return fb;
   }
 
-  /**
-   * Get candidates nodes for the detection
-   *
-   * @throws Neo4jQueryException
-   */
-  public void getNodes() throws Neo4jQueryException {
-    List<String> categories = languageProperties.getObjectsInternalType();
-    Result res;
-
-    if (categories.isEmpty()) {
-      String forgedRequest =
-          String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.Type in '%s' AND obj.External=true RETURN obj as node", application, languageProperties.getName());
-      res = neo4jAL.executeQuery(forgedRequest);
-
-      while (res.hasNext()) {
-        Map<String, Object> resMap = res.next();
-        Node node = (Node) resMap.get("node");
-        toInvestigateNodes.add(node);
-      }
-    } else {
-        String forgedRequest =
-            String.format(
-                "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
-                application);
-        Map<String, Object> params = Map.of("internalTypes", categories);
-        res = neo4jAL.executeQuery(forgedRequest, params);
-
-        while (res.hasNext()) {
-          Map<String, Object> resMap = res.next();
-          Node node = (Node) resMap.get("node");
-          toInvestigateNodes.add(node);
-        }
-
-    }
+  public boolean getPersistentMode() {
+    return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
   }
-
-  /**
-   * Get the detector based on the language and the application
-   * @param neo4jAL Neo4j Access Layer
-   * @param application Name of the application
-   * @param language Language of the detector
-   * @return
-   * @throws IOException
-   * @throws Neo4jQueryException
-   */
-  public static ADetector getDetector(
-          Neo4jAL neo4jAL, String application, SupportedLanguage language)
-          throws IOException, Neo4jQueryException {
-
-    ADetector aDetector;
-    switch (language) {
-      case COBOL:
-        aDetector = new CobolDetector(neo4jAL, application);
-        break;
-      case JAVA:
-        aDetector = new JavaDetector(neo4jAL, application);
-        break;
-      case NET:
-        aDetector = new NetDetector(neo4jAL, application);
-        break;
-      default:
-        throw new IllegalArgumentException(
-                String.format("The language is not currently supported %s", language.toString()));
-    }
-    return aDetector;
-  }
-
-
 }

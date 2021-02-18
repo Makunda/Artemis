@@ -24,44 +24,18 @@ public class Configuration {
 
   private static final Properties PROPERTIES = loadConfiguration();
 
-  private static Properties loadConfiguration() {
-    try (InputStream input =
-        Configuration.class.getClassLoader().getResourceAsStream("artemis.properties")) {
-
-      Properties prop = new Properties();
-
-      if (input == null) {
-        throw new MissingFileException(
-            "No file 'artemis.properties' was found.",
-            "resources/procedure.properties",
-            "CONFxLOAD1");
-      }
-
-      // load a properties file from class path, inside static method
-      prop.load(input);
-      return prop;
-    } catch (IOException | MissingFileException ex) {
-      System.err.println(ex.getMessage());
-      System.exit(-1);
-    }
-    return null;
-  }
-
   /**
-   * Save the configuration and reload it
+   * Test if the property is present in the Configuration Node. Then test if the property is present
+   * in the UserConfiguration and then in the Classic configuration.
    *
-   * @throws FileNotFoundException
+   * @param property key
+   * @return Return the value as String, null if it matches no key
    */
-  public static void saveAndReload() throws MissingFileException {
-    try {
-      PROPERTIES.store(new FileOutputStream("artemis.properties"), null);
-      loadConfiguration();
-    } catch (IOException e) {
-      throw new MissingFileException(
-          "No file 'artemis.properties' was found.",
-          "resources/procedure.properties",
-          "CONFxLOAD1");
-    }
+  public static String getBestOfAllWorlds(String property) {
+    // Add the Node configuration
+    if (UserConfiguration.has(property)) return UserConfiguration.get(property);
+    if (Configuration.has(property)) return Configuration.get(property);
+    return null;
   }
 
   /**
@@ -86,20 +60,6 @@ public class Configuration {
   }
 
   /**
-   * Test if the property is present in the Configuration Node. Then test if the property is present
-   * in the UserConfiguration and then in the Classic configuration.
-   *
-   * @param property key
-   * @return Return the value as String, null if it matches no key
-   */
-  public static String getBestOfAllWorlds(String property) {
-    // Add the Node configuration
-    if (UserConfiguration.has(property)) return UserConfiguration.get(property);
-    if (Configuration.has(property)) return Configuration.get(property);
-    return null;
-  }
-
-  /**
    * Get the corresponding value for the specified key as an object
    *
    * @param key
@@ -119,5 +79,45 @@ public class Configuration {
     PROPERTIES.setProperty(key, value);
     saveAndReload();
     return PROPERTIES.get(key);
+  }
+
+  /**
+   * Save the configuration and reload it
+   *
+   * @throws FileNotFoundException
+   */
+  public static void saveAndReload() throws MissingFileException {
+    try {
+      PROPERTIES.store(new FileOutputStream("artemis.properties"), null);
+      loadConfiguration();
+    } catch (IOException e) {
+      throw new MissingFileException(
+          "No file 'artemis.properties' was found.",
+          "resources/procedure.properties",
+          "CONFxLOAD1");
+    }
+  }
+
+  private static Properties loadConfiguration() {
+    try (InputStream input =
+        Configuration.class.getClassLoader().getResourceAsStream("artemis.properties")) {
+
+      Properties prop = new Properties();
+
+      if (input == null) {
+        throw new MissingFileException(
+            "No file 'artemis.properties' was found.",
+            "resources/procedure.properties",
+            "CONFxLOAD1");
+      }
+
+      // load a properties file from class path, inside static method
+      prop.load(input);
+      return prop;
+    } catch (IOException | MissingFileException ex) {
+      System.err.println(ex.getMessage());
+      System.exit(-1);
+    }
+    return null;
   }
 }

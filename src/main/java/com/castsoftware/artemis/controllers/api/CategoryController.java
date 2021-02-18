@@ -34,15 +34,6 @@ public class CategoryController {
   }
 
   /**
-   * Create a Regex Node
-   *
-   * @see CategoryNode#createNode(Neo4jAL, String, String)
-   */
-  public static CategoryNode createNode(Neo4jAL neo4jAL, String name, String iconUrl) {
-    return CategoryNode.createNode(neo4jAL, name, iconUrl);
-  }
-
-  /**
    * Get a Node by its name, or create it if it doesn't exist
    *
    * @param neo4jAL Neo4j Access Layer
@@ -65,16 +56,6 @@ public class CategoryController {
     } else {
       return CategoryNode.createNode(neo4jAL, name, "");
     }
-  }
-
-  /**
-   * Get a specific Category Node
-   *
-   * @see CategoryNode#getNode() (Neo4jAL, Long)
-   */
-  public static CategoryNode getNodeById(Neo4jAL neo4jAL, Long idNode)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    return CategoryNode.getNode(neo4jAL, idNode);
   }
 
   /**
@@ -115,5 +96,24 @@ public class CategoryController {
     CategoryNode.removeNode(neo4jAL, cn.getId());
 
     return newNode;
+  }
+
+  /**
+   * Get a specific Category Node
+   *
+   * @see CategoryNode#getNode() (Neo4jAL, Long)
+   */
+  public static CategoryNode getNodeById(Neo4jAL neo4jAL, Long idNode)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    return CategoryNode.getNode(neo4jAL, idNode);
+  }
+
+  /**
+   * Create a Regex Node
+   *
+   * @see CategoryNode#createNode(Neo4jAL, String, String)
+   */
+  public static CategoryNode createNode(Neo4jAL neo4jAL, String name, String iconUrl) {
+    return CategoryNode.createNode(neo4jAL, name, iconUrl);
   }
 }

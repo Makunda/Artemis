@@ -28,16 +28,6 @@ import java.util.Map;
 public class Workspace {
 
   /**
-   * Get the current path of the current Artemis Workspace
-   *
-   * @return Path of the workspace
-   */
-  public static Path getWorkspacePath() {
-    String workspace = Configuration.get("artemis.workspace.folder");
-    return Path.of(workspace);
-  }
-
-  /**
    * Change the Workspace of Artemis
    *
    * @param directoryPath New directory path
@@ -67,73 +57,6 @@ public class Workspace {
     outputMessages.add(
         String.format("Artemis workspace folder was successfully changed to '%s'.", directoryPath));
     return outputMessages;
-  }
-
-  /**
-   * Path to the user configuration file
-   *
-   * @return
-   */
-  public static Path getUserConfigPath() {
-    String workspace = Configuration.get("artemis.workspace.folder");
-    return Path.of(workspace).resolve(Configuration.get("artemis.config.user.conf_file"));
-  }
-
-  /**
-   * Get the supposed path of the initialization
-   *
-   * @return
-   */
-  public static Path getInitDataZip() {
-    String workspace = Configuration.get("artemis.workspace.folder");
-    Path dataFolder = Path.of(workspace).resolve(Configuration.get("artemis.install_data.folder"));
-    return dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
-  }
-
-  /**
-   * Get the path of the model for a specific language
-   *
-   * @param language
-   * @return
-   */
-  public static Path getLanguageModelFile(SupportedLanguage language) {
-    Path workspace = Path.of(Configuration.get("artemis.workspace.folder"));
-    LanguageProp lp =
-        LanguageConfiguration.getInstance().getLanguageProperties(language.toString());
-
-    if (lp == null)
-      throw new IllegalArgumentException(
-          "No properties exists for language with name :".concat(language.toString()));
-
-    Path modelFile = workspace.resolve(lp.getName());
-    System.out.printf(
-        "Workspace at %s and filename at %s and model file Name : %s",
-        workspace.toString(), lp.getName(), lp.getModelFileName());
-    return modelFile.resolve(lp.getModelFileName());
-  }
-
-  /**
-   * Check if the folder exist. If not, create it
-   *
-   * @param folderPath Path of the folder to check
-   * @param name Name of the folder
-   * @return
-   */
-  private static List<String> checkOrCreateFolder(Path folderPath, String name) {
-    List<String> messageOutputList = new ArrayList<>();
-    // Check main folders and create if necessary
-    if (!Files.exists(folderPath)) {
-      try {
-        Files.createDirectory(folderPath);
-        messageOutputList.add(String.format("%s was missing and has been created.", name));
-      } catch (IOException e) {
-        messageOutputList.add(
-            String.format(
-                "ERROR : %s is missing and its creation failed : %s", name, e.getMessage()));
-      }
-    }
-
-    return messageOutputList;
   }
 
   /**
@@ -232,5 +155,82 @@ public class Workspace {
     }
 
     return messageOutputList;
+  }
+
+  /**
+   * Get the current path of the current Artemis Workspace
+   *
+   * @return Path of the workspace
+   */
+  public static Path getWorkspacePath() {
+    String workspace = Configuration.get("artemis.workspace.folder");
+    return Path.of(workspace);
+  }
+
+  /**
+   * Check if the folder exist. If not, create it
+   *
+   * @param folderPath Path of the folder to check
+   * @param name Name of the folder
+   * @return
+   */
+  private static List<String> checkOrCreateFolder(Path folderPath, String name) {
+    List<String> messageOutputList = new ArrayList<>();
+    // Check main folders and create if necessary
+    if (!Files.exists(folderPath)) {
+      try {
+        Files.createDirectory(folderPath);
+        messageOutputList.add(String.format("%s was missing and has been created.", name));
+      } catch (IOException e) {
+        messageOutputList.add(
+            String.format(
+                "ERROR : %s is missing and its creation failed : %s", name, e.getMessage()));
+      }
+    }
+
+    return messageOutputList;
+  }
+
+  /**
+   * Path to the user configuration file
+   *
+   * @return
+   */
+  public static Path getUserConfigPath() {
+    String workspace = Configuration.get("artemis.workspace.folder");
+    return Path.of(workspace).resolve(Configuration.get("artemis.config.user.conf_file"));
+  }
+
+  /**
+   * Get the supposed path of the initialization
+   *
+   * @return
+   */
+  public static Path getInitDataZip() {
+    String workspace = Configuration.get("artemis.workspace.folder");
+    Path dataFolder = Path.of(workspace).resolve(Configuration.get("artemis.install_data.folder"));
+    return dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
+  }
+
+  /**
+   * Get the path of the model for a specific language
+   *
+   * @param language
+   * @return
+   */
+  public static Path getLanguageModelFile(SupportedLanguage language) {
+    Path workspace = Path.of(Configuration.get("artemis.workspace.folder"));
+    LanguageProp lp =
+        LanguageConfiguration.getInstance().getLanguageProperties(language.toString());
+
+    if (lp == null)
+      throw new IllegalArgumentException(
+          "No properties exists for language with name :".concat(language.toString()));
+
+    Path modelFile = workspace.resolve(lp.getName());
+    System.out.printf(
+        "Workspace at %s and filename at %s and model file Name : %s",
+        workspace.toString(), lp.getName(), lp.getModelFileName());
+    return modelFile.resolve(lp.getModelFileName());
   }
 }

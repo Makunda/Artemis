@@ -43,6 +43,7 @@ public class ProcedureException extends Throwable {
     this.cause = cause;
     this.code = code;
   }
+
   public ProcedureException(String message, Throwable cause) {
     super(String.format(DEFAULT_USER_ERROR_MESSAGE, "0000x0000"));
     if (cause instanceof ExtensionException) {

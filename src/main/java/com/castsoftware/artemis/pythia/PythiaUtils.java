@@ -60,7 +60,7 @@ public class PythiaUtils {
             timestampCreation);
     CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
     fn.setCategory(cn);
-    fn.setInternalType(Collections.singletonList(internalType));
+    fn.setInternalTypes(Collections.singletonList(internalType));
     fn.setFrameworkType(frameworkType);
 
     return fn;

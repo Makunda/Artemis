@@ -13,6 +13,11 @@ package com.castsoftware.artemis.database;
 
 import org.neo4j.graphdb.Node;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class Neo4jTypeManager {
 
   /**
@@ -111,5 +116,29 @@ public class Neo4jTypeManager {
     }
 
     return val;
+  }
+
+  public static List<String> getAsStringList(Node node, String property) {
+    String[] strings = new String[0];
+    if (!node.hasProperty(property)) {
+      node.setProperty(property, strings);
+      return Arrays.asList(strings);
+    }
+
+    Object valObject = node.getProperty(property);
+
+    if (valObject instanceof String[]) {
+      strings = (String[]) valObject;
+      return Arrays.asList(strings);
+    }
+
+    if (valObject instanceof String) {
+      strings = Arrays.asList((String) valObject).toArray(new String[0]);
+      node.setProperty(property, strings);
+      return Arrays.asList(strings);
+    }
+
+    return Arrays.asList(strings);
+
   }
 }

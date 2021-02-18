@@ -21,6 +21,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.io.Importer;
 import com.castsoftware.artemis.utils.Workspace;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,57 +71,55 @@ public class UtilsController {
 
   /**
    * Apply the demeter level tags on the group matchin the regexes
+   *
    * @param neo4jAL Neo4j Access Mayer
    * @param regex Regular expression matching the fullname
    * @param groupName Name of the group created
    * @throws Neo4jQueryException
    */
   public static void applyDemeterTagRegexFullName(Neo4jAL neo4jAL, String regex, String groupName)
-          throws Neo4jQueryException {
+      throws Neo4jQueryException {
     String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
     String tagRequest =
-            String.format(
-                    "MATCH (obj) WHERE obj.FullName=~'%1$s' "
-                            + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
-                    regex, demeterPrefix + groupName);
+        String.format(
+            "MATCH (obj) WHERE obj.FullName=~'%1$s' "
+                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
+            regex, demeterPrefix + groupName);
     neo4jAL.executeQuery(tagRequest);
   }
-
 
   public static void applyModuleTagRegexFullName(Neo4jAL neo4jAL, String regex, String groupName)
-          throws Neo4jQueryException {
+      throws Neo4jQueryException {
     String demeterPrefix = "$m_";
     String tagRequest =
-            String.format(
-                    "MATCH (obj) WHERE obj.FullName CONTAINS '%1$s' "
-                            + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
-                    regex, demeterPrefix + groupName);
+        String.format(
+            "MATCH (obj) WHERE obj.FullName CONTAINS '%1$s' "
+                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
+            regex, demeterPrefix + groupName);
     neo4jAL.executeQuery(tagRequest);
   }
 
-  public static void applyArchitectureTagRegexFullName(Neo4jAL neo4jAL, String regex, String viewName, String groupName)
-          throws Neo4jQueryException {
+  public static void applyArchitectureTagRegexFullName(
+      Neo4jAL neo4jAL, String regex, String viewName, String groupName) throws Neo4jQueryException {
     String demeterPrefix = "$a_";
     String tagRequest =
-            String.format(
-                    "MATCH (obj:Object) WHERE obj.FullName CONTAINS '%1$s' "
-                            + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
-                    regex, demeterPrefix + viewName + "$" + groupName);
+        String.format(
+            "MATCH (obj:Object) WHERE obj.FullName CONTAINS '%1$s' "
+                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
+            regex, demeterPrefix + viewName + "$" + groupName);
     neo4jAL.executeQuery(tagRequest);
   }
 
   public static void applyLevelTagRegexFullName(Neo4jAL neo4jAL, String regex, String groupName)
-          throws Neo4jQueryException {
+      throws Neo4jQueryException {
     String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
     String tagRequest =
-            String.format(
-                    "MATCH (obj:Object) WHERE obj.FullName CONTAINS '%1$s' "
-                            + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
-                    regex, demeterPrefix + groupName);
+        String.format(
+            "MATCH (obj:Object) WHERE obj.FullName CONTAINS '%1$s' "
+                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%2$s'] ELSE obj.Tags + '%2$s' END",
+            regex, demeterPrefix + groupName);
     neo4jAL.executeQuery(tagRequest);
   }
-
-
 
   /**
    * Apply a demeter tag to the object using its parent level and a suffix provided
@@ -128,19 +127,23 @@ public class UtilsController {
    * @param neo4jAL Neo4j access Layer
    * @param n Node to tag
    * @param suffix Suffix to append to the group
+   * @return The name of the level created
    * @throws Neo4jQueryException
    */
-  public static void applyDemeterParentTag(Neo4jAL neo4jAL, Node n, String suffix)
+  public static String applyDemeterParentTag(Neo4jAL neo4jAL, Node n, String suffix)
       throws Neo4jQueryException {
     String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
     Long id = n.getId();
     String tagRequest =
         String.format(
             "MATCH (obj)<-[:Aggregates]-(l:Level5) WHERE ID(obj)=%1$s "
-                + "WITH obj, '%2$s' + l.Name + '%3$s' as tagName "
-                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN [tagName] ELSE obj.Tags + tagName END",
+                + "WITH obj, '%2$s' + l.Name + '%3$s' as tagName, l.Name + '%3$s' as groupName "
+                + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN [tagName] ELSE obj.Tags + tagName END return groupName",
             id, demeterPrefix, suffix);
-    neo4jAL.executeQuery(tagRequest);
+    Result res = neo4jAL.executeQuery(tagRequest);
+    if(!res.hasNext()) return "";
+
+    return (String) res.next().get("groupName");
   }
 
   /**
@@ -209,6 +212,7 @@ public class UtilsController {
 
   /**
    * Set the value of the learning mode. In learning mode the query will be saved to be reprocessed
+   *
    * @param active
    * @return
    * @throws MissingFileException

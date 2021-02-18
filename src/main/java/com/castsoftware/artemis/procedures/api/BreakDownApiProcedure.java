@@ -13,11 +13,9 @@ package com.castsoftware.artemis.procedures.api;
 
 import com.castsoftware.artemis.controllers.api.BreakdownController;
 import com.castsoftware.artemis.database.Neo4jAL;
-import com.castsoftware.artemis.detector.ALeaf;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.results.CategoryNodeResult;
 import com.castsoftware.artemis.results.LeafResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -29,27 +27,30 @@ import java.util.stream.Stream;
 
 public class BreakDownApiProcedure {
 
-	@Context public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+  @Context public Transaction transaction;
 
-	@Context public Log log;
+  @Context public Log log;
 
-	@Procedure(value = "artemis.api.breakdown.get", mode = Mode.WRITE)
-	@Description("artemis.api.breakdown.get(String application, String language, Optional Boolean externality) - Get the breakdown of the package in an application")
-	public Stream<LeafResult> getBreakDown(@Name(value = "Application") String application,
-										   @Name(value = "Language") String language,
-										   @Name(value = "Externality", defaultValue = "false") Boolean externality) throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language);
-			if(lr == null) return Stream.empty();
+  @Procedure(value = "artemis.api.breakdown.get", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.breakdown.get(String application, String language, Optional Boolean externality) - Get the breakdown of the package in an application")
+  public Stream<LeafResult> getBreakDown(
+      @Name(value = "Application") String application,
+      @Name(value = "Language") String language,
+      @Name(value = "Externality", defaultValue = "false") Boolean externality)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language);
+      if (lr == null) return Stream.empty();
 
-			return lr.stream();
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+      return lr.stream();
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 }

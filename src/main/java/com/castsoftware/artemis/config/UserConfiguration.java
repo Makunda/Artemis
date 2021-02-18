@@ -61,6 +61,38 @@ public class UserConfiguration {
   }
 
   /**
+   * Load the user configuration file
+   *
+   * @return The list properties found in the configuration file.
+   */
+  private static Properties loadConfiguration() {
+    Path configurationPath = Workspace.getUserConfigPath();
+
+    if (!Files.exists(configurationPath)) {
+      System.err.printf("No configuration file found at path : %s%n", configurationPath.toString());
+      return null;
+    }
+
+    try (InputStream input = new FileInputStream(configurationPath.toFile())) {
+      Properties prop = new Properties();
+
+      if (input == null) {
+        throw new MissingFileException(
+            "No file 'artemis.properties' was found.",
+            "resources/procedure.properties",
+            "CONFxLOAD1");
+      }
+
+      // load a properties file from class path, inside static method
+      prop.load(input);
+      return prop;
+    } catch (IOException | MissingFileException ex) {
+      System.err.println(ex.getMessage());
+      return null;
+    }
+  }
+
+  /**
    * Save the configuration and reload it
    *
    * @throws FileNotFoundException
@@ -160,37 +192,5 @@ public class UserConfiguration {
   public static Properties reload() {
     PROPERTIES = loadConfiguration();
     return PROPERTIES;
-  }
-
-  /**
-   * Load the user configuration file
-   *
-   * @return The list properties found in the configuration file.
-   */
-  private static Properties loadConfiguration() {
-    Path configurationPath = Workspace.getUserConfigPath();
-
-    if (!Files.exists(configurationPath)) {
-      System.err.printf("No configuration file found at path : %s%n", configurationPath.toString());
-      return null;
-    }
-
-    try (InputStream input = new FileInputStream(configurationPath.toFile())) {
-      Properties prop = new Properties();
-
-      if (input == null) {
-        throw new MissingFileException(
-            "No file 'artemis.properties' was found.",
-            "resources/procedure.properties",
-            "CONFxLOAD1");
-      }
-
-      // load a properties file from class path, inside static method
-      prop.load(input);
-      return prop;
-    } catch (IOException | MissingFileException ex) {
-      System.err.println(ex.getMessage());
-      return null;
-    }
   }
 }

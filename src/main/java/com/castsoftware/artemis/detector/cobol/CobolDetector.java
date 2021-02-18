@@ -34,7 +34,13 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import java.io.IOException;
 import java.util.*;
 
-/** Detector for COBOL */
+/**
+ * Detector for COBOL
+ * Internal Detection : OK
+ * Find framework locally : OK
+ * Pythia : OK
+ *
+ * */
 public class CobolDetector extends ADetector {
 
   private final List<Node> unknownNonUtilities = new ArrayList<>();
@@ -148,13 +154,14 @@ public class CobolDetector extends ADetector {
 
   /** Get the name of the core of the application */
   public String getCoreApplication() throws Neo4jQueryException {
+    neo4jAL.logInfo("Getting the core of");
     String req =
         String.format(
-            "MATCH (o:Object:`%s`) WHERE o.InternalType in $internalType AND o.External=False "
+            "MATCH (o:Object:`%s`) WHERE o.InternalType in $internalTypes AND o.External=False "
                 + "RETURN o.Name as name",
             application);
     Map<String, Object> params =
-        Map.of("internalType", languageProperties.getObjectsInternalType());
+        Map.of("internalTypes", languageProperties.getObjectsInternalType().toArray(new String[0]));
 
     Result result = neo4jAL.executeQuery(req, params);
     Map<String, Integer> mapName = new HashMap<>();
@@ -175,6 +182,8 @@ public class CobolDetector extends ADetector {
       if (max < en.getValue()) corePrefix = en.getKey();
     }
 
+    neo4jAL.logInfo("Suspected application core under : " + corePrefix);
+
     return corePrefix;
   }
 
@@ -183,7 +192,8 @@ public class CobolDetector extends ADetector {
    *
    * @throws IOException
    */
-  public List<FrameworkNode> treatExternals() throws IOException {
+  @Override
+  public List<FrameworkNode> extractUtilities() throws IOException {
     int numTreated = 0;
 
     neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
@@ -205,12 +215,14 @@ public class CobolDetector extends ADetector {
 
         try {
           // Check if the framework is already known
-          FrameworkNode fb = FrameworkNode.findFrameworkByName(neo4jAL, objectName);
+          FrameworkNode fb = FrameworkNode.findFrameworkByNameAndType(neo4jAL, objectName, internalType);
           if (fb != null) {
             neo4jAL.logInfo(
                 String.format(
                     "The object with name '%s' is already known by Artemis as a '%s'.",
                     objectName, fb.getFrameworkType()));
+          } else {
+            if(isPythiaUp) fb = findFrameworkOnPythia(objectName, internalType); // Check on pythia
           }
 
           // If the Framework is not known and the connection to google still possible, launch the
@@ -288,23 +300,5 @@ public class CobolDetector extends ADetector {
         new SystemOfFramework(
             this.neo4jAL, SupportedLanguage.COBOL, this.application, frameworkNodeList);
     sof.run();
-  }
-
-  /** Launch the detection */
-  @Override
-  public List<FrameworkNode> launch() throws IOException, Neo4jQueryException {
-
-    List<FrameworkNode> frameworkNodes = treatExternals();
-    extractUnknownApp();
-    extractOtherApps();
-    extractUnknownNonUtilities();
-
-    // Launch internal framework detector on remaining nodes
-    if (languageProperties.getInteractionDetector()) {
-      // getInternalFramework(neo4jAL, notDetected);
-      createSystemOfFrameworks(frameworkNodeList);
-    }
-
-    return frameworkNodeList;
   }
 }

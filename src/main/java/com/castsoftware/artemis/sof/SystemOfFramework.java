@@ -52,30 +52,6 @@ public class SystemOfFramework {
     this.frameworkNodeList = frameworkNodeList;
   }
 
-  /**
-   * Create an
-   *
-   * @param targetApplication Name of the Targeted application
-   * @return The nod
-   * @throws Neo4jQueryException
-   */
-  public Node createSofObject(String targetApplication) throws Neo4jQueryException {
-    Label levelLabel = Label.label("Level5");
-    Label applicationLabel = Label.label(application);
-
-    Node node = neo4jAL.createNode(levelLabel);
-    node.addLabel(applicationLabel);
-
-    node.setProperty("Color", "rgb(233,66,53)");
-    node.setProperty("Concept", true);
-    node.setProperty("Count", 0L);
-    node.setProperty(
-        "FullName", "Services##Logic Services##Business Logic##Adobe##" + targetApplication);
-    node.setProperty("Color", "rgb(233,66,53)");
-
-    return node;
-  }
-
   /** Run this instance of System of Framework to show the discovered links in your applications */
   public void run() {
     // Parse detected object in the application
@@ -111,5 +87,29 @@ public class SystemOfFramework {
             "An error occurred parsing the applications to find similar frameworks.", e);
       }
     }
+  }
+
+  /**
+   * Create an
+   *
+   * @param targetApplication Name of the Targeted application
+   * @return The nod
+   * @throws Neo4jQueryException
+   */
+  public Node createSofObject(String targetApplication) throws Neo4jQueryException {
+    Label levelLabel = Label.label("Level5");
+    Label applicationLabel = Label.label(application);
+
+    Node node = neo4jAL.createNode(levelLabel);
+    node.addLabel(applicationLabel);
+
+    node.setProperty("Color", "rgb(233,66,53)");
+    node.setProperty("Concept", true);
+    node.setProperty("Count", 0L);
+    node.setProperty(
+        "FullName", "Services##Logic Services##Business Logic##Adobe##" + targetApplication);
+    node.setProperty("Color", "rgb(233,66,53)");
+
+    return node;
   }
 }

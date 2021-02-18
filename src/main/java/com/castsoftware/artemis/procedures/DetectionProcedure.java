@@ -14,8 +14,6 @@ package com.castsoftware.artemis.procedures;
 import com.castsoftware.artemis.controllers.DetectionController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;

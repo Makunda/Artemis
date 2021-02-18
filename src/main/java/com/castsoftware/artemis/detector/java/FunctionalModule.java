@@ -21,107 +21,123 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Module to represent the different connection with other identified packages
- */
+/** Module to represent the different connection with other identified packages */
 public class FunctionalModule {
 
-	private Neo4jAL neo4jAL;
+  private final String application;
+  private final String identifier;
+  private final String delimiter;
+  private final List<String> internalTypes;
+  private final Integer depth;
+  private Neo4jAL neo4jAL;
+  private List<String> toOtherModules;
+  private List<String> fromOtherModules;
 
-	private final String application;
-	private final String identifier;
-	private final String delimiter;
-	private final List<String> internalTypes;
-	private final Integer depth;
+  public FunctionalModule(
+      Neo4jAL neo4jAL,
+      String application,
+      String identifier,
+      LanguageProp languageProp,
+      Integer depth)
+      throws Neo4jQueryException {
+    this.neo4jAL = neo4jAL;
 
-	private List<String> toOtherModules;
-	private List<String> fromOtherModules;
+    this.identifier = identifier;
+    this.application = application;
+    this.delimiter = languageProp.getPackageDelimiter();
+    this.internalTypes = languageProp.getObjectsInternalType();
+    this.depth = depth;
 
-	public String getIdentifier() {
-		return identifier;
-	}
+    this.toOtherModules = new ArrayList<>();
+    this.fromOtherModules = new ArrayList<>();
 
-	public List<String> getToOtherModules() {
-		return toOtherModules;
-	}
+    init();
+  }
 
-	public List<String> getFromOtherModules() {
-		return fromOtherModules;
-	}
-
-	public boolean isOnlyUsed() {
-		return toOtherModules.isEmpty() && !fromOtherModules.isEmpty();
-	}
-
-	private void init() throws Neo4jQueryException {
-		Map<String, Object> params = Map.of("identifier", identifier+delimiter, "delimiter", delimiter, "depth", depth, "languageTypes", internalTypes);
+  private void init() throws Neo4jQueryException {
+    Map<String, Object> params =
+        Map.of(
+            "identifier",
+            identifier + delimiter,
+            "delimiter",
+            delimiter,
+            "depth",
+            depth,
+            "languageTypes",
+            internalTypes);
 
     String reqTo =
         String.format(
-            "MATCH (o:Object:`%1$s`)-[]->(e:Object:`%1$s`) WHERE o.FullName CONTAINS $identifier " +
-					"AND NOT e.FullName CONTAINS $identifier " +
-					"AND o.InternalType IN $languageTypes AND e.InternalType IN $languageTypes " +
-					"AND o.External=false AND e.External=false " +
-					"RETURN DISTINCT apoc.text.join(SPLIT(e.FullName, $delimiter)[0..$depth], $delimiter) as package;",
+            "MATCH (o:Object:`%1$s`)-[]->(e:Object:`%1$s`) WHERE o.FullName CONTAINS $identifier "
+                + "AND NOT e.FullName CONTAINS $identifier "
+                + "AND o.InternalType IN $languageTypes AND e.InternalType IN $languageTypes "
+                + "AND o.External=false AND e.External=false "
+                + "RETURN DISTINCT apoc.text.join(SPLIT(e.FullName, $delimiter)[0..$depth], $delimiter) as package;",
             application);
 
-		String reqFrom =
-				String.format(
-						"MATCH (o:Object:`%1$s`)<-[]-(e:Object:`%1$s`) WHERE o.FullName CONTAINS $identifier " +
-								"AND NOT e.FullName CONTAINS $identifier " +
-								"AND o.InternalType IN $languageTypes AND e.InternalType IN $languageTypes " +
-								"AND o.External=false AND e.External=false " +
-								"RETURN DISTINCT apoc.text.join(SPLIT(e.FullName, $delimiter)[0..$depth], $delimiter) as package;",
-						application);
+    String reqFrom =
+        String.format(
+            "MATCH (o:Object:`%1$s`)<-[]-(e:Object:`%1$s`) WHERE o.FullName CONTAINS $identifier "
+                + "AND NOT e.FullName CONTAINS $identifier "
+                + "AND o.InternalType IN $languageTypes AND e.InternalType IN $languageTypes "
+                + "AND o.External=false AND e.External=false "
+                + "RETURN DISTINCT apoc.text.join(SPLIT(e.FullName, $delimiter)[0..$depth], $delimiter) as package;",
+            application);
 
-		// Relations to modules
-		Result resTo = neo4jAL.executeQuery(reqTo, params);
-		while (resTo.hasNext()) {
-			toOtherModules.add((String) resTo.next().get("package"));
-		}
+    // Relations to modules
+    Result resTo = neo4jAL.executeQuery(reqTo, params);
+    while (resTo.hasNext()) {
+      toOtherModules.add((String) resTo.next().get("package"));
+    }
 
-		// Relations from modules
-		Result resFrom = neo4jAL.executeQuery(reqFrom, params);
-		while (resFrom.hasNext()) {
-			fromOtherModules.add((String) resFrom.next().get("package"));
-		}
+    // Relations from modules
+    Result resFrom = neo4jAL.executeQuery(reqFrom, params);
+    while (resFrom.hasNext()) {
+      fromOtherModules.add((String) resFrom.next().get("package"));
+    }
 
-		if(isOnlyUsed()) {
-			applyLevelTag();
-		}
-	}
+    if (isOnlyUsed()) {
+      applyLevelTag();
+    }
+  }
 
-	public void applyArchitectureTag(String viewName) throws Neo4jQueryException {
-		UtilsController.applyArchitectureTagRegexFullName(neo4jAL, identifier+delimiter, viewName, identifier);
-	}
+  public boolean isOnlyUsed() {
+    return toOtherModules.isEmpty() && !fromOtherModules.isEmpty();
+  }
 
-	public void applyLevelTag() throws Neo4jQueryException {
-		UtilsController.applyLevelTagRegexFullName(neo4jAL, identifier+delimiter, identifier);
-	}
+  public void applyLevelTag() throws Neo4jQueryException {
+    UtilsController.applyLevelTagRegexFullName(neo4jAL, identifier + delimiter, identifier);
+  }
 
-	@Override
-	public String toString() {
-		return "FunctionalModule{" +
-				"identifier='" + identifier + '\'' +
-				", depth=" + depth +
-				", toOtherModules=" + toOtherModules +
-				", fromOtherModules=" + fromOtherModules +
-				'}';
-	}
+  public String getIdentifier() {
+    return identifier;
+  }
 
-	public FunctionalModule(Neo4jAL neo4jAL, String application, String identifier, LanguageProp languageProp, Integer depth) throws Neo4jQueryException {
-		this.neo4jAL = neo4jAL;
+  public List<String> getToOtherModules() {
+    return toOtherModules;
+  }
 
-		this.identifier = identifier;
-		this.application = application;
-		this.delimiter = languageProp.getPackageDelimiter();
-		this.internalTypes = languageProp.getObjectsInternalType();
-		this.depth = depth;
+  public List<String> getFromOtherModules() {
+    return fromOtherModules;
+  }
 
-		this.toOtherModules = new ArrayList<>();
-		this.fromOtherModules = new ArrayList<>();
+  public void applyArchitectureTag(String viewName) throws Neo4jQueryException {
+    UtilsController.applyArchitectureTagRegexFullName(
+        neo4jAL, identifier + delimiter, viewName, identifier);
+  }
 
-		init();
-	}
-
+  @Override
+  public String toString() {
+    return "FunctionalModule{"
+        + "identifier='"
+        + identifier
+        + '\''
+        + ", depth="
+        + depth
+        + ", toOtherModules="
+        + toOtherModules
+        + ", fromOtherModules="
+        + fromOtherModules
+        + '}';
+  }
 }

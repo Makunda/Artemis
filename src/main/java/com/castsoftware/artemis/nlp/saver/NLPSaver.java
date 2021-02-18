@@ -38,25 +38,6 @@ public class NLPSaver implements Closeable {
   }
 
   /**
-   * Write the results in the file with its associated category
-   *
-   * @param category
-   * @param content
-   * @throws IOException
-   */
-  public void writeNLPResult(NLPCategory category, String content) throws IOException {
-    content = content.replace(System.lineSeparator(), ""); // replace /n
-    if (category == NLPCategory.FRAMEWORK) {
-      fileWriter.write("Framework\t" + content + "\n");
-      System.out.println("Framework\t" + content + "\n");
-    } else {
-      fileWriter.write("NotFramework\t" + content + "\n");
-    }
-
-    fileWriter.flush();
-  }
-
-  /**
    * Init the repository
    *
    * @throws IOException
@@ -75,7 +56,8 @@ public class NLPSaver implements Closeable {
             + application
             + "_on"
             + SDF.format(timestamp)
-            + "_" + language
+            + "_"
+            + language
             + ".txt";
 
     try {
@@ -86,6 +68,25 @@ public class NLPSaver implements Closeable {
       e.printStackTrace();
       throw e;
     }
+  }
+
+  /**
+   * Write the results in the file with its associated category
+   *
+   * @param category
+   * @param content
+   * @throws IOException
+   */
+  public void writeNLPResult(NLPCategory category, String content) throws IOException {
+    content = content.replace(System.lineSeparator(), ""); // replace /n
+    if (category == NLPCategory.FRAMEWORK) {
+      fileWriter.write("Framework\t" + content + "\n");
+      System.out.println("Framework\t" + content + "\n");
+    } else {
+      fileWriter.write("NotFramework\t" + content + "\n");
+    }
+
+    fileWriter.flush();
   }
 
   @Override

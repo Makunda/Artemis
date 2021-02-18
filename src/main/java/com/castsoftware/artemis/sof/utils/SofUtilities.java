@@ -14,12 +14,13 @@ package com.castsoftware.artemis.sof.utils;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class SofUtilities {
 
@@ -61,19 +62,23 @@ public class SofUtilities {
    */
   public static Node createSofObject(
       Neo4jAL neo4jAL, String sourceApplication, String targetApplication)
-          throws Neo4jQueryException, Neo4jBadRequestException {
+      throws Neo4jQueryException, Neo4jBadRequestException {
     String fullName = "Services##Logic Services##Business Logic##Artemis##" + targetApplication;
 
-    String req = String.format("MERGE (o:Level5:`%s` { Name:$name, Concept:true }) " +
-                "SET o.Color='rgb(233,66,53)' " +
-                "SET o.Count=0 " +
-                "SET o.FullName=$fullName " +
-                "RETURN o as sof", sourceApplication);
+    String req =
+        String.format(
+            "MERGE (o:Level5:`%s` { Name:$name, Concept:true }) "
+                + "SET o.Color='rgb(233,66,53)' "
+                + "SET o.Count=0 "
+                + "SET o.FullName=$fullName "
+                + "RETURN o as sof",
+            sourceApplication);
     Map<String, Object> params = Map.of("name", targetApplication, "fullName", fullName);
     Result res = neo4jAL.executeQuery(req, params);
 
     if (!res.hasNext()) {
-      throw new Neo4jBadRequestException("The request '%s' failed to create a SOF Object", "SOFUxCREAS1");
+      throw new Neo4jBadRequestException(
+          "The request '%s' failed to create a SOF Object", "SOFUxCREAS1");
     }
 
     return (Node) res.next().get("sof");
@@ -81,6 +86,7 @@ public class SofUtilities {
 
   /**
    * Create a link from concept to a level in an application
+   *
    * @param neo4jAL Neo4j access Layer
    * @param application Name of the application
    * @param idSofObject Id of the sof object
@@ -88,13 +94,18 @@ public class SofUtilities {
    * @return
    * @throws Neo4jQueryException
    */
-  public static Relationship fromLevelConceptRel(Neo4jAL neo4jAL, String application, Long idSofObject, String levelName) throws Neo4jQueryException {
-    String req = String.format("MATCH (o:Level5:`%1$s`) WHERE o.Name=$levelName WITH o as lev " +
-                " MATCH (o:Level5:`%1$s`) WHERE ID(o)=$idSofObject MERGE (lev)-[r:References { Concept: true }]->(o) RETURN r as rel", application);
+  public static Relationship fromLevelConceptRel(
+      Neo4jAL neo4jAL, String application, Long idSofObject, String levelName)
+      throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (o:Level5:`%1$s`) WHERE o.Name=$levelName WITH o as lev "
+                + " MATCH (o:Level5:`%1$s`) WHERE ID(o)=$idSofObject MERGE (lev)-[r:References { Concept: true }]->(o) RETURN r as rel",
+            application);
     Map<String, Object> params = Map.of("idSofObject", idSofObject, "levelName", levelName);
 
     Result res = neo4jAL.executeQuery(req, params);
-    if(!res.hasNext()) {
+    if (!res.hasNext()) {
       return null;
     }
 

@@ -26,19 +26,12 @@ public class FrameworkResult {
   public String discoveryDate = "";
   public Double percentageOfDetection = .0;
 
-  public FrameworkResult(String name, String description, String category, String type) {
-    this.name = name;
-    this.category = category;
-    this.description = description;
-    this.type = type;
-  }
-
   public FrameworkResult(FrameworkNode fn) {
     this.name = fn.getName();
     this.category = fn.getCategory();
     this.description = fn.getDescription();
     this.type = fn.getFrameworkType().toString();
-    this.internalType = fn.getInternalType();
+    this.internalType = fn.getInternalTypes();
     this.location = fn.getLocation();
     this.discoveryDate = fn.getDiscoveryDate();
     this.percentageOfDetection = fn.getPercentageOfDetection();

@@ -73,7 +73,7 @@ public class FrameworksApiProcedure {
       "artemis.api.update.framework(String oldName, String oldInternalType, String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, String InternalType, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
   public Stream<BooleanResult> updateFramework(
       @Name(value = "OldName") String oldName,
-      @Name(value = "OldInternalType") String oldInternalType,
+      @Name(value = "OldInternalType") List<String> oldInternalType,
       @Name(value = "Name") String name,
       @Name(value = "DiscoveryDate") String discoveryDate,
       @Name(value = "Location") String location,
@@ -102,6 +102,46 @@ public class FrameworksApiProcedure {
               percentageOfDetection,
               internalTypes);
       return Stream.of(new BooleanResult(addedFramework != null));
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.merge.framework", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.merge.framework( String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
+  public Stream<FrameworkResult> mergeFramework(
+      @Name(value = "Name") String name,
+      @Name(value = "DiscoveryDate") String discoveryDate,
+      @Name(value = "Location") String location,
+      @Name(value = "Description") String description,
+      @Name(value = "Type") String type,
+      @Name(value = "Category") String category,
+      @Name(value = "InternalTypes") List<String> internalTypes,
+      @Name(value = "NumberOfDetection", defaultValue = "0") Long numberOfDetection,
+      @Name(value = "PercentageOfDetection", defaultValue = "0") Double percentageOfDetection)
+      throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      FrameworkNode addedFramework =
+          FrameworkController.mergeFramework(
+              nal,
+              name,
+              discoveryDate,
+              location,
+              description,
+              type,
+              category,
+              numberOfDetection,
+              percentageOfDetection,
+              internalTypes);
+      return Stream.of(new FrameworkResult(addedFramework));
     } catch (Exception
         | Neo4jConnectionError
         | Neo4jQueryException

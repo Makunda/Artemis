@@ -80,6 +80,20 @@ public class CategoryNode {
   }
 
   /**
+   * Initialize the Node with it data
+   *
+   * @param n
+   * @return
+   */
+  public Node initNode(Node n) {
+    assert (n != null) : "Cannot initialize a null node";
+    this.node = n;
+    node.setProperty(NAME_PROPERTY, name);
+    node.setProperty(ICON_URL_PROPERTY, iconUrl);
+    return n;
+  }
+
+  /**
    * Get a Category node by its Id
    *
    * @param neo4jAL Neo4j Access Layer
@@ -140,7 +154,6 @@ public class CategoryNode {
   }
 
   /** Statics methods */
-
   public Node getNode() {
     return node;
   }
@@ -151,20 +164,6 @@ public class CategoryNode {
 
   public String getIconUrl() {
     return iconUrl;
-  }
-
-  /**
-   * Initialize the Node with it data
-   *
-   * @param n
-   * @return
-   */
-  public Node initNode(Node n) {
-    assert (n != null) : "Cannot initialize a null node";
-    this.node = n;
-    node.setProperty(NAME_PROPERTY, name);
-    node.setProperty(ICON_URL_PROPERTY, iconUrl);
-    return n;
   }
 
   /**

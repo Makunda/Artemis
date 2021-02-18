@@ -65,6 +65,22 @@ public class Neo4jAL {
   }
 
   /**
+   * Execute a single query
+   *
+   * @param query Cypher query to execute
+   * @return Result of the cypher query
+   * @throws Neo4jQueryException Exception during the processing of the query
+   */
+  public Result executeQuery(String query) throws Neo4jQueryException {
+    try {
+      return this.transaction.execute(query);
+    } catch (QueryExecutionException e) {
+      throw new Neo4jQueryException(
+          "Error while executing query.", query, e, ERROR_PREFIX + "EXQS1");
+    }
+  }
+
+  /**
    * Find nodes using their Label
    *
    * @param label Label to search
@@ -79,22 +95,6 @@ public class Neo4jAL {
           String.format("Cannot find all nodes with label '%s'", label.toString()),
           e,
           ERROR_PREFIX + "FIND1");
-    }
-  }
-
-  /**
-   * Execute a single query
-   *
-   * @param query Cypher query to execute
-   * @return Result of the cypher query
-   * @throws Neo4jQueryException Exception during the processing of the query
-   */
-  public Result executeQuery(String query) throws Neo4jQueryException {
-    try {
-      return this.transaction.execute(query);
-    } catch (QueryExecutionException e) {
-      throw new Neo4jQueryException(
-          "Error while executing query.", query, e, ERROR_PREFIX + "EXQS1");
     }
   }
 

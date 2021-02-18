@@ -29,7 +29,7 @@ public class PythiaComController {
    * @return
    */
   public static boolean isOracleConnected(Neo4jAL neo4jAL) {
-    return PythiaCom.getInstance(neo4jAL).getStatus();
+    return PythiaCom.getInstance(neo4jAL).pingApi();
   }
 
   /**
@@ -53,7 +53,7 @@ public class PythiaComController {
   }
 
   public static FrameworkNode findFramework(Neo4jAL neo4jAL, String name, String internalType)
-          throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
+      throws Neo4jBadRequestException, Neo4jQueryException, UnirestException {
     return PythiaCom.getInstance(neo4jAL).findFramework(name, internalType);
   }
 

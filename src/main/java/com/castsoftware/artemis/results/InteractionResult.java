@@ -11,18 +11,16 @@
 
 package com.castsoftware.artemis.results;
 
-import java.util.List;
-
 public class InteractionResult {
-	public String fullName;
-	public String application;
-	public Long numMatch;
-	public String externality;
+  public String fullName;
+  public String application;
+  public Long numMatch;
+  public String externality;
 
-	public InteractionResult(String fullName, String application, Long numMatch, String externality) {
-		this.fullName = fullName;
-		this.application = application;
-		this.numMatch = numMatch;
-		this.externality = externality;
-	}
+  public InteractionResult(String fullName, String application, Long numMatch, String externality) {
+    this.fullName = fullName;
+    this.application = application;
+    this.numMatch = numMatch;
+    this.externality = externality;
+  }
 }

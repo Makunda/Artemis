@@ -101,15 +101,8 @@ public class LanguageConfiguration {
     return instance;
   }
 
-  /**
-   * Check the existence of a Language in the configuration
-   *
-   * @param language Language to search in the configuration
-   * @return True if the language exist, False otherwise
-   */
-  public boolean checkLanguageExistence(String language) {
-    language = language.toUpperCase();
-    return languageMap.containsKey(language);
+  public LanguageProp getLanguageProperties(SupportedLanguage language) {
+    return getLanguageProperties(language.toString());
   }
 
   /**
@@ -124,8 +117,15 @@ public class LanguageConfiguration {
     return languageMap.get(language);
   }
 
-  public LanguageProp getLanguageProperties(SupportedLanguage language) {
-    return getLanguageProperties(language.toString());
+  /**
+   * Check the existence of a Language in the configuration
+   *
+   * @param language Language to search in the configuration
+   * @return True if the language exist, False otherwise
+   */
+  public boolean checkLanguageExistence(String language) {
+    language = language.toUpperCase();
+    return languageMap.containsKey(language);
   }
 
   /**

@@ -203,21 +203,21 @@ public class RegexNodeApiProcedure {
   }
 
   @Procedure(value = "artemis.api.regex.get.request", mode = Mode.WRITE)
-  @Description("artemis.api.regex.get.request(Long idRegexNode) - Get the request associated to a node")
+  @Description(
+      "artemis.api.regex.get.request(Long idRegexNode) - Get the request associated to a node")
   public Stream<OutputMessage> getRequest(@Name(value = "IdNode") Long idNode)
-          throws ProcedureException {
+      throws ProcedureException {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       String req = RegexNodeController.getRegexRequest(nal, idNode);
       return Stream.of(new OutputMessage(req));
     } catch (Exception
-            | Neo4jConnectionError
-            | Neo4jQueryException
-            | Neo4jBadNodeFormatException e) {
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadNodeFormatException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
     }
   }
-
 }

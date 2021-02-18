@@ -70,11 +70,15 @@ public class NLPResults {
 
   @Override
   public String toString() {
-    return "NLPResults{" +
-            "category=" + category +
-            ", confidence=" + confidence +
-            ", probability=" + probability +
-            ", probabilities=" + Arrays.toString(probabilities) +
-            '}';
+    return "NLPResults{"
+        + "category="
+        + category
+        + ", confidence="
+        + confidence
+        + ", probability="
+        + probability
+        + ", probabilities="
+        + Arrays.toString(probabilities)
+        + '}';
   }
 }

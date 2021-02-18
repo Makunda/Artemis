@@ -17,7 +17,6 @@ import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.InteractionResult;
-import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -45,7 +44,8 @@ public class InteractionsProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<InteractionResult> detectedInteraction = InteractionsController.getInteraction(nal, applications, language, toSearch);
+      List<InteractionResult> detectedInteraction =
+          InteractionsController.getInteraction(nal, applications, language, toSearch);
 
       return detectedInteraction.stream();
     } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {

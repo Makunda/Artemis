@@ -15,6 +15,7 @@ import com.castsoftware.artemis.config.LanguageConfiguration;
 import com.castsoftware.artemis.config.LanguageProp;
 import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -65,15 +66,14 @@ public class FrameworkController {
    *
    * @param neo4jAL Neo4j Access Layer
    * @param name Name of the Framework to find
-   * @param internalType
+   * @param internalTypes List of the internal type of the framework
    * @return
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static void deleteFrameworkByNameAndType(
-      Neo4jAL neo4jAL, String name, String internalType)
+  public static void deleteFrameworkByNameAndType(Neo4jAL neo4jAL, String name, List<String> internalTypes)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
-      FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalType);
+    FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalTypes);
   }
 
   /**
@@ -104,7 +104,7 @@ public class FrameworkController {
     FrameworkNode fn =
         new FrameworkNode(
             neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
-    fn.setInternalType(internalTypes);
+    fn.setInternalTypes(internalTypes);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
 
@@ -138,7 +138,7 @@ public class FrameworkController {
   public static FrameworkNode updateFramework(
       Neo4jAL neo4jAL,
       String oldName,
-      String oldInternalType,
+      List<String> oldInternalType,
       String name,
       String discoveryDate,
       String location,
@@ -161,11 +161,103 @@ public class FrameworkController {
             percentageOfDetection,
             new Date().getTime());
 
-    fn.setInternalType(internalType);
+    fn.setInternalTypes(internalType);
     fn.setFrameworkType(FrameworkType.getType(type));
 
     return FrameworkNode.updateFrameworkByName(neo4jAL, oldName, oldInternalType, category, fn);
   }
+
+  /**
+   * Merge a Framework node if its overlapping with a current framework node, if not create a new one
+   * @param neo4jAL Neo4j Access Layer
+   * @param name Name of the Framework
+   * @param discoveryDate Date of the discovery
+   * @param location Location of the Framework ( repository, url, etc...)
+   * @param description Description
+   * @param type Framework category ( Framework, NotFramework, etc..)
+   * @param category Category of the framework
+   * @param internalTypes Internal types of the framework
+   * @param numberOfDetection Number of detection
+   * @param percentageOfDetection Detection rate
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static FrameworkNode mergeFramework(
+          Neo4jAL neo4jAL,
+          String name,
+          String discoveryDate,
+          String location,
+          String description,
+          String type,
+          String category,
+          Long numberOfDetection,
+          Double percentageOfDetection,
+          List<String> internalTypes)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+
+    // Find framework with same name and overlapping type
+    String req = String.format("MATCH (o:%s) WHERE o.%s=$frameworkName " +
+            "AND any( x IN $internalTypes WHERE x IN o.%s) AND o.%s=$type RETURN o as framework LIMIT 1",
+            FrameworkNode.getLabel(), FrameworkNode.getNameProperty(),
+            FrameworkNode.getInternalTypeProperty(), FrameworkNode.getTypeProperty());
+    Map<String, Object> params = Map.of("frameworkName", name, "internalTypes", internalTypes, "type", type);
+
+    Result res = neo4jAL.executeQuery(req, params);
+
+    FrameworkNode fn = null;
+    if(res.hasNext()) {
+      // Overlapping Framework // Merge
+      Node n = (Node) res.next().get("framework");
+      fn = FrameworkNode.fromNode(neo4jAL, n);
+
+      List<String> oldInternal = Neo4jTypeManager.getAsStringList(n, FrameworkNode.getInternalTypeProperty());
+
+      // Update the categories
+      Set<String> setCategories = new HashSet<>();
+      setCategories.addAll(internalTypes);
+      setCategories.addAll(oldInternal);
+
+      fn.updateInternalTypes(new ArrayList<>(setCategories));
+
+      // Description update
+      if(!description.isBlank()) {
+        fn.updateDescription(description);
+      }
+
+      // Location update
+      if(!location.isBlank()) {
+        fn.updateLocation(location);
+      }
+
+      // Percentage update
+      if(percentageOfDetection > fn.getPercentageOfDetection()) {
+        fn.updateDetectionScore(percentageOfDetection);
+      }
+
+    } else {
+      fn = new FrameworkNode(
+                      neo4jAL,
+                      name,
+                      discoveryDate,
+                      location,
+                      description,
+                      numberOfDetection,
+                      percentageOfDetection,
+                      new Date().getTime());
+
+      fn.setInternalTypes(internalTypes);
+      fn.setFrameworkType(FrameworkType.getType(type));
+
+      CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+      fn.setCategory(cn);
+
+      fn.createNode();
+    }
+
+    return fn;
+  }
+
 
   /**
    * Get the complete list of framework in the database (Not recommended, prefer the batch search)

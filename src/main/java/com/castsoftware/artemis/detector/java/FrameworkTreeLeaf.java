@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.detector.java;
 
-
 import com.castsoftware.artemis.detector.ALeaf;
 
 import java.util.ArrayList;

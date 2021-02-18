@@ -120,41 +120,6 @@ public class NLPEngine {
     return numFlagFramework / (double) (numFlagFramework + numFlagNotFramework);
   }
 
-  /**
-   * Train the model with the Train and Test dataset passed in parameters. The model will be
-   * serialized into a file stored as a resource
-   *
-   * @throws IOException
-   */
-  public void train() throws IOException {
-    Path trainDtFile =
-        Workspace.getWorkspacePath()
-            .resolve(languageProperties.getName())
-            .resolve(Configuration.get("nlp.dataset_train.name"));
-
-    // Read file with classifications samples of sentences.
-    InputStreamFactory inputStreamFactory =
-        new MarkableFileInputStreamFactory(trainDtFile.toFile());
-    ObjectStream<String> lineStream =
-        new PlainTextByLineStream(inputStreamFactory, StandardCharsets.UTF_8);
-    ObjectStream<DocumentSample> sampleStream = new DocumentSampleStream(lineStream);
-
-    TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, 500 + "");
-    params.put(TrainingParameters.CUTOFF_PARAM, 0);
-    DoccatFactory factory =
-        new DoccatFactory(new FeatureGenerator[] {new BagOfWordsFeatureGenerator()});
-
-    // Train a model
-    model = DocumentCategorizerME.train("en", sampleStream, params, factory);
-
-    // Serialize model
-    model.serialize(trainDtFile.toFile());
-
-    // Use the model to create the Categorizer
-    docCategorizer = new DocumentCategorizerME(model);
-  }
-
   /** Load Datasets and evaluate the model */
   public Double evaluateModel() throws IOException {
     Path testDtFile =
@@ -208,6 +173,41 @@ public class NLPEngine {
   }
 
   /**
+   * Train the model with the Train and Test dataset passed in parameters. The model will be
+   * serialized into a file stored as a resource
+   *
+   * @throws IOException
+   */
+  public void train() throws IOException {
+    Path trainDtFile =
+        Workspace.getWorkspacePath()
+            .resolve(languageProperties.getName())
+            .resolve(Configuration.get("nlp.dataset_train.name"));
+
+    // Read file with classifications samples of sentences.
+    InputStreamFactory inputStreamFactory =
+        new MarkableFileInputStreamFactory(trainDtFile.toFile());
+    ObjectStream<String> lineStream =
+        new PlainTextByLineStream(inputStreamFactory, StandardCharsets.UTF_8);
+    ObjectStream<DocumentSample> sampleStream = new DocumentSampleStream(lineStream);
+
+    TrainingParameters params = new TrainingParameters();
+    params.put(TrainingParameters.ITERATIONS_PARAM, 500 + "");
+    params.put(TrainingParameters.CUTOFF_PARAM, 0);
+    DoccatFactory factory =
+        new DoccatFactory(new FeatureGenerator[] {new BagOfWordsFeatureGenerator()});
+
+    // Train a model
+    model = DocumentCategorizerME.train("en", sampleStream, params, factory);
+
+    // Serialize model
+    model.serialize(trainDtFile.toFile());
+
+    // Use the model to create the Categorizer
+    docCategorizer = new DocumentCategorizerME(model);
+  }
+
+  /**
    * Predict the category of the text
    *
    * @param text
@@ -221,6 +221,53 @@ public class NLPEngine {
 
     double[] probabilitiesOfOutcomes = docCategorizer.categorize(tokenizer.tokenize(text));
     return docCategorizer.getBestCategory(probabilitiesOfOutcomes);
+  }
+
+  /** Get the model or create a new one and train the model */
+  private void getModelOrTrain() throws IOException {
+    try {
+      importModelFile();
+    } catch (IOException | NLPIncorrectConfigurationException e) {
+      train();
+    }
+  }
+
+  /**
+   * Import the file model from the Artemis workspace
+   *
+   * @throws IOException
+   */
+  public void importModelFile() throws IOException, NLPIncorrectConfigurationException {
+
+    Path modelFile = checkIfModelExists();
+
+    if (modelFile == null) {
+      String message =
+          String.format(
+              "No model file with name '%s' was found under workspace '%s'.",
+              modelFile, Workspace.getWorkspacePath().toString());
+      throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
+    }
+
+    InputStream is = new FileInputStream(modelFile.toFile());
+    this.model = new DoccatModel(is);
+    this.docCategorizer = new DocumentCategorizerME(model);
+  }
+
+  /**
+   * Check if the model file exists int
+   *
+   * @return
+   */
+  public Path checkIfModelExists() {
+    Path modelFile = Workspace.getLanguageModelFile(this.language);
+    log.info("Checking the existence of the model file at '%s'.", modelFile);
+    if (Files.exists(modelFile)) {
+      return modelFile;
+    } else {
+      log.error("No model file found at '%s'.", modelFile);
+      return null;
+    }
   }
 
   /**
@@ -264,52 +311,5 @@ public class NLPEngine {
       getModelOrTrain();
     }
     return docCategorizer.getBestCategory(probabilitiesOfOutcomes);
-  }
-
-  /**
-   * Check if the model file exists int
-   *
-   * @return
-   */
-  public Path checkIfModelExists() {
-    Path modelFile = Workspace.getLanguageModelFile(this.language);
-    log.info("Checking the existence of the model file at '%s'.", modelFile);
-    if (Files.exists(modelFile)) {
-      return modelFile;
-    } else {
-      log.error("No model file found at '%s'.", modelFile);
-      return null;
-    }
-  }
-
-  /** Get the model or create a new one and train the model */
-  private void getModelOrTrain() throws IOException {
-    try {
-      importModelFile();
-    } catch (IOException | NLPIncorrectConfigurationException e) {
-      train();
-    }
-  }
-
-  /**
-   * Import the file model from the Artemis workspace
-   *
-   * @throws IOException
-   */
-  public void importModelFile() throws IOException, NLPIncorrectConfigurationException {
-
-    Path modelFile = checkIfModelExists();
-
-    if (modelFile == null) {
-      String message =
-          String.format(
-              "No model file with name '%s' was found under workspace '%s'.",
-              modelFile, Workspace.getWorkspacePath().toString());
-      throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
-    }
-
-    InputStream is = new FileInputStream(modelFile.toFile());
-    this.model = new DoccatModel(is);
-    this.docCategorizer = new DocumentCategorizerME(model);
   }
 }

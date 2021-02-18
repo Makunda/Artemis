@@ -84,101 +84,196 @@ public class Importer {
     this.idBindingMap = new HashMap<>();
   }
 
+  public Stream<String> load(String pathToZipFileName) throws ProcedureException {
+    MESSAGE_QUEUE.clear();
+
+    try {
+      File zipFile = new File(pathToZipFileName);
+
+      // End the procedure if the path specified isn't valid
+      if (!zipFile.exists()) {
+        MESSAGE_QUEUE.add(
+            "No zip file found at path "
+                .concat(pathToZipFileName)
+                .concat(". Please check the path provided"));
+        return MESSAGE_QUEUE.stream();
+      }
+
+      parseZip(zipFile);
+
+    } catch (IOException | Neo4jQueryException e) {
+      throw new ProcedureException(e);
+    }
+
+    MESSAGE_QUEUE.add(
+        String.format(
+            "%d file(s) containing a label where found and processed.", countLabelCreated));
+    MESSAGE_QUEUE.add(
+        String.format(
+            "%d file(s) containing relationships where found and processed.",
+            countRelationTypeCreated));
+    MESSAGE_QUEUE.add(
+        String.format("%d file(s) where ignored. Check logs for more information.", ignoredFile));
+    MESSAGE_QUEUE.add(
+        String.format(
+            "%d node(s) and %d relationship(s) were created during the import.",
+            nodeCreated, relationshipCreated));
+
+    return MESSAGE_QUEUE.stream();
+  }
+
   /**
-   * Convert a String containing a Neo4j Type to a Java Type Handled type are : Boolean, Char, Byte,
-   * Short, Long, Double, LocalDate, OffsetTime, LocalTime, ZoneDateTime. If none of these types are
-   * detected, it will return the value as a String. <u>Warning :</u> TemporalAmount and
-   * org.neo4j.graphdb.spatial.Point are not detected Check
-   * https://neo4j.com/docs/java-reference/current/java-embedded/property-values/index.html for more
-   * informations <u>Warning :</u> The goal of this function is to reassign the correct Java type to
-   * the value discovered in the CSV. It mays detect the wrong type.
+   * Parse all files within zip file. For each file a BufferedReader will be open and stored as a
+   * Node BufferReader or a Relationship BufferReader. The procedure will use the prefix in the
+   * filename to decide if it must be treated as a file containing node or relationships.
    *
-   * @param value Neo4j Value as a string
-   * @return Object of the Java Type associated to the discovered type within the string provided
+   * @param file The Zip file to be treated
+   * @throws IOException
    */
-  private Object getNeo4jType(String value) {
+  private void parseZip(File file) throws IOException, Neo4jQueryException {
+    Map<BufferedReader, String> nodeBuffers = new HashMap<>();
+    Map<BufferedReader, String> relBuffers = new HashMap<>();
 
-    // Long
-    try {
-      return Long.parseLong(value);
-    } catch (NumberFormatException ignored) {
-    }
+    try (ZipFile zf = new ZipFile(file)) {
+      Enumeration entries = zf.entries();
 
-    // Double
-    try {
-      return Double.parseDouble(value);
-    } catch (NumberFormatException ignored) {
-    }
+      while (entries.hasMoreElements()) {
+        ZipEntry ze = (ZipEntry) entries.nextElement();
+        String filename = ze.getName();
+        if (ze.getSize() < 0) continue; // Empty entry
 
-    // Integer
-    try {
-      return ((Integer) Integer.parseInt(value)).longValue();
-    } catch (NumberFormatException ignored) {
-    }
+        try {
+          BufferedReader br = new BufferedReader(new InputStreamReader(zf.getInputStream(ze)));
 
-    // Byte
-    try {
-      return Byte.parseByte(value);
-    } catch (NumberFormatException ignored) {
-    }
-    // Short
-    try {
-      return Short.parseShort(value);
-    } catch (NumberFormatException ignored) {
-    }
+          if (filename.startsWith(RELATIONSHIP_PREFIX)) {
+            relBuffers.put(br, filename);
+          } else if (filename.startsWith(NODE_PREFIX)) {
+            nodeBuffers.put(br, filename);
+          } else {
+            ignoredFile++;
+            log.error(
+                String.format("Unrecognized file with name '%s' in zip file. Skipped.", filename));
+          }
+        } catch (Exception e) {
+          log.error(
+              "An error occurred trying to process entry with file name ".concat(filename), e);
+          log.error("This entry will be skipped");
+        }
+      }
 
-    // Boolean
-    if (value.toLowerCase().matches("true|false")) {
-      return Boolean.parseBoolean(value);
-    }
+      // Treat nodes in a first time, to fill the idBindingMap for relationships
+      for (Map.Entry<BufferedReader, String> pair : nodeBuffers.entrySet()) {
+        try {
+          String labelAsString = getLabelFromFilename(pair.getValue());
+          treatNodeBuffer(labelAsString, pair.getKey());
+          countLabelCreated++;
+        } catch (FileCorruptedException e) {
+          log.error("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
+          ignoredFile++;
+        }
+      }
 
-    // DateTimeFormatter covering all Neo4J Date Format  (cf :
-    // https://neo4j.com/docs/cypher-manual/current/syntax/temporal/ )
-    DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern(
-            "[YYYY-MM-DD]"
-                + "[YYYYMMDD]"
-                + "[YYYY-MM]"
-                + "[YYYYMM]"
-                + "[YYYY-Www-D]"
-                + "[YYYY- W ww]"
-                + "[YYYY W ww]"
-                + "[YYYY- Q q-DD]"
-                + "[YYYY Q q]"
-                + "[YYYY-DDD]"
-                + "[YYYYDDD]"
-                + "[YYYY]");
+      for (Map.Entry<BufferedReader, String> pair : relBuffers.entrySet()) {
+        try {
+          String relAsString = getLabelFromFilename(pair.getValue());
+          treatRelBuffer(relAsString, pair.getKey());
+          countRelationTypeCreated++;
+        } catch (FileCorruptedException e) {
+          log.error("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
+          ignoredFile++;
+        } catch (Neo4jQueryException e) {
+          log.error("Operation failed, check the stack trace for more information.");
+          throw e;
+        }
+      }
 
-    // LocalDate
-    try {
-      return LocalDate.parse(value, formatter);
-    } catch (DateTimeParseException ignored) {
+    } finally {
+      // Close bufferedReader
+      for (BufferedReader bf : nodeBuffers.keySet()) bf.close();
+      for (BufferedReader bf : relBuffers.keySet()) bf.close();
     }
-    // OffsetTime
-    try {
-      return OffsetTime.parse(value, formatter);
-    } catch (DateTimeParseException ignored) {
-    }
-    // LocalTime
-    try {
-      return LocalTime.parse(value, formatter);
-    } catch (DateTimeParseException ignored) {
-    }
-    // ZoneDateTime
-    try {
-      return ZonedDateTime.parse(value, formatter);
-    } catch (DateTimeParseException ignored) {
-    }
+  }
 
-    // Char
-    if (value.length() == 1) return value.charAt(0);
+  /**
+   * Get the label stored within the filename by removing the prefix and the extension
+   *
+   * @param filename
+   * @return
+   */
+  private String getLabelFromFilename(String filename) {
+    return filename
+        .replace(RELATIONSHIP_PREFIX, "")
+        .replace(NODE_PREFIX, "")
+        .replace(EXTENSION, "");
+  }
 
-    // Remove Sanitization
-    value = value.replaceAll("(^\\s\")|(\\s\"\\s?$)", "");
+  /**
+   * Treat a node buffer by extracting the first row as a list of header value. Treat all the other
+   * rows as list of node's values.
+   *
+   * @param associatedLabel Name of the label
+   * @param nodeFileBuf BufferReader pointing to the node file
+   * @throws IOException thrown if the procedure fails to read the buffer
+   * @throws FileCorruptedException thrown if the file isn't in a good format ( If the headers are
+   *     missing, or if it does not contains any Index Column)
+   */
+  private void treatNodeBuffer(String associatedLabel, BufferedReader nodeFileBuf)
+      throws IOException, FileCorruptedException {
+    String line;
+    String headers = nodeFileBuf.readLine();
+    if (headers == null)
+      throw new FileCorruptedException("No header found in file.", "LOADxTNBU01");
 
-    log.info("Value inserted : " + value);
-    // String
-    return value;
+    Label label = Label.label(associatedLabel);
+
+    // Process header line
+    List<String> headerList = sanitizeCSVInput(headers);
+    if (!headerList.contains(INDEX_COL))
+      throw new FileCorruptedException("No index column found in file.", "LOADxTNBU02");
+
+    while ((line = nodeFileBuf.readLine()) != null) {
+      List<String> values = sanitizeCSVInput(line);
+      try {
+        createNode(label, headerList, values);
+      } catch (Exception | Neo4jQueryException e) {
+        log.error(
+            "An error occurred during creation of node with label : "
+                .concat(associatedLabel)
+                .concat(" and values : ")
+                .concat(String.join(DELIMITER, values)),
+            e);
+      }
+    }
+  }
+
+  /**
+   * Treat a relationship buffer by extracting the first row as a list of header value. Treat all
+   * the other rows as list of relationship's values.
+   *
+   * @param associatedRelation Name of the relationship
+   * @param relFileBuf BufferReader pointing to the relationship file
+   * @throws IOException thrown if the procedure fails to read the buffer
+   * @throws FileCorruptedException thrown if the file isn't in a good format ( If the headers are
+   *     missing, or if it does not contains any Source or Destination index column)
+   */
+  private void treatRelBuffer(String associatedRelation, BufferedReader relFileBuf)
+      throws IOException, FileCorruptedException, Neo4jQueryException {
+    String line;
+    String headers = relFileBuf.readLine();
+    if (headers == null)
+      throw new FileCorruptedException("No header found in file.", "LOADxTNBU01");
+
+    RelationshipType relName = RelationshipType.withName(associatedRelation);
+
+    List<String> headerList = sanitizeCSVInput(headers);
+    if (!headerList.contains(INDEX_OUTGOING) || !headerList.contains(INDEX_INCOMING))
+      throw new FileCorruptedException(
+          "Corrupted header (missing source or destination columns).", "LOADxTNBU02");
+
+    while ((line = relFileBuf.readLine()) != null) {
+      List<String> values = sanitizeCSVInput(line);
+      createRelationship(relName, headerList, values);
+    }
   }
 
   /**
@@ -193,19 +288,6 @@ public class Importer {
         input
             .replaceAll("\\\\r\\\\n", "")
             .split(DELIMITER + "(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)"));
-  }
-
-  /**
-   * Get the label stored within the filename by removing the prefix and the extension
-   *
-   * @param filename
-   * @return
-   */
-  private String getLabelFromFilename(String filename) {
-    return filename
-        .replace(RELATIONSHIP_PREFIX, "")
-        .replace(NODE_PREFIX, "")
-        .replace(EXTENSION, "");
   }
 
   /**
@@ -310,181 +392,99 @@ public class Importer {
   }
 
   /**
-   * Treat a node buffer by extracting the first row as a list of header value. Treat all the other
-   * rows as list of node's values.
+   * Convert a String containing a Neo4j Type to a Java Type Handled type are : Boolean, Char, Byte,
+   * Short, Long, Double, LocalDate, OffsetTime, LocalTime, ZoneDateTime. If none of these types are
+   * detected, it will return the value as a String. <u>Warning :</u> TemporalAmount and
+   * org.neo4j.graphdb.spatial.Point are not detected Check
+   * https://neo4j.com/docs/java-reference/current/java-embedded/property-values/index.html for more
+   * informations <u>Warning :</u> The goal of this function is to reassign the correct Java type to
+   * the value discovered in the CSV. It mays detect the wrong type.
    *
-   * @param associatedLabel Name of the label
-   * @param nodeFileBuf BufferReader pointing to the node file
-   * @throws IOException thrown if the procedure fails to read the buffer
-   * @throws FileCorruptedException thrown if the file isn't in a good format ( If the headers are
-   *     missing, or if it does not contains any Index Column)
+   * @param value Neo4j Value as a string
+   * @return Object of the Java Type associated to the discovered type within the string provided
    */
-  private void treatNodeBuffer(String associatedLabel, BufferedReader nodeFileBuf)
-      throws IOException, FileCorruptedException {
-    String line;
-    String headers = nodeFileBuf.readLine();
-    if (headers == null)
-      throw new FileCorruptedException("No header found in file.", "LOADxTNBU01");
+  private Object getNeo4jType(String value) {
 
-    Label label = Label.label(associatedLabel);
-
-    // Process header line
-    List<String> headerList = sanitizeCSVInput(headers);
-    if (!headerList.contains(INDEX_COL))
-      throw new FileCorruptedException("No index column found in file.", "LOADxTNBU02");
-
-    while ((line = nodeFileBuf.readLine()) != null) {
-      List<String> values = sanitizeCSVInput(line);
-      try {
-        createNode(label, headerList, values);
-      } catch (Exception | Neo4jQueryException e) {
-        log.error(
-            "An error occurred during creation of node with label : "
-                .concat(associatedLabel)
-                .concat(" and values : ")
-                .concat(String.join(DELIMITER, values)),
-            e);
-      }
-    }
-  }
-
-  /**
-   * Treat a relationship buffer by extracting the first row as a list of header value. Treat all
-   * the other rows as list of relationship's values.
-   *
-   * @param associatedRelation Name of the relationship
-   * @param relFileBuf BufferReader pointing to the relationship file
-   * @throws IOException thrown if the procedure fails to read the buffer
-   * @throws FileCorruptedException thrown if the file isn't in a good format ( If the headers are
-   *     missing, or if it does not contains any Source or Destination index column)
-   */
-  private void treatRelBuffer(String associatedRelation, BufferedReader relFileBuf)
-      throws IOException, FileCorruptedException, Neo4jQueryException {
-    String line;
-    String headers = relFileBuf.readLine();
-    if (headers == null)
-      throw new FileCorruptedException("No header found in file.", "LOADxTNBU01");
-
-    RelationshipType relName = RelationshipType.withName(associatedRelation);
-
-    List<String> headerList = sanitizeCSVInput(headers);
-    if (!headerList.contains(INDEX_OUTGOING) || !headerList.contains(INDEX_INCOMING))
-      throw new FileCorruptedException(
-          "Corrupted header (missing source or destination columns).", "LOADxTNBU02");
-
-    while ((line = relFileBuf.readLine()) != null) {
-      List<String> values = sanitizeCSVInput(line);
-      createRelationship(relName, headerList, values);
-    }
-  }
-
-  /**
-   * Parse all files within zip file. For each file a BufferedReader will be open and stored as a
-   * Node BufferReader or a Relationship BufferReader. The procedure will use the prefix in the
-   * filename to decide if it must be treated as a file containing node or relationships.
-   *
-   * @param file The Zip file to be treated
-   * @throws IOException
-   */
-  private void parseZip(File file) throws IOException, Neo4jQueryException {
-    Map<BufferedReader, String> nodeBuffers = new HashMap<>();
-    Map<BufferedReader, String> relBuffers = new HashMap<>();
-
-    try (ZipFile zf = new ZipFile(file)) {
-      Enumeration entries = zf.entries();
-
-      while (entries.hasMoreElements()) {
-        ZipEntry ze = (ZipEntry) entries.nextElement();
-        String filename = ze.getName();
-        if (ze.getSize() < 0) continue; // Empty entry
-
-        try {
-          BufferedReader br = new BufferedReader(new InputStreamReader(zf.getInputStream(ze)));
-
-          if (filename.startsWith(RELATIONSHIP_PREFIX)) {
-            relBuffers.put(br, filename);
-          } else if (filename.startsWith(NODE_PREFIX)) {
-            nodeBuffers.put(br, filename);
-          } else {
-            ignoredFile++;
-            log.error(
-                String.format("Unrecognized file with name '%s' in zip file. Skipped.", filename));
-          }
-        } catch (Exception e) {
-          log.error(
-              "An error occurred trying to process entry with file name ".concat(filename), e);
-          log.error("This entry will be skipped");
-        }
-      }
-
-      // Treat nodes in a first time, to fill the idBindingMap for relationships
-      for (Map.Entry<BufferedReader, String> pair : nodeBuffers.entrySet()) {
-        try {
-          String labelAsString = getLabelFromFilename(pair.getValue());
-          treatNodeBuffer(labelAsString, pair.getKey());
-          countLabelCreated++;
-        } catch (FileCorruptedException e) {
-          log.error("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
-          ignoredFile++;
-        }
-      }
-
-      for (Map.Entry<BufferedReader, String> pair : relBuffers.entrySet()) {
-        try {
-          String relAsString = getLabelFromFilename(pair.getValue());
-          treatRelBuffer(relAsString, pair.getKey());
-          countRelationTypeCreated++;
-        } catch (FileCorruptedException e) {
-          log.error("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
-          ignoredFile++;
-        } catch (Neo4jQueryException e) {
-          log.error("Operation failed, check the stack trace for more information.");
-          throw e;
-        }
-      }
-
-    } finally {
-      // Close bufferedReader
-      for (BufferedReader bf : nodeBuffers.keySet()) bf.close();
-      for (BufferedReader bf : relBuffers.keySet()) bf.close();
-    }
-  }
-
-  public Stream<String> load(String pathToZipFileName) throws ProcedureException {
-    MESSAGE_QUEUE.clear();
-
+    // Long
     try {
-      File zipFile = new File(pathToZipFileName);
-
-      // End the procedure if the path specified isn't valid
-      if (!zipFile.exists()) {
-        MESSAGE_QUEUE.add(
-            "No zip file found at path "
-                .concat(pathToZipFileName)
-                .concat(". Please check the path provided"));
-        return MESSAGE_QUEUE.stream();
-      }
-
-      parseZip(zipFile);
-
-    } catch (IOException | Neo4jQueryException e) {
-      throw new ProcedureException(e);
+      return Long.parseLong(value);
+    } catch (NumberFormatException ignored) {
     }
 
-    MESSAGE_QUEUE.add(
-        String.format(
-            "%d file(s) containing a label where found and processed.", countLabelCreated));
-    MESSAGE_QUEUE.add(
-        String.format(
-            "%d file(s) containing relationships where found and processed.",
-            countRelationTypeCreated));
-    MESSAGE_QUEUE.add(
-        String.format("%d file(s) where ignored. Check logs for more information.", ignoredFile));
-    MESSAGE_QUEUE.add(
-        String.format(
-            "%d node(s) and %d relationship(s) were created during the import.",
-            nodeCreated, relationshipCreated));
+    // Double
+    try {
+      return Double.parseDouble(value);
+    } catch (NumberFormatException ignored) {
+    }
 
-    return MESSAGE_QUEUE.stream();
+    // Integer
+    try {
+      return ((Integer) Integer.parseInt(value)).longValue();
+    } catch (NumberFormatException ignored) {
+    }
+
+    // Byte
+    try {
+      return Byte.parseByte(value);
+    } catch (NumberFormatException ignored) {
+    }
+    // Short
+    try {
+      return Short.parseShort(value);
+    } catch (NumberFormatException ignored) {
+    }
+
+    // Boolean
+    if (value.toLowerCase().matches("true|false")) {
+      return Boolean.parseBoolean(value);
+    }
+
+    // DateTimeFormatter covering all Neo4J Date Format  (cf :
+    // https://neo4j.com/docs/cypher-manual/current/syntax/temporal/ )
+    DateTimeFormatter formatter =
+        DateTimeFormatter.ofPattern(
+            "[YYYY-MM-DD]"
+                + "[YYYYMMDD]"
+                + "[YYYY-MM]"
+                + "[YYYYMM]"
+                + "[YYYY-Www-D]"
+                + "[YYYY- W ww]"
+                + "[YYYY W ww]"
+                + "[YYYY- Q q-DD]"
+                + "[YYYY Q q]"
+                + "[YYYY-DDD]"
+                + "[YYYYDDD]"
+                + "[YYYY]");
+
+    // LocalDate
+    try {
+      return LocalDate.parse(value, formatter);
+    } catch (DateTimeParseException ignored) {
+    }
+    // OffsetTime
+    try {
+      return OffsetTime.parse(value, formatter);
+    } catch (DateTimeParseException ignored) {
+    }
+    // LocalTime
+    try {
+      return LocalTime.parse(value, formatter);
+    } catch (DateTimeParseException ignored) {
+    }
+    // ZoneDateTime
+    try {
+      return ZonedDateTime.parse(value, formatter);
+    } catch (DateTimeParseException ignored) {
+    }
+
+    // Char
+    if (value.length() == 1) return value.charAt(0);
+
+    // Remove Sanitization
+    value = value.replaceAll("(^\\s\")|(\\s\"\\s?$)", "");
+
+    log.info("Value inserted : " + value);
+    // String
+    return value;
   }
 }

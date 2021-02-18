@@ -59,6 +59,64 @@ public class PythiaCom {
   }
 
   /**
+   * Ping the API
+   *
+   * @return True if the API is reachable, false otherwise
+   */
+  public boolean pingApi() {
+    this.uri = UserConfiguration.get("oracle.server");
+
+    // If configuration is empty
+    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
+      neo4jAL.logInfo(
+          String.format(
+              "The Oracle has not been set up. Please check your configuration at %s",
+              Workspace.getUserConfigPath().toString()));
+      if (!UserConfiguration.isKey("oracle.server"))
+        neo4jAL.logInfo("Missing oracle.server parameter.");
+      if (!UserConfiguration.isKey("oracle.token"))
+        neo4jAL.logInfo("Missing oracle.token parameter.");
+      return false;
+    }
+    ;
+
+    // Else get the properties
+    this.uri = UserConfiguration.get("oracle.server");
+    this.token = UserConfiguration.get("oracle.token");
+
+    if (uri == null || uri.isEmpty()) return false;
+
+    StringBuilder url = new StringBuilder();
+    url.append(this.uri);
+
+    try {
+      HttpResponse<String> jsonResponse =
+          Unirest.get(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .asString();
+
+      if (jsonResponse.getStatus() == 200 || jsonResponse.getStatus() == 304) {
+        neo4jAL.logInfo(
+            String.format(
+                "PYTHIA COM : The API is online (%s). Message : %s",
+                this.uri, jsonResponse.getBody()));
+        return true;
+      } else {
+        neo4jAL.logError(
+            String.format(
+                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                this.uri, jsonResponse.getStatus()));
+        return false;
+      }
+    } catch (Exception e) {
+      neo4jAL.logError(
+          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+      return false;
+    }
+  }
+
+  /**
    * Get the instance of the OracleCom
    *
    * @return
@@ -115,64 +173,8 @@ public class PythiaCom {
   }
 
   /**
-   * Ping the API
-   *
-   * @return True if the API is reachable, false otherwise
-   */
-  public boolean pingApi() {
-
-    // If configuration is empty
-    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
-      neo4jAL.logInfo(
-          String.format(
-              "The Oracle has not been set up. Please check your configuration at %s",
-              Workspace.getUserConfigPath().toString()));
-      if (!UserConfiguration.isKey("oracle.server"))
-        neo4jAL.logInfo("Missing oracle.server parameter.");
-      if (!UserConfiguration.isKey("oracle.token"))
-        neo4jAL.logInfo("Missing oracle.token parameter.");
-      return false;
-    }
-    ;
-
-    // Else get the properties
-    this.uri = UserConfiguration.get("oracle.server");
-    this.token = UserConfiguration.get("oracle.token");
-
-    if (uri == null || uri.isEmpty()) return false;
-
-    StringBuilder url = new StringBuilder();
-    url.append(this.uri);
-
-    try {
-      HttpResponse<String> jsonResponse =
-          Unirest.get(url.toString())
-              .header("accept", "application/json")
-              .header("Authorization", "Bearer " + token)
-              .asString();
-
-      if (jsonResponse.getStatus() == 200 || jsonResponse.getStatus() == 304) {
-        neo4jAL.logInfo(
-            String.format(
-                "PYTHIA COM : The API is online (%s). Message : %s",
-                this.uri, jsonResponse.getBody()));
-        return true;
-      } else {
-        neo4jAL.logError(
-            String.format(
-                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
-                this.uri, jsonResponse.getStatus()));
-        return false;
-      }
-    } catch (Exception e) {
-      neo4jAL.logError(
-          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
-      return false;
-    }
-  }
-
-  /**
    * Verify if the api is online
+   *
    * @return
    */
   public boolean getStatus() {
@@ -182,6 +184,7 @@ public class PythiaCom {
 
   /**
    * Find a framework
+   *
    * @param name Name of the framework
    * @param internalType Internal type of the framework
    * @return
@@ -197,17 +200,17 @@ public class PythiaCom {
     try {
       Map<String, Object> params = Map.of("name", name, "internalType", internalType);
       HttpResponse<String> pResponse =
-              Unirest.post(url.toString())
-                      .header("accept", "application/json")
-                      .header("Authorization", "Bearer " + token)
-                      .body(params)
-                      .asString();
+          Unirest.post(url.toString())
+              .header("accept", "application/json")
+              .header("Authorization", "Bearer " + token)
+              .body(new JSONObject(params))
+              .asString();
 
       if (pResponse.getStatus() == 200 || pResponse.getStatus() == 304) {
         neo4jAL.logInfo(String.format("Response for the update %s", pResponse.getBody()));
         PythiaResponse pr = new PythiaResponse(pResponse.getBody());
 
-        if(pr.data == null) return null;
+        if (pr.data == null) return null;
 
         try {
           fn = PythiaUtils.JSONtoFramework(neo4jAL, (JSONObject) pr.data);
@@ -217,13 +220,13 @@ public class PythiaCom {
         }
       } else {
         neo4jAL.logError(
-                String.format(
-                        "PYTHIA COM : Failed to connect to the API (%s) with status %d",
-                        this.uri, pResponse.getStatus()));
+            String.format(
+                "PYTHIA COM : Failed to connect to the API (%s) with status %d",
+                this.uri, pResponse.getStatus()));
       }
     } catch (Exception e) {
       neo4jAL.logError(
-              String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
+          String.format("PYTHIA COM : Failed to connect to the API (%s) with error.", this.uri), e);
     }
 
     return fn;

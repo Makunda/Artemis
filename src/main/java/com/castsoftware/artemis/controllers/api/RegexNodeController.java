@@ -21,24 +21,8 @@ import org.neo4j.graphdb.Result;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class RegexNodeController {
-
-  /**
-   * Create a Regex Node
-   *
-   * @see RegexNode#createRegexNode(Neo4jAL, String, List, List, String, String)
-   */
-  public static RegexNode createRegexNode(
-      Neo4jAL neo4jAL,
-      String name,
-      List<String> regexes,
-      List<String> internalTypes,
-      String framework,
-      String category) {
-    return RegexNode.createRegexNode(neo4jAL, name, regexes, internalTypes, framework, category);
-  }
 
   public static RegexNode createRegexNodeWithParent(
       Neo4jAL neo4jAL,
@@ -54,16 +38,6 @@ public class RegexNodeController {
     RegexNode.linkToParent(neo4jAL, rn.getId(), parentId);
 
     return rn;
-  }
-
-  /**
-   * Get a specific Regex Node
-   *
-   * @see RegexNode#getRegexNodeById(Neo4jAL, Long)
-   */
-  public static RegexNode getRegexNodeById(Neo4jAL neo4jAL, Long idNode)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    return RegexNode.getRegexNodeById(neo4jAL, idNode);
   }
 
   /**
@@ -134,45 +108,47 @@ public class RegexNodeController {
     return newNode;
   }
 
-  private static String arrayToList(List<String> array) {
-    return "['" + String.join("','", array) + "']";
+  /**
+   * Get a specific Regex Node
+   *
+   * @see RegexNode#getRegexNodeById(Neo4jAL, Long)
+   */
+  public static RegexNode getRegexNodeById(Neo4jAL neo4jAL, Long idNode)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    return RegexNode.getRegexNodeById(neo4jAL, idNode);
   }
 
   /**
-   * Flag objects matching a regex node
+   * Create a Regex Node
+   *
+   * @see RegexNode#createRegexNode(Neo4jAL, String, List, List, String, String)
+   */
+  public static RegexNode createRegexNode(
+      Neo4jAL neo4jAL,
+      String name,
+      List<String> regexes,
+      List<String> internalTypes,
+      String framework,
+      String category) {
+    return RegexNode.createRegexNode(neo4jAL, name, regexes, internalTypes, framework, category);
+  }
+
+  /**
+   * Test a Regex Node and get the number of matching object
    *
    * @param neo4jAL Neo4j Access Layer
-   * @param rn Regex Node
+   * @param id Id of the regex Node
    * @return
    * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
    */
-  private static Long flagObjects(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
-    if (rn.getRegexes().isEmpty()) return 0L;
-    String req = getRequestRegex(rn);
+  public static Long testRegexNode(Neo4jAL neo4jAL, Long id)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    neo4jAL.logInfo("Testing node : " + id);
+    RegexNode rn = RegexNode.getRegexNodeById(neo4jAL, id);
+    if (rn == null) return null;
 
-    Result res = neo4jAL.executeQuery(req);
-    if (!res.hasNext()) return 0L;
-    return (Long) res.next().get("count");
-  }
-
-  /**
-   * Get te request related to the Regex Node
-   * @param rn Regex Node
-   * @return
-   */
-  private static String getRequestRegex(RegexNode rn) {
-
-    String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
-    String tagName = demeterPrefix + rn.getCategory();
-
-    String clauseInternalType = "";
-    if(!rn.getInternalTypes().isEmpty()) clauseInternalType = String.format("AND o.InternalType in %s ", arrayToList(rn.getInternalTypes()));
-
-    return String.format(
-            "MATCH (obj:Object) WHERE any( x IN %1$s WHERE o.FullName=~x ) %2$s " +
-                    "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%3$s'] ELSE [ x IN obj.Tags WHERE NOT x CONTAINS '%4$s' ] + '%3$s' " +
-                    "END RETURN COUNT(DISTINCT obj) as count",
-            arrayToList(rn.getRegexes()), clauseInternalType, tagName, demeterPrefix);
+    return testRegex(neo4jAL, rn);
   }
 
   /**
@@ -207,39 +183,48 @@ public class RegexNodeController {
     return (Long) res.next().get("count");
   }
 
-  /**
-   * Test a Regex Node and get the number of matching object
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param id Id of the regex Node
-   * @return
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadNodeFormatException
-   */
-  public static Long testRegexNode(Neo4jAL neo4jAL, Long id)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    neo4jAL.logInfo("Testing node : " + id);
-    RegexNode rn = RegexNode.getRegexNodeById(neo4jAL, id);
-    if (rn == null) return null;
-
-    return testRegex(neo4jAL, rn);
+  private static String arrayToList(List<String> array) {
+    return "['" + String.join("','", array) + "']";
   }
-
 
   /**
    * Get the cypher regex of request of a regex
+   *
    * @param neo4jAL Neo4j access layer
    * @param id Id if the regex node
    * @return
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static String getRegexRequest (Neo4jAL neo4jAL, Long id)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+  public static String getRegexRequest(Neo4jAL neo4jAL, Long id)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
     RegexNode rn = RegexNode.getRegexNodeById(neo4jAL, id);
     if (rn == null) return "";
 
     return getRequestRegex(rn);
+  }
+
+  /**
+   * Get te request related to the Regex Node
+   *
+   * @param rn Regex Node
+   * @return
+   */
+  private static String getRequestRegex(RegexNode rn) {
+
+    String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
+    String tagName = demeterPrefix + rn.getCategory();
+
+    String clauseInternalType = "";
+    if (!rn.getInternalTypes().isEmpty())
+      clauseInternalType =
+          String.format("AND o.InternalType in %s ", arrayToList(rn.getInternalTypes()));
+
+    return String.format(
+        "MATCH (obj:Object) WHERE any( x IN %1$s WHERE o.FullName=~x ) %2$s "
+            + "SET obj.Tags = CASE WHEN obj.Tags IS NULL THEN ['%3$s'] ELSE [ x IN obj.Tags WHERE NOT x CONTAINS '%4$s' ] + '%3$s' "
+            + "END RETURN COUNT(DISTINCT obj) as count",
+        arrayToList(rn.getRegexes()), clauseInternalType, tagName, demeterPrefix);
   }
 
   /**
@@ -265,5 +250,22 @@ public class RegexNodeController {
     }
 
     return regexMatched;
+  }
+
+  /**
+   * Flag objects matching a regex node
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param rn Regex Node
+   * @return
+   * @throws Neo4jQueryException
+   */
+  private static Long flagObjects(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
+    if (rn.getRegexes().isEmpty()) return 0L;
+    String req = getRequestRegex(rn);
+
+    Result res = neo4jAL.executeQuery(req);
+    if (!res.hasNext()) return 0L;
+    return (Long) res.next().get("count");
   }
 }

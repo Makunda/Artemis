@@ -54,6 +54,21 @@ public class NodeConfiguration {
   }
 
   /**
+   * Delete and recreate a configuration
+   *
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static NodeConfiguration forceRecreateConfiguration(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    String req = String.format("MATCH (o:%s) DETACH DELETE o", NODE_LABEL);
+    neo4jAL.executeQuery(req);
+
+    return createConfiguration(neo4jAL);
+  }
+
+  /**
    * Create a new Artemis configuration mode
    *
    * @param neo4jAL Neo4j Access Layer
@@ -79,21 +94,6 @@ public class NodeConfiguration {
     Node n = (Node) res.next().get("node");
 
     return new NodeConfiguration(n);
-  }
-
-  /**
-   * Delete and recreate a configuration
-   *
-   * @param neo4jAL
-   * @return
-   * @throws Neo4jQueryException
-   */
-  public static NodeConfiguration forceRecreateConfiguration(Neo4jAL neo4jAL)
-      throws Neo4jQueryException, Neo4jBadRequestException {
-    String req = String.format("MATCH (o:%s) DETACH DELETE o", NODE_LABEL);
-    neo4jAL.executeQuery(req);
-
-    return createConfiguration(neo4jAL);
   }
 
   /**
