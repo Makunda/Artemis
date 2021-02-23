@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FrameworkResult {
+  public Long id = -1L;
   public String name;
   public String description;
   public String category;
@@ -27,6 +28,7 @@ public class FrameworkResult {
   public Double percentageOfDetection = .0;
 
   public FrameworkResult(FrameworkNode fn) {
+    if(fn.getNode() != null) id = fn.getNode().getId();
     this.name = fn.getName();
     this.category = fn.getCategory();
     this.description = fn.getDescription();

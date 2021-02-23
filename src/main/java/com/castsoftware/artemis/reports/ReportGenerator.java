@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.reports;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.utils.Workspace;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -113,9 +114,9 @@ public class ReportGenerator {
    * @return
    * @throws IOException
    */
-  public void generate() throws IOException {
+  public void generate(Neo4jAL neo4jAL) throws IOException {
     Path reportFolderPath =
-        Workspace.getWorkspacePath().resolve(Configuration.get("artemis.reports_generator.folder"));
+        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.reports_generator.folder"));
 
     if (!Files.exists(reportFolderPath)) {
       Files.createDirectories(reportFolderPath);

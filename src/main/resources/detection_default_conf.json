@@ -1,0 +1,15 @@
+{
+  "arrangement": {
+    "known_utilities" :  ["level", "view", "architecture", "module"],
+    "potentially_missing_code" :  ["level", "view", "architecture", "module"],
+    "in_other_applications" :  ["level", "view", "architecture", "module"],
+    "unknown_utilities" :  ["level", "view", "architecture", "module"],
+    "unknown_non_utilities" :  ["level", "view", "architecture", "module"],
+    "known_not_utilities" :  ["level", "view", "architecture", "module"]
+  },
+
+  "to_exclude" : {
+    "regex_object_fullName": [],
+    "regex_object_type" : []
+  }
+}

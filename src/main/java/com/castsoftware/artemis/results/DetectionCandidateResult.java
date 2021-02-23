@@ -9,25 +9,20 @@
  *
  */
 
-package com.castsoftware.artemis.controllers.api;
+package com.castsoftware.artemis.results;
 
-import com.castsoftware.artemis.config.detection.LanguageConfiguration;
-import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.nlp.SupportedLanguage;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class LanguageController {
+public class DetectionCandidateResult {
+	public String application;
+	public List<String> languages;
 
-  /**
-   * Get the list of the languages by Artemis
-   *
-   * @return
-   */
-  public static List<String> getSupportedLanguages() {
-    LanguageConfiguration lc = LanguageConfiguration.getInstance();
-    return lc.getLanguageMap().values().stream()
-        .map(LanguageProp::getName)
-        .collect(Collectors.toList());
-  }
+	public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
+		this.application = application;
+		this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
+	}
 }

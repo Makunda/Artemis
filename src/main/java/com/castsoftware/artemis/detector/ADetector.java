@@ -12,8 +12,11 @@
 package com.castsoftware.artemis.detector;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.DetectionProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.controllers.ApplicationController;
+import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -71,6 +74,7 @@ public abstract class ADetector {
   protected PythiaCom pythiaCom;
 
   protected boolean isPythiaUp = false;
+  protected DetectionProp detectionProp;
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
   private List<FrameworkNode> pythiaFrameworks;
@@ -84,44 +88,57 @@ public abstract class ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public ADetector(Neo4jAL neo4jAL, String application, SupportedLanguage language)
+  public ADetector(Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProperties)
       throws IOException, Neo4jQueryException {
     this.neo4jAL = neo4jAL;
     this.application = application;
+    this.detectionProp = detectionProperties;
 
+    neo4jAL.logInfo(String.format("[1/9] The instantiation of %s detector started.\nThis operation can take up to one minute.", language.toString()));
+
+    neo4jAL.logInfo("[2/9] Retrieving the list of candidates nodes...");
     // To investigate nodes
     this.toInvestigateNodes = new ArrayList<>();
     // Shuffle nodes to avoid being bust by the google bot detector
     Collections.shuffle(this.toInvestigateNodes);
 
     // Pythia Initialization
+    neo4jAL.logInfo("[3/9] Try to reach Pythia...");
     this.pythiaCom = PythiaCom.getInstance(neo4jAL);
     this.pythiaFrameworks = new ArrayList<>();
-    this.isPythiaUp = this.pythiaCom.pingApi();
+    this.isPythiaUp = this.pythiaCom.getConnected();
     if (!this.isPythiaUp) {
       neo4jAL.logInfo(
-          String.format("Failed to reach Pythia with status %s", pythiaCom.getStatus()));
+          String.format("[4/9] Failed to reach Pythia."));
+    } else {
+      neo4jAL.logInfo("[4/9] Connection to Pythia successful.");
     }
 
     // NLP
     // Make sure the nlp is trained, train it otherwise
-    this.nlpSaver = new NLPSaver(application, language.toString());
-    this.nlpEngine = new NLPEngine(neo4jAL.getLogger(), language);
+    neo4jAL.logInfo(String.format("[5/9] Starting the NLP¨Engine for %s...", language.toString()));
+    this.nlpSaver = new NLPSaver(neo4jAL, application, language.toString());
+    this.nlpEngine = new NLPEngine(neo4jAL, language);
 
     Path modelFile = this.nlpEngine.checkIfModelExists();
     if (!Files.exists(modelFile)) {
       this.nlpEngine.train();
     }
 
+    neo4jAL.logInfo("[6/9] Starting the report generator...");
     this.reportGenerator = new ReportGenerator(application);
-    this.googleParser = new GoogleParser(neo4jAL.getLogger());
+    neo4jAL.logInfo("[7/9] Starting the Google crawler...");
+    this.googleParser = new GoogleParser(neo4jAL);
     this.frameworkNodeList = new ArrayList<>();
 
     // Configuration
+    neo4jAL.logInfo("[8/9] Retrieve information relative to the language...");
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     this.languageProperties = lc.getLanguageProperties(language.toString());
 
     getNodes();
+    neo4jAL.logInfo("[9/9] The instantiation is successful !");
+
   }
 
   /**
@@ -172,19 +189,19 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public static ADetector getDetector(
-      Neo4jAL neo4jAL, String application, SupportedLanguage language)
+      Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProperties)
       throws IOException, Neo4jQueryException {
 
     ADetector aDetector;
     switch (language) {
       case COBOL:
-        aDetector = new CobolDetector(neo4jAL, application);
+        aDetector = new CobolDetector(neo4jAL, application, detectionProperties);
         break;
       case JAVA:
-        aDetector = new JavaDetector(neo4jAL, application);
+        aDetector = new JavaDetector(neo4jAL, application, detectionProperties);
         break;
       case NET:
-        aDetector = new NetDetector(neo4jAL, application);
+        aDetector = new NetDetector(neo4jAL, application, detectionProperties);
         break;
       default:
         throw new IllegalArgumentException(
@@ -196,12 +213,109 @@ public abstract class ADetector {
   public abstract ATree getExternalBreakdown();
 
   public boolean getOnlineMode() {
-    return Boolean.parseBoolean(Configuration.get("artemis.onlineMode")); // Get configuration
+    String config = Configuration.get("artemis.onlineMode"); // Get configuration
+    if(config != null && config.equals("true")) return true;
+    return false;
+
+  }
+
+  /**
+   * Apply a the Artemis detection property on a node
+   * @param n
+   */
+  public void applyNodeProperty(Node n) {
+
+  }
+
+
+  public void applyDescriptionProperty
+
+  /**
+   * Apply tag based on the configuration
+   * @param n Node to flag
+   * @param groupName Name of the group to extract
+   * @param arrangementParameters Parameters of the arrangement ( containing the destinations of the grouping )
+   */
+  public void applyDemeterTags(Node n, String groupName, List<String> arrangementParameters) {
+    if(arrangementParameters.contains("level")) {
+      try {
+        UtilsController.applyDemeterLevelTag(neo4jAL, n, groupName);
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(String.format("Failed to apply demeter level tag on node with Id: %s", n.getId()), e);
+      }
+    }
+
+    if(arrangementParameters.contains("view")) {
+      // Not implemented yet
+    }
+
+    if(arrangementParameters.contains("architecture")) {
+      try {
+        UtilsController.applyDemeterArchitectureTag(neo4jAL, n, groupName);
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(String.format("Failed to apply demeter architecture tag on node with Id: %s", n.getId()), e);
+      }
+    }
+
+    if(arrangementParameters.contains("module")) {
+      try {
+        UtilsController.applyDemeterModuleTag(neo4jAL, n, groupName);
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(String.format("Failed to apply demeter module tag on node with Id: %s", n.getId()), e);
+      }
+    }
+
   }
 
   public boolean getLearningMode() {
     return Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
   }
+
+  public void printConfig() {
+    neo4jAL.logInfo("_________________________________________________________________________________");
+    neo4jAL.logInfo("| -----------------  Artemis parameters  ----------------------- ");
+    neo4jAL.logInfo(String.format("| Detection launched on application                      : %s ", application) );
+    neo4jAL.logInfo(String.format("| Language of the detection is                           : %s ", languageProperties.getName()));
+    neo4jAL.logInfo(String.format("| Online Mode (Google search, repository, etc..) set on  : %s ", getOnlineMode()) );
+    neo4jAL.logInfo(String.format("| Persistent Mode set on                                 : %s ", getPersistentMode()) );
+    neo4jAL.logInfo(String.format("| Learning mode set on                                   : %s ", getLearningMode()) );
+    neo4jAL.logInfo(String.format("| Candidates for the detection (before filtering)        : %s ", toInvestigateNodes.size()) );
+    neo4jAL.logInfo("| ----------------  Detection parameters  ---------------------- ");
+    neo4jAL.logInfo(String.format("| Known Utilities will be extracted to                   : %s ", String.join(",", detectionProp.getKnownUtilities())) );
+    neo4jAL.logInfo(String.format("| Known non-utilities will be extracted to               : %s ", String.join(",", detectionProp.getKnownNotUtilities())) );
+    neo4jAL.logInfo(String.format("| Utilities in other applications will be extracted to   : %s ", String.join(",", detectionProp.getInOtherApplication())) );
+    neo4jAL.logInfo(String.format("| Potentially missing code will be extracted to          : %s ", String.join(",", detectionProp.getPotentiallyMissing())) );
+    neo4jAL.logInfo(String.format("| Unknown utilities will be extracted to                 : %s ", String.join(",", detectionProp.getUnknownUtilities())) );
+    neo4jAL.logInfo(String.format("| Unknown non-utilities will be extracted to             : %s ", String.join(",", detectionProp.getUnknownNonUtilities())) );
+    neo4jAL.logInfo("| ----------------  Exclusions parameters  --------------------- ");
+    neo4jAL.logInfo(String.format("| Exclusion on fullName                                  : %s ", String.join(",", detectionProp.getPatternFullNameToExclude())) );
+    neo4jAL.logInfo(String.format("| Exclusion on object type                               : %s ", String.join(",", detectionProp.getPatternObjectTypeToExclude())) );
+    neo4jAL.logInfo("__________________________________________________________________________________");
+  }
+
+  protected boolean isNameExcluded(Node n) {
+    if (!n.hasProperty("FullName")) return true;
+    String fullName = (String) n.getProperty("FullName");
+
+    for(String regex : detectionProp.getPatternFullNameToExclude()) {
+      if(fullName.matches(regex)) return true;
+    }
+
+    return false;
+  }
+
+  protected boolean isInternalTypeExcluded(Node n) {
+    if (!n.hasProperty("InternalType")) return true;
+    String internalType = (String) n.getProperty("InternalType");
+
+    for(String regex : detectionProp.getPatternObjectTypeToExclude()) {
+      if(internalType.matches(regex)) return true;
+    }
+
+    return false;
+
+  }
+
 
   /**
    * Launch the detection in the Application
@@ -214,12 +328,20 @@ public abstract class ADetector {
   public final List<FrameworkNode> launch()
       throws IOException, Neo4jQueryException, Neo4jBadRequestException {
 
+    printConfig();
+
+    // Detection flow
     List<FrameworkNode> frameworkNodes = extractUtilities();
     extractUnknownApp();
-    extractOtherApps();
+    extractOtherApps(); // Search in internal classes
     extractUnknownNonUtilities();
 
+    // Explode fullNames + Communities
+
     uploadResultToPythia();
+
+    // Add the language detected to the application
+    ApplicationController.addLanguage(neo4jAL, application, languageProperties.getName());
 
     return frameworkNodes;
   }

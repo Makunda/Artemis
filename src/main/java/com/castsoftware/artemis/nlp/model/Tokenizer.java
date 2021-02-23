@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 import opennlp.tools.tokenize.*;
 import opennlp.tools.util.*;
@@ -22,11 +23,11 @@ import java.nio.file.Path;
 
 public class Tokenizer {
 
-  public static void run() throws Exception {
+  public static void run(Neo4jAL neo4jAL) throws Exception {
 
     /** Read human understandable data & train a model */
     Path tokenizerFilePath =
-        Workspace.getWorkspacePath().resolve(Configuration.get("nlp.tokenizer_file.name"));
+        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("nlp.tokenizer_file.name"));
 
     // Read file with examples of tokenization.
     InputStreamFactory inputStreamFactory =

@@ -11,8 +11,8 @@
 
 package com.castsoftware.artemis.sof;
 
-import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;

@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.nlp.saver;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.nlp.model.NLPCategory;
 import com.castsoftware.artemis.utils.Workspace;
 
@@ -30,10 +31,12 @@ public class NLPSaver implements Closeable {
   private FileWriter fileWriter;
   private String application;
   private String language;
+  private Neo4jAL neo4jAL;
 
-  public NLPSaver(String application, String language) throws IOException {
+  public NLPSaver(Neo4jAL neo4jAL, String application, String language) throws IOException {
     this.application = application;
     this.language = language;
+    this.neo4jAL = neo4jAL;
     init();
   }
 
@@ -44,7 +47,7 @@ public class NLPSaver implements Closeable {
    */
   private void init() throws IOException {
     Path reportFolderPath =
-        Workspace.getWorkspacePath().resolve(Configuration.get("artemis.nlp_enrichment.folder"));
+        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.nlp_enrichment.folder"));
     if (!Files.exists(reportFolderPath)) {
       Files.createDirectories(reportFolderPath);
     }

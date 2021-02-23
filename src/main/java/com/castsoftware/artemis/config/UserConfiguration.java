@@ -11,8 +11,10 @@
 
 package com.castsoftware.artemis.config;
 
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.utils.Workspace;
+import org.neo4j.kernel.impl.security.User;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -22,7 +24,7 @@ import java.util.*;
 /** Retrieve the Configuration of the user config file */
 public class UserConfiguration {
 
-  private static Properties PROPERTIES = loadConfiguration();
+  private static Properties PROPERTIES ;
 
   /**
    * Get the corresponding value for the specified key as a String If the configuration file doesn't
@@ -32,9 +34,9 @@ public class UserConfiguration {
    * @see this.getAsObject to get the value as an object
    * @return <code>String</code> value for the key as a String
    */
-  public static String get(String key) {
+  public static String get(Neo4jAL neo4jAL, String key) {
     if (PROPERTIES == null) {
-      return "";
+      PROPERTIES = loadConfiguration(neo4jAL);
     }
 
     return PROPERTIES.get(key).toString();
@@ -46,17 +48,22 @@ public class UserConfiguration {
    * @param key
    * @return
    */
-  public static Boolean has(String key) {
+  public static Boolean has(Neo4jAL neo4jAL, String key) {
+    if (PROPERTIES == null) {
+      PROPERTIES = loadConfiguration(neo4jAL);
+    }
+
+    if(PROPERTIES == null) return false;
     return PROPERTIES.contains(key);
   }
 
-  public static String set(String key, String value) throws MissingFileException {
+  public static String set(Neo4jAL neo4jAL, String key, String value) throws MissingFileException {
     if (PROPERTIES == null) {
-      PROPERTIES = loadConfiguration();
+      PROPERTIES = loadConfiguration(neo4jAL);
     }
 
     PROPERTIES.setProperty(key, value);
-    saveAndReload();
+    saveAndReload(neo4jAL);
     return PROPERTIES.get(key).toString();
   }
 
@@ -65,8 +72,8 @@ public class UserConfiguration {
    *
    * @return The list properties found in the configuration file.
    */
-  private static Properties loadConfiguration() {
-    Path configurationPath = Workspace.getUserConfigPath();
+  private static Properties loadConfiguration(Neo4jAL neo4jAL) {
+    Path configurationPath = Workspace.getUserConfigPath(neo4jAL);
 
     if (!Files.exists(configurationPath)) {
       System.err.printf("No configuration file found at path : %s%n", configurationPath.toString());
@@ -97,9 +104,13 @@ public class UserConfiguration {
    *
    * @throws FileNotFoundException
    */
-  public static void saveAndReload() throws MissingFileException {
+  public static void saveAndReload(Neo4jAL neo4jAL) throws MissingFileException {
 
-    Path configurationPath = Workspace.getUserConfigPath();
+    if (PROPERTIES == null) {
+      PROPERTIES = loadConfiguration(neo4jAL);
+    }
+
+    Path configurationPath = Workspace.getUserConfigPath(neo4jAL);
 
     try (FileOutputStream file = new FileOutputStream(configurationPath.toFile())) {
 
@@ -149,9 +160,9 @@ public class UserConfiguration {
    * @param key
    * @return <Object>String</code> value for the key as a string
    */
-  public static Object getAsObject(String key) {
+  public static Object getAsObject(Neo4jAL neo4jAL, String key) {
     if (PROPERTIES == null) {
-      return null;
+      PROPERTIES = loadConfiguration(neo4jAL);
     }
 
     return PROPERTIES.get(key);
@@ -176,8 +187,12 @@ public class UserConfiguration {
    * @param key
    * @return
    */
-  public static boolean isKey(String key) {
+  public static boolean isKey(Neo4jAL neo4jAL, String key) {
     try {
+      if(PROPERTIES == null) {
+        PROPERTIES = loadConfiguration(neo4jAL);
+      }
+
       return PROPERTIES.containsKey(key);
     } catch (NullPointerException e) {
       return false;
@@ -189,8 +204,8 @@ public class UserConfiguration {
    *
    * @return
    */
-  public static Properties reload() {
-    PROPERTIES = loadConfiguration();
+  public static Properties reload(Neo4jAL neo4jAL) {
+    PROPERTIES = loadConfiguration(neo4jAL);
     return PROPERTIES;
   }
 }

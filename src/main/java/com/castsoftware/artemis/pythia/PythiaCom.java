@@ -46,14 +46,14 @@ public class PythiaCom {
     this.neo4jAL = neo4jAL;
 
     // If configuration is empty
-    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
+    if (!UserConfiguration.isKey(neo4jAL, "oracle.server") || !UserConfiguration.isKey(neo4jAL,"oracle.token")) {
       neo4jAL.logInfo("The Oracle has not been set up. Please check your configuration");
     }
     ;
 
     // Else get the properties
-    this.uri = UserConfiguration.get("oracle.server");
-    this.token = UserConfiguration.get("oracle.token");
+    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
+    this.token = UserConfiguration.get(neo4jAL,"oracle.token");
 
     this.connected = pingApi();
   }
@@ -64,25 +64,25 @@ public class PythiaCom {
    * @return True if the API is reachable, false otherwise
    */
   public boolean pingApi() {
-    this.uri = UserConfiguration.get("oracle.server");
+    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
 
     // If configuration is empty
-    if (!UserConfiguration.isKey("oracle.server") || !UserConfiguration.isKey("oracle.token")) {
+    if (!UserConfiguration.isKey(neo4jAL,"oracle.server") || !UserConfiguration.isKey(neo4jAL,"oracle.token")) {
       neo4jAL.logInfo(
           String.format(
               "The Oracle has not been set up. Please check your configuration at %s",
-              Workspace.getUserConfigPath().toString()));
-      if (!UserConfiguration.isKey("oracle.server"))
+              Workspace.getUserConfigPath(neo4jAL).toString()));
+      if (!UserConfiguration.isKey(neo4jAL,"oracle.server"))
         neo4jAL.logInfo("Missing oracle.server parameter.");
-      if (!UserConfiguration.isKey("oracle.token"))
+      if (!UserConfiguration.isKey(neo4jAL,"oracle.token"))
         neo4jAL.logInfo("Missing oracle.token parameter.");
       return false;
     }
     ;
 
     // Else get the properties
-    this.uri = UserConfiguration.get("oracle.server");
-    this.token = UserConfiguration.get("oracle.token");
+    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
+    this.token = UserConfiguration.get(neo4jAL,"oracle.token");
 
     if (uri == null || uri.isEmpty()) return false;
 
@@ -141,11 +141,11 @@ public class PythiaCom {
    * @throws MissingFileException
    */
   public String setUri(String newURI) throws MissingFileException {
-    UserConfiguration.set("oracle.server", newURI);
-    UserConfiguration.saveAndReload();
+    UserConfiguration.set(neo4jAL, "oracle.server", newURI);
+    UserConfiguration.saveAndReload(neo4jAL);
     this.uri = newURI;
 
-    return UserConfiguration.get("oracle.server");
+    return UserConfiguration.get(neo4jAL,"oracle.server");
   }
 
   /**
@@ -156,11 +156,11 @@ public class PythiaCom {
    * @throws MissingFileException
    */
   public Boolean setToken(String newToken) throws MissingFileException {
-    UserConfiguration.set("oracle.token", newToken);
-    UserConfiguration.saveAndReload();
+    UserConfiguration.set(neo4jAL, "oracle.token", newToken);
+    UserConfiguration.saveAndReload(neo4jAL);
     this.token = newToken;
 
-    return newToken == UserConfiguration.get("oracle.token");
+    return newToken == UserConfiguration.get(neo4jAL,"oracle.token");
   }
 
   /**
@@ -181,6 +181,14 @@ public class PythiaCom {
     connected = this.pingApi();
     return connected;
   }
+
+  public boolean getConnected() {
+    return connected;
+  }
+
+
+
+
 
   /**
    * Find a framework
@@ -276,7 +284,7 @@ public class PythiaCom {
   public Long getPullForecast() throws Neo4jQueryException, Neo4jBadRequestException {
     if (uri == null || uri.isEmpty()) return null;
 
-    NodeConfiguration nc = NodeConfiguration.getConfiguration(neo4jAL);
+    NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
 
     StringBuilder url = new StringBuilder();
     url.append(this.uri)
@@ -319,7 +327,7 @@ public class PythiaCom {
    */
   public List<FrameworkNode> pullFrameworks()
       throws Neo4jQueryException, Neo4jBadRequestException, UnirestException {
-    NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
+    NodeConfiguration nodeConf = NodeConfiguration.getInstance(neo4jAL);
     Long lastUpdate = nodeConf.getLastUpdate();
 
     StringBuilder url = new StringBuilder();

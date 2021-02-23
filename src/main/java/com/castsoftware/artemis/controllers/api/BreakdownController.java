@@ -11,9 +11,12 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.detection.DetectionParameters;
+import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.detector.ADetector;
 import com.castsoftware.artemis.detector.ATree;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.results.LeafResult;
@@ -35,7 +38,7 @@ public class BreakdownController {
    * @throws Neo4jQueryException
    */
   public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language)
-      throws IOException, Neo4jQueryException {
+          throws IOException, Neo4jQueryException, MissingFileException {
     ATree tree = getBreakDownAsTree(neo4jAL, application, language);
     return tree.flatten().stream()
         .map(x -> new LeafResult(x, tree.getDelimiterLeaves()))
@@ -53,12 +56,13 @@ public class BreakdownController {
    * @throws Neo4jQueryException
    */
   public static ATree getBreakDownAsTree(Neo4jAL neo4jAL, String application, String language)
-      throws IOException, Neo4jQueryException {
+          throws IOException, Neo4jQueryException, MissingFileException {
 
     if (!SupportedLanguage.has(language)) return null;
     SupportedLanguage sl = SupportedLanguage.getLanguage(language);
+    DetectionProp detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
 
-    ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl);
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl, detectionProp);
     ATree tree = aDetector.getExternalBreakdown();
     if (tree == null) return null;
 

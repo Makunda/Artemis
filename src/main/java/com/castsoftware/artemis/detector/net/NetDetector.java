@@ -11,6 +11,7 @@
 
 package com.castsoftware.artemis.detector.net;
 
+import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.detector.ADetector;
@@ -32,8 +33,8 @@ public class NetDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public NetDetector(Neo4jAL neo4jAL, String application) throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.NET);
+  public NetDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties) throws IOException, Neo4jQueryException {
+    super(neo4jAL, application, SupportedLanguage.NET, detectionProperties);
   }
 
   @Override

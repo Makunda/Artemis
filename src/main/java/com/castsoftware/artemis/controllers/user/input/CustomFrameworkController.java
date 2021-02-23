@@ -43,8 +43,8 @@ public class CustomFrameworkController {
   public static List<FrameworkNode> getUserCustomFrameworks(Neo4jAL neo4jAL)
       throws Neo4jQueryException {
     String artemisFrameworkTag = null;
-    if (UserConfiguration.isKey("artemis.tag.framework.identifier")) {
-      artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
+    if (UserConfiguration.isKey(neo4jAL, "artemis.tag.framework.identifier")) {
+      artemisFrameworkTag = UserConfiguration.get(neo4jAL, "artemis.tag.framework.identifier");
     } else {
       artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
       if (!alreadyWarned)
@@ -126,8 +126,8 @@ public class CustomFrameworkController {
    */
   public static boolean isTagPresent(Neo4jAL neo4jAL) throws Neo4jQueryException {
     String artemisFrameworkTag = null;
-    if (UserConfiguration.isKey("artemis.tag.framework.identifier")) {
-      artemisFrameworkTag = UserConfiguration.get("artemis.tag.framework.identifier");
+    if (UserConfiguration.isKey(neo4jAL, "artemis.tag.framework.identifier")) {
+      artemisFrameworkTag = UserConfiguration.get(neo4jAL, "artemis.tag.framework.identifier");
     } else {
       artemisFrameworkTag = Configuration.get("artemis.tag.framework.identifier");
       if (!alreadyWarned)
@@ -152,9 +152,9 @@ public class CustomFrameworkController {
    *
    * @return The tag
    */
-  public static String getTag() {
-    if (UserConfiguration.isKey("artemis.tag.framework.identifier")) {
-      return UserConfiguration.get("artemis.tag.framework.identifier");
+  public static String getTag(Neo4jAL neo4jAL) {
+    if (UserConfiguration.isKey(neo4jAL, "artemis.tag.framework.identifier")) {
+      return UserConfiguration.get(neo4jAL, "artemis.tag.framework.identifier");
     }
 
     return Configuration.get("artemis.tag.framework.identifier");
@@ -167,9 +167,9 @@ public class CustomFrameworkController {
    * @return The new value of the custom framework tag
    * @throws MissingFileException If the user configuration doesn't exist
    */
-  public static String setTag(String newTag) throws MissingFileException {
-    String tag = UserConfiguration.set("artemis.tag.framework.identifier", newTag);
-    UserConfiguration.reload();
+  public static String setTag(Neo4jAL neo4jAL, String newTag) throws MissingFileException {
+    String tag = UserConfiguration.set(neo4jAL, "artemis.tag.framework.identifier", newTag);
+    UserConfiguration.reload(neo4jAL);
     return tag;
   }
 }

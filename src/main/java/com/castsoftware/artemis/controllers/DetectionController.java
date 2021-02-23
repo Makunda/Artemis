@@ -12,10 +12,13 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.config.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.DetectionParameters;
+import com.castsoftware.artemis.config.detection.DetectionProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.detector.ADetector;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
@@ -27,6 +30,7 @@ import org.neo4j.graphdb.Result;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DetectionController {
   // Artemis properties
@@ -51,7 +55,7 @@ public class DetectionController {
    */
   public static void trainArtemis(Neo4jAL neo4jAL)
       throws IOException, NLPIncorrectConfigurationException {
-    NLPEngine nlpEngine = new NLPEngine(neo4jAL.getLogger(), SupportedLanguage.ALL);
+    NLPEngine nlpEngine = new NLPEngine(neo4jAL, SupportedLanguage.ALL);
     nlpEngine.train();
   }
 
@@ -64,7 +68,7 @@ public class DetectionController {
   @Deprecated
   public static List<FrameworkResult> launchBulkDetection(
       Neo4jAL neo4jAL, String language, Boolean flagNodes)
-      throws Neo4jQueryException, IOException, Neo4jBadRequestException {
+          throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
     List<FrameworkResult> resultList = new ArrayList<>();
 
     // Application
@@ -81,8 +85,13 @@ public class DetectionController {
         String.format(
             "Launching the analysis on applications : %s", String.join(", ", appNameList)));
 
+    DetectionProp detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
+
     for (String appName : appNameList) {
-      resultList.addAll(launchDetection(neo4jAL, appName, language, flagNodes));
+      resultList.addAll(getFrameworkList(neo4jAL, appName, SupportedLanguage.getLanguage(language), detectionProp)
+              .stream()
+              .map(FrameworkResult::new)
+              .collect(Collectors.toList()));
     }
 
     return resultList;
@@ -99,11 +108,18 @@ public class DetectionController {
    * @throws IOException
    */
   public static List<FrameworkResult> launchDetection(
-      Neo4jAL neo4jAL, String application, String language, Boolean flagNodes)
-      throws Neo4jQueryException, IOException, Neo4jBadRequestException {
+      Neo4jAL neo4jAL, String application, String language, String detectionPropAsJson)
+          throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
+
+    DetectionProp detectionProp;
+    if(!detectionPropAsJson.isBlank()) {
+      detectionProp = DetectionParameters.deserializeOrDefault(detectionPropAsJson);
+    } else {
+      detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
+    }
 
     List<FrameworkNode> frameworkList =
-        getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language));
+        getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language), detectionProp);
     List<FrameworkResult> resultList = new ArrayList<>();
 
     // Convert the framework detected to Framework Results
@@ -126,10 +142,10 @@ public class DetectionController {
    * @throws Neo4jQueryException
    */
   private static List<FrameworkNode> getFrameworkList(
-      Neo4jAL neo4jAL, String application, SupportedLanguage language)
-      throws IOException, Neo4jQueryException, Neo4jBadRequestException {
+      Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProp)
+          throws IOException, Neo4jQueryException, Neo4jBadRequestException, MissingFileException {
 
-    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language);
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language, detectionProp);
     return aDetector.launch();
   }
 }

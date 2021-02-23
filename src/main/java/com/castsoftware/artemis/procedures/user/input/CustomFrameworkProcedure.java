@@ -71,9 +71,10 @@ public class CustomFrameworkProcedure {
   @Description("artemis.get.framework.tag - Get the custom tag framework  ")
   public Stream<OutputMessage> getTag() throws ProcedureException {
     try {
-      String tag = CustomFrameworkController.getTag();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String tag = CustomFrameworkController.getTag(nal);
       return Stream.of(new OutputMessage(tag));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -84,9 +85,10 @@ public class CustomFrameworkProcedure {
   @Description("artemis.set.framework.tag(String tag) - Set the custom tag framework  ")
   public Stream<OutputMessage> setTag(@Name(value = "Tag") String tag) throws ProcedureException {
     try {
-      String newTag = CustomFrameworkController.setTag(tag);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String newTag = CustomFrameworkController.setTag(nal, tag);
       return Stream.of(new OutputMessage(newTag));
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

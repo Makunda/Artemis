@@ -11,18 +11,18 @@
 
 package com.castsoftware.artemis.config;
 
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Properties;
 
-/** Singleton in charge of the communication with the configuration file */
+/** Singleton in charge of the communication with the configuration file (Read Only) */
 public class Configuration {
 
-  private static final Properties PROPERTIES = loadConfiguration();
+  private static Properties PROPERTIES = loadConfiguration();
 
   /**
    * Test if the property is present in the Configuration Node. Then test if the property is present
@@ -31,11 +31,11 @@ public class Configuration {
    * @param property key
    * @return Return the value as String, null if it matches no key
    */
-  public static String getBestOfAllWorlds(String property) {
+  public static String getBestOfAllWorlds(Neo4jAL neo4jAL, String property) {
     // Add the Node configuration
-    if (UserConfiguration.has(property)) return UserConfiguration.get(property);
-    if (Configuration.has(property)) return Configuration.get(property);
-    return null;
+    if (UserConfiguration.has(neo4jAL, property) && UserConfiguration.get(neo4jAL, property) != null)
+      return UserConfiguration.get(neo4jAL, property);
+    return Configuration.get(property);
   }
 
   /**
@@ -45,6 +45,7 @@ public class Configuration {
    * @return
    */
   public static Boolean has(String key) {
+    PROPERTIES = loadConfiguration();
     return PROPERTIES.contains(key);
   }
 
@@ -56,6 +57,7 @@ public class Configuration {
    * @return <code>String</code> value for the key as a String
    */
   public static String get(String key) {
+    PROPERTIES = loadConfiguration();
     return PROPERTIES.get(key).toString();
   }
 
@@ -77,26 +79,9 @@ public class Configuration {
    */
   public static Object set(String key, String value) throws MissingFileException {
     PROPERTIES.setProperty(key, value);
-    saveAndReload();
     return PROPERTIES.get(key);
   }
 
-  /**
-   * Save the configuration and reload it
-   *
-   * @throws FileNotFoundException
-   */
-  public static void saveAndReload() throws MissingFileException {
-    try {
-      PROPERTIES.store(new FileOutputStream("artemis.properties"), null);
-      loadConfiguration();
-    } catch (IOException e) {
-      throw new MissingFileException(
-          "No file 'artemis.properties' was found.",
-          "resources/procedure.properties",
-          "CONFxLOAD1");
-    }
-  }
 
   private static Properties loadConfiguration() {
     try (InputStream input =
@@ -116,7 +101,6 @@ public class Configuration {
       return prop;
     } catch (IOException | MissingFileException ex) {
       System.err.println(ex.getMessage());
-      System.exit(-1);
     }
     return null;
   }

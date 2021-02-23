@@ -15,7 +15,6 @@ import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.mailer.Mailer;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -44,7 +43,7 @@ public class SmtpController {
    * @return True if the operation was successful, False if the list of address provided is not
    *     valid
    */
-  public static Boolean setMailsRecipients(String recipients) {
+  public static Boolean setMailsRecipients(Neo4jAL neo4jAL, String recipients) {
     // Validates the mails list
     try {
       InternetAddress[] emailAddr = InternetAddress.parse(recipients);
@@ -53,8 +52,7 @@ public class SmtpController {
       }
 
       // All the address are valid
-      Configuration.set(CONFIG_KEY_RECIPIENT_SMTP, recipients);
-      Configuration.saveAndReload();
+      UserConfiguration.set(neo4jAL, CONFIG_KEY_RECIPIENT_SMTP, recipients);
 
       return true;
     } catch (AddressException | MissingFileException ex) {
@@ -71,7 +69,7 @@ public class SmtpController {
   public static List<String> getMailConfiguration(Neo4jAL neo4jAL) {
     List<String> returnList = new ArrayList<>();
 
-    String smtpServer = UserConfiguration.get("smtp.server");
+    String smtpServer = UserConfiguration.get(neo4jAL, "smtp.server");
 
     neo4jAL.logInfo("Artemis directory loaded : " + UserConfiguration.isLoaded());
 
@@ -89,13 +87,5 @@ public class SmtpController {
     return returnList;
   }
 
-  public static void testMailCampaign() throws Exception {
-    try {
-      Mailer.bulkMail();
-    } catch (NullPointerException e) {
-      System.err.println("An error happened :");
-      System.err.println(e.getLocalizedMessage());
-      System.err.println(e.getMessage());
-    }
-  }
+
 }

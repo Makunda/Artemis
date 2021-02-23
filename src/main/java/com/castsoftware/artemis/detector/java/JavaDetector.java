@@ -11,6 +11,7 @@
 
 package com.castsoftware.artemis.detector.java;
 
+import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
@@ -53,8 +54,8 @@ public class JavaDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public JavaDetector(Neo4jAL neo4jAL, String application) throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.JAVA);
+  public JavaDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties) throws IOException, Neo4jQueryException {
+    super(neo4jAL, application, SupportedLanguage.JAVA, detectionProperties);
     this.externalTree = getExternalBreakdown();
     this.internalTree = getInternalBreakDown();
     this.corePrefix = "";
@@ -191,8 +192,13 @@ public class JavaDetector extends ADetector {
     List<FrameworkNode> frameworkNodes = new ArrayList<>();
 
     // Get base leaf detection rate
-    NLPResults res = getGoogleResult(ftl.getFullName());
-    MavenPackage candidate = parseMaven(ftl.getFullName());
+    NLPResults res = null;
+    MavenPackage candidate = null;
+    if(getOnlineMode()){
+      res = getGoogleResult(ftl.getFullName());
+      candidate = parseMaven(ftl.getFullName());
+    }
+
 
     // If the package on maven match the exact name or fullName, validate the Framework
     if (candidate != null

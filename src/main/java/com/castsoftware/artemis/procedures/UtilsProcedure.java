@@ -55,9 +55,10 @@ public class UtilsProcedure {
   public Stream<OutputMessage> setWorkspace(
       @Name(value = "ArtemisDirectory") String artemisDirectory) throws ProcedureException {
     try {
-      List<String> outputMessages = UtilsController.setArtemisDirectory(artemisDirectory);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<String> outputMessages = UtilsController.setArtemisDirectory(nal, artemisDirectory);
       return outputMessages.stream().map(OutputMessage::new);
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -82,9 +83,10 @@ public class UtilsProcedure {
   public Stream<BooleanResult> setOnlineMode(
       @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
     try {
-      Boolean mode = UtilsController.setOnlineMode(value);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.setOnlineMode(nal, value);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -95,9 +97,10 @@ public class UtilsProcedure {
   @Description("artemis.get.onlineMode() - Get the value of online mode.")
   public Stream<BooleanResult> getOnlineMode() throws ProcedureException {
     try {
-      Boolean mode = UtilsController.getOnlineMode();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.getOnlineMode(nal);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -109,9 +112,10 @@ public class UtilsProcedure {
   public Stream<BooleanResult> setRepositoryMode(
       @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
     try {
-      Boolean mode = UtilsController.setRepositoryMode(value);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.setRepositoryMode(nal, value);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -122,9 +126,10 @@ public class UtilsProcedure {
   @Description("artemis.get.repositoryMode() - Get the value of repository mode.")
   public Stream<BooleanResult> getRepositoryMode() throws ProcedureException {
     try {
-      Boolean mode = UtilsController.getRepositoryMode();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.getRepositoryMode(nal);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -136,9 +141,10 @@ public class UtilsProcedure {
   public Stream<BooleanResult> setLearningMode(
       @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
     try {
-      Boolean mode = UtilsController.setLearningMode(value);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.setLearningMode(nal, value);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -149,9 +155,10 @@ public class UtilsProcedure {
   @Description("artemis.get.learningMode() - Get the value of learning mode.")
   public Stream<BooleanResult> getLearningMode() throws ProcedureException {
     try {
-      Boolean mode = UtilsController.getLearningMode();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.getLearningMode(nal);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -163,9 +170,10 @@ public class UtilsProcedure {
   public Stream<BooleanResult> setPersistentMode(
       @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
     try {
-      Boolean mode = UtilsController.setRepositoryMode(value);
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.setRepositoryMode(nal, value);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception | MissingFileException e) {
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -176,9 +184,10 @@ public class UtilsProcedure {
   @Description("artemis.get.persistentMode() - Get the value of the persistent mode.")
   public Stream<BooleanResult> getPersistentMode() throws ProcedureException {
     try {
-      Boolean mode = UtilsController.getRepositoryMode();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.getRepositoryMode(nal);
       return Stream.of(new BooleanResult(mode));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

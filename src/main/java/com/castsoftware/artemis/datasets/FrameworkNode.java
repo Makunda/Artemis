@@ -65,6 +65,7 @@ public class FrameworkNode {
   private String discoveryDate;
   private String location = "";
   private String description = "";
+  private String category;
   private List<String> internalTypes = new ArrayList<>();
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
@@ -86,6 +87,7 @@ public class FrameworkNode {
     this.description = description;
     this.numberOfDetection = numberOfDetection;
     this.percentageOfDetection = 0.0;
+    this.category = CategoryController.getDefaultName(neo4jAL);
   }
 
   public FrameworkNode(
@@ -105,6 +107,7 @@ public class FrameworkNode {
     this.numberOfDetection = numberOfDetection;
     this.percentageOfDetection = percentageDetection;
     this.creationDate = creationDate;
+    this.category = CategoryController.getDefaultName(neo4jAL);
   }
 
   public static String getLabel() {
@@ -259,13 +262,10 @@ public class FrameworkNode {
       FrameworkType type = FrameworkType.getType(frameworkType);
 
       // Categories
-      String category = "Externals";
-      Iterator<Relationship> itCat =
-          n.getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
-              .iterator();
-      if (!itCat.hasNext()) {
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-        cn.getNode().createRelationshipTo(n, RelationshipType.withName(CATEGORY_RELATIONSHIP));
+      String category = CategoryController.getDefaultName(neo4jAL);
+      if(n.hasProperty(CATEGORY_PROPERTY)) {
+        String temp = (String) n.getProperty(CATEGORY_PROPERTY);
+        if(!temp.isBlank()) category = temp;
       }
 
       // User created
@@ -307,10 +307,16 @@ public class FrameworkNode {
       fn.setInternalTypes(internalType);
       fn.setUserCreated(userCreated);
 
+      try {
+        fn.setCategory(category);
+      } catch (Exception e) {
+        neo4jAL.logError("Failed to change the category of the node", e);
+      }
+
       fn.setNode(n);
 
       return fn;
-    } catch (Exception | Neo4jQueryException e) {
+    } catch (Exception  e) {
       String msg =
           String.format("The Framework node with id: %d is not in a correct format", n.getId());
       neo4jAL.logError(msg, e);
@@ -346,7 +352,8 @@ public class FrameworkNode {
     }
     // Node was found, return corresponding Framework Node
     Node n = (Node) res.next().get("node");
-    return FrameworkNode.fromNode(neo4jAL, n);
+    FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, n);
+    return fn;
   }
 
   /**
@@ -623,15 +630,16 @@ public class FrameworkNode {
         cn = new CategoryNode(category);
         return cn.getName();
       } catch (Neo4jBadNodeFormatException e) {
-        return CategoryController.getDefaultName();
+        return CategoryController.getDefaultName(neo4jAL);
       }
     } else {
       try {
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, this.getCategory());
+        if(category == null) category = "Externals";
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, this.category);
         cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
         return cn.getName();
       } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
-        return CategoryController.getDefaultName(); // Default value
+        return CategoryController.getDefaultName(neo4jAL); // Default value
       }
     }
   }
@@ -659,10 +667,10 @@ public class FrameworkNode {
       itCat.next().delete();
 
       try {
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, this.getCategory());
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
         cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
       } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
-        neo4jAL.logError("Failed to attach a new catedory to the node", e);
+        neo4jAL.logError("Failed to attach a new category to the node", e);
       }
     }
   }

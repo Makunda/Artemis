@@ -201,7 +201,7 @@ public class RegexNodeController {
     RegexNode rn = RegexNode.getRegexNodeById(neo4jAL, id);
     if (rn == null) return "";
 
-    return getRequestRegex(rn);
+    return getRequestRegex(neo4jAL, rn);
   }
 
   /**
@@ -210,9 +210,9 @@ public class RegexNodeController {
    * @param rn Regex Node
    * @return
    */
-  private static String getRequestRegex(RegexNode rn) {
+  private static String getRequestRegex(Neo4jAL neo4jAL, RegexNode rn) {
 
-    String demeterPrefix = UserConfiguration.get("demeter.prefix.group_level");
+    String demeterPrefix = UserConfiguration.get(neo4jAL, "demeter.prefix.group_level");
     String tagName = demeterPrefix + rn.getCategory();
 
     String clauseInternalType = "";
@@ -262,7 +262,7 @@ public class RegexNodeController {
    */
   private static Long flagObjects(Neo4jAL neo4jAL, RegexNode rn) throws Neo4jQueryException {
     if (rn.getRegexes().isEmpty()) return 0L;
-    String req = getRequestRegex(rn);
+    String req = getRequestRegex(neo4jAL, rn);
 
     Result res = neo4jAL.executeQuery(req);
     if (!res.hasNext()) return 0L;

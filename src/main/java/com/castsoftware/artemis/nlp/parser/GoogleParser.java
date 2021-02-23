@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.nlp.parser;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -47,9 +48,9 @@ public class GoogleParser {
   private Log log;
   private HeaderGenerator headerGenerator;
 
-  public GoogleParser(Log log) throws IOException {
-    this.log = log;
-    this.headerGenerator = HeaderGenerator.getInstance();
+  public GoogleParser(Neo4jAL neo4jAL) throws IOException {
+    this.log = neo4jAL.getLogger();
+    this.headerGenerator = HeaderGenerator.getInstance(neo4jAL);
   }
 
   public GoogleResult request(String query) throws IOException, GoogleBadResponseCodeException {

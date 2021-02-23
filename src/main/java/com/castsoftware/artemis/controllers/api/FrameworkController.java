@@ -11,8 +11,8 @@
 
 package com.castsoftware.artemis.controllers.api;
 
-import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.database.Neo4jTypeManager;
@@ -582,7 +582,7 @@ public class FrameworkController {
    */
   public static Long getLastUpdate(Neo4jAL neo4jAL)
       throws Neo4jQueryException, Neo4jBadRequestException {
-    NodeConfiguration nodeConf = NodeConfiguration.getConfiguration(neo4jAL);
+    NodeConfiguration nodeConf = NodeConfiguration.getInstance(neo4jAL);
     return nodeConf.getLastUpdate();
   }
 
@@ -610,5 +610,23 @@ public class FrameworkController {
     }
 
     return numFramework;
+  }
+
+  public static Boolean updateById(Neo4jAL neo4jAl, String id, String name, String discoveryDate, String location, String description, String type, String category, List<String> internalTypes) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+    Map<String, Object> params = Map.of("idNode", id);
+
+    Result res = neo4jAl.executeQuery(req, params);
+    if(res.hasNext()) {
+      Node oldFramework = (Node) res.next().get("framework");
+
+      FrameworkNode newFramework = addFramework(neo4jAl, name, discoveryDate, location, description, type, category, internalTypes);
+      oldFramework.delete();
+
+      return true;
+    } else {
+      return false;
+    }
+
   }
 }

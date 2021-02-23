@@ -20,7 +20,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
-public class Mailer {
+/* public class Mailer {
 
   static final String FROM = UserConfiguration.get("smtp.mail.username");
   static final String FROMNAME = UserConfiguration.get("smtp.mail.displayed_name");
@@ -108,3 +108,4 @@ public class Mailer {
     return msg;
   }
 }
+*/

@@ -12,10 +12,11 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.api.BreakdownController;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.results.InteractionResult;
@@ -122,7 +123,7 @@ public class InteractionsController {
       List<String> appToSearch,
       String language,
       String fullNameRegex)
-      throws Neo4jQueryException, IOException {
+          throws Neo4jQueryException, IOException, MissingFileException {
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
 

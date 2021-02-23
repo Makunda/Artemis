@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.detector.cobol;
 
-import com.castsoftware.artemis.controllers.UtilsController;
+import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
@@ -44,12 +44,9 @@ import java.util.*;
 public class CobolDetector extends ADetector {
 
   private final List<Node> unknownNonUtilities = new ArrayList<>();
-  private final List<Node> otherApps = new ArrayList<>();
-  private final List<Node> unknownApp = new ArrayList<>();
-
-  public CobolDetector(Neo4jAL neo4jAL, String application)
+  public CobolDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties)
       throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.COBOL);
+    super(neo4jAL, application, SupportedLanguage.COBOL, detectionProperties);
   }
 
   /**
@@ -83,12 +80,7 @@ public class CobolDetector extends ADetector {
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
     while (itNode.hasNext()) {
       Node n = itNode.next();
-      try {
-        UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Non Utilities");
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-            String.format("Failed to extract node with name %s to Unknown Non Utilities", e));
-      }
+      applyDemeterTags(n, "Unknowns Non Utilities",  detectionProp.getUnknownNonUtilities());
       itNode.remove();
     }
   }
@@ -97,6 +89,8 @@ public class CobolDetector extends ADetector {
   public void extractOtherApps() {
 
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+    Map<Node, List<String>> nodeListMap = new HashMap<>();
+
     while (itNode.hasNext()) {
       try {
 
@@ -107,14 +101,18 @@ public class CobolDetector extends ADetector {
         String internalType = (String) n.getProperty("InternalType");
 
         String req =
-            "MATCH (o:Object) WHERE NOT $appName in LABELS(o) AND o.Name=$nodeName AND o.InternalType=$internalType "
+            "MATCH (o:Object) WHERE NOT $appName in LABELS(o) AND o.Name=$nodeName AND o.InternalType=$internalType AND o.External=False "
                 + "RETURN [ x in LABELS(o) WHERE NOT x='Object'][0] as app";
         Map<String, Object> params =
             Map.of("appName", application, "nodeName", name, "internalType", internalType);
 
         Result res = neo4jAL.executeQuery(req, params);
         if (res.hasNext()) {
-          UtilsController.applyDemeterParentTag(neo4jAL, n, " : Unknowns other Applications");
+          List<String> appList = new ArrayList<>();
+          while (res.hasNext()) {
+            appList.add((String) res.next().get("app"));
+          }
+          nodeListMap.put(n, appList);
           itNode.remove();
         }
 
@@ -122,6 +120,11 @@ public class CobolDetector extends ADetector {
         neo4jAL.logError(
             String.format("Failed to extract node with name %s to  Unknown other applications", e));
       }
+    }
+
+    for (Map.Entry<Node, List<String>> en : nodeListMap.entrySet()) {
+      String groupName =  String.format("Unknowns in app : [%s]", String.join(", ", en.getValue()));
+      applyDemeterTags(en.getKey(), groupName, detectionProp.getInOtherApplication());
     }
   }
 
@@ -141,7 +144,7 @@ public class CobolDetector extends ADetector {
 
         // The name match the nGram
         if (name.startsWith(corePrefix)) {
-          UtilsController.applyDemeterTag(neo4jAL, n, "Unknown app");
+          applyDemeterTags(n, "Unknown application", detectionProp.getPotentiallyMissing());
           itNode.remove();
         }
       }
@@ -188,12 +191,50 @@ public class CobolDetector extends ADetector {
   }
 
   /**
+   * Filter and look only for unknowns utilities
+   */
+  private void filterNodes() {
+    int removed = 0;
+    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+
+    while (itNode.hasNext()) {
+      Node n = itNode.next();
+      if (!n.hasProperty("FullName")) continue;
+
+
+      String name = (String) n.getProperty("FullName");
+      String internalType = (String) n.getProperty("InternalType");
+
+      if(!name.contains("Unknown")) {
+        // If the name is flag as an utility , extract it, if not in is own category
+        itNode.remove();
+        removed++;
+      }
+
+      if(isNameExcluded(n)) {
+        // If the name match unauthorized regex
+        itNode.remove();
+        removed++;
+      }
+
+      if(isInternalTypeExcluded(n)) {
+        // If the name match unauthorized regex
+        itNode.remove();
+        removed++;
+      }
+    }
+
+    neo4jAL.logInfo(String.format("Filtering : %d nodes were removed. %d nodes remaining.", removed, toInvestigateNodes.size()));
+  }
+  /**
    * Process the external candidates
    *
    * @throws IOException
    */
   @Override
   public List<FrameworkNode> extractUtilities() throws IOException {
+    filterNodes();
+
     int numTreated = 0;
 
     neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
@@ -253,7 +294,7 @@ public class CobolDetector extends ADetector {
             // If flag option is set, apply a demeter tag to the nodes considered as framework
             if (fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
               String cat = fb.getCategory();
-              UtilsController.applyDemeterTag(neo4jAL, n, cat);
+              applyDemeterTags(n, cat, detectionProp.getKnownUtilities());
               listIterator.remove(); // Remove the node from the to investigate list
             } else {
               unknownNonUtilities.add(n);
@@ -288,7 +329,7 @@ public class CobolDetector extends ADetector {
     } catch (TransactionTerminatedException e) {
       neo4jAL.logError("The detection was interrupted. Saving the results...", e);
     } finally {
-      reportGenerator.generate(); // generate the report
+      reportGenerator.generate(neo4jAL); // generate the report
       nlpSaver.close();
     }
 

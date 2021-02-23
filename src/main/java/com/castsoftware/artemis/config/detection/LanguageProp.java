@@ -9,7 +9,7 @@
  *
  */
 
-package com.castsoftware.artemis.config;
+package com.castsoftware.artemis.config.detection;
 
 import java.util.List;
 

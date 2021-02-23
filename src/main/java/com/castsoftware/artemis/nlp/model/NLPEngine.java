@@ -12,8 +12,9 @@
 package com.castsoftware.artemis.nlp.model;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.config.LanguageConfiguration;
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.LanguageConfiguration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
 import com.castsoftware.artemis.nlp.KeywordsManager;
@@ -50,15 +51,17 @@ public class NLPEngine {
   private DocumentCategorizerME docCategorizer = null;
   private DoccatModel model = null;
   private SupportedLanguage language;
+  private Neo4jAL neo4jAL;
 
   private Path trainDatasetFilePath;
   private Path testDatasetFilePath;
 
   private Log log;
 
-  public NLPEngine(Log log, SupportedLanguage language) {
+  public NLPEngine(Neo4jAL neo4jAL, SupportedLanguage language) {
     this.language = language;
-    this.log = log;
+    this.neo4jAL = neo4jAL;
+    this.log = neo4jAL.getLogger();
 
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     this.languageProperties = lc.getLanguageProperties(language.toString());
@@ -72,8 +75,8 @@ public class NLPEngine {
    * @param sentence The sentence to tokenize
    * @return Tokens found as a list of string
    */
-  private static String[] getTokens(String sentence) {
-    Path tokenizerFilePath = Workspace.getWorkspacePath().resolve(TOKENIZER_FILE_NAME);
+  private static String[] getTokens(Neo4jAL neo4jAL, String sentence) {
+    Path tokenizerFilePath = Workspace.getWorkspacePath(neo4jAL).resolve(TOKENIZER_FILE_NAME);
 
     // Use model that was created in earlier tokenizer
     try (InputStream modelIn = new FileInputStream(tokenizerFilePath.toFile())) {
@@ -123,7 +126,7 @@ public class NLPEngine {
   /** Load Datasets and evaluate the model */
   public Double evaluateModel() throws IOException {
     Path testDtFile =
-        Workspace.getWorkspacePath()
+        Workspace.getWorkspacePath(neo4jAL)
             .resolve(languageProperties.getName())
             .resolve(Configuration.get("nlp.dataset_test.name"));
 
@@ -180,7 +183,7 @@ public class NLPEngine {
    */
   public void train() throws IOException {
     Path trainDtFile =
-        Workspace.getWorkspacePath()
+        Workspace.getWorkspacePath(neo4jAL)
             .resolve(languageProperties.getName())
             .resolve(Configuration.get("nlp.dataset_train.name"));
 
@@ -245,7 +248,7 @@ public class NLPEngine {
       String message =
           String.format(
               "No model file with name '%s' was found under workspace '%s'.",
-              modelFile, Workspace.getWorkspacePath().toString());
+              modelFile, Workspace.getWorkspacePath(neo4jAL).toString());
       throw new NLPIncorrectConfigurationException(message, ERROR_PREFIX);
     }
 
@@ -260,7 +263,7 @@ public class NLPEngine {
    * @return
    */
   public Path checkIfModelExists() {
-    Path modelFile = Workspace.getLanguageModelFile(this.language);
+    Path modelFile = Workspace.getLanguageModelFile(neo4jAL, this.language);
     log.info("Checking the existence of the model file at '%s'.", modelFile);
     if (Files.exists(modelFile)) {
       return modelFile;

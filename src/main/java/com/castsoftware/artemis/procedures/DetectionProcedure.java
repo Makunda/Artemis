@@ -14,6 +14,7 @@ package com.castsoftware.artemis.procedures;
 import com.castsoftware.artemis.controllers.DetectionController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
+import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
@@ -44,16 +45,18 @@ public class DetectionProcedure {
   public Stream<FrameworkResult> launchDetection(
       @Name(value = "ApplicationContext") String applicationContext,
       @Name(value = "Language", defaultValue = "") String language,
-      @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes)
+      @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes,
+      @Name(value = "Parameters", defaultValue = "") String jsonParameters
+      )
       throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       List<FrameworkResult> detectedFrameworks =
-          DetectionController.launchDetection(nal, applicationContext, language, flagNodes);
+          DetectionController.launchDetection(nal, applicationContext, language, jsonParameters);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -74,7 +77,7 @@ public class DetectionProcedure {
           DetectionController.launchBulkDetection(nal, language, flagNodes);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

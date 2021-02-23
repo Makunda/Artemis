@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.nlp.parser;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 
 import java.io.*;
@@ -25,11 +26,13 @@ public class HeaderGenerator {
 
   private Integer numberOfLine = 0;
   private File headerFile = null;
+  private Neo4jAL neo4jAL;
 
-  private HeaderGenerator() throws IOException {
+  private HeaderGenerator(Neo4jAL neo4jAL) throws IOException {
     Path headerFilePath =
-        Workspace.getWorkspacePath().resolve(Configuration.get("artemis.parser.header_file.name"));
-    headerFile = headerFilePath.toFile();
+        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.parser.header_file.name"));
+    this.headerFile = headerFilePath.toFile();
+    this.neo4jAL = neo4jAL;
 
     if (!headerFile.exists()) {
       throw new IOException(String.format("File with name '%s' does not exist.", headerFile));
@@ -55,8 +58,8 @@ public class HeaderGenerator {
     }
   }
 
-  public static HeaderGenerator getInstance() throws IOException {
-    if (instance == null) instance = new HeaderGenerator();
+  public static HeaderGenerator getInstance(Neo4jAL neo4jAL) throws IOException {
+    if (instance == null) instance = new HeaderGenerator(neo4jAL);
     return instance;
   }
 

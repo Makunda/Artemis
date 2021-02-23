@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.detector.java;
 
-import com.castsoftware.artemis.config.LanguageProp;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;

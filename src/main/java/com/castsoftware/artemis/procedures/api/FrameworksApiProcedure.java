@@ -68,6 +68,38 @@ public class FrameworksApiProcedure {
     }
   }
 
+  @Procedure(value = "artemis.api.update.framework.by.id", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.update.framework.by.id(Long id, String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalType) - Update a framework with a specific id")
+  public Stream<BooleanResult> updateFrameworkById(
+          @Name(value = "Id") String id,
+          @Name(value = "Name") String name,
+          @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
+          @Name(value = "Location", defaultValue = "") String location,
+          @Name(value = "Description", defaultValue = "") String description,
+          @Name(value = "Type", defaultValue = "") String type,
+          @Name(value = "Category", defaultValue = "") String category,
+          @Name(value = "InternalTypes", defaultValue = "[]") List<String> internalTypes)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean updated =
+              FrameworkController.updateById(
+                      nal, id, name, discoveryDate, location, description, type, category, internalTypes);
+
+      return Stream.of(new BooleanResult(updated));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException
+            | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
   @Procedure(value = "artemis.api.update.framework", mode = Mode.WRITE)
   @Description(
       "artemis.api.update.framework(String oldName, String oldInternalType, String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, String InternalType, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")

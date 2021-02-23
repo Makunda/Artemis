@@ -45,7 +45,7 @@ public class FamilyGroup {
 
   public void addDemeterTag(Neo4jAL neo4jAL) throws Neo4jQueryException {
     for (Node n : nodeList) {
-      UtilsController.applyDemeterTag(neo4jAL, n, commonPrefix);
+      UtilsController.applyDemeterLevelTag(neo4jAL, n, commonPrefix);
     }
   }
 
