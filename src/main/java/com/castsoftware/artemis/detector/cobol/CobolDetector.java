@@ -17,6 +17,7 @@ import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.ADetector;
 import com.castsoftware.artemis.detector.ATree;
+import com.castsoftware.artemis.detector.DetectionCategory;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
@@ -80,7 +81,7 @@ public class CobolDetector extends ADetector {
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
     while (itNode.hasNext()) {
       Node n = itNode.next();
-      applyDemeterTags(n, "Unknowns Non Utilities",  detectionProp.getUnknownNonUtilities());
+      applyNodeProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
       itNode.remove();
     }
   }
@@ -123,8 +124,13 @@ public class CobolDetector extends ADetector {
     }
 
     for (Map.Entry<Node, List<String>> en : nodeListMap.entrySet()) {
-      String groupName =  String.format("Unknowns in app : [%s]", String.join(", ", en.getValue()));
-      applyDemeterTags(en.getKey(), groupName, detectionProp.getInOtherApplication());
+      String groupName =  String.format("[%s]", String.join(", ", en.getValue()));
+      try {
+        applyNodeProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
+        applyOtherApplicationsProperty(en.getKey(), groupName);
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError("Failed to create a 'other application' property", e);
+      }
     }
   }
 
@@ -144,7 +150,7 @@ public class CobolDetector extends ADetector {
 
         // The name match the nGram
         if (name.startsWith(corePrefix)) {
-          applyDemeterTags(n, "Unknown application", detectionProp.getPotentiallyMissing());
+          applyNodeProperty(n, DetectionCategory.MISSING_CODE);
           itNode.remove();
         }
       }
@@ -241,7 +247,6 @@ public class CobolDetector extends ADetector {
     neo4jAL.logInfo(
         String.format("Investigation launched against %d objects.", toInvestigateNodes.size()));
 
-    List<Node> notDetected = new ArrayList<>();
     // Init the save
 
     ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
@@ -294,11 +299,12 @@ public class CobolDetector extends ADetector {
             // If flag option is set, apply a demeter tag to the nodes considered as framework
             if (fb.getFrameworkType() == FrameworkType.FRAMEWORK) {
               String cat = fb.getCategory();
-              applyDemeterTags(n, cat, detectionProp.getKnownUtilities());
+              String description = fb.getDescription();
+              applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
+              applyDescriptionProperty(n, description);
+              applyCategory(n, cat);
+
               listIterator.remove(); // Remove the node from the to investigate list
-            } else {
-              unknownNonUtilities.add(n);
-              notDetected.add(n);
             }
 
             // Increment the number of detection and add it to the result lists

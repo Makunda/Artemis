@@ -11,9 +11,16 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
+import com.castsoftware.artemis.detector.DetectionCategory;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.pythia.PythiaCom;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class ConfigurationController {
 
@@ -62,5 +69,32 @@ public class ConfigurationController {
   public static Boolean getTokenPythia(Neo4jAL neo4jAL) throws MissingFileException {
     Boolean present = PythiaCom.getInstance(neo4jAL).isTokenPresent();
     return present;
+  }
+
+  /**
+   * Get the property of the node detection
+   * @return
+   * @throws MissingFileException
+   */
+  public static String getNodeDetectionProperty() throws MissingFileException {
+    return Configuration.get("artemis.node.detection");
+  }
+
+  /**
+   * Get the name of category property applied on the nodes
+   * @return
+   * @throws MissingFileException
+   */
+  public static String getNodeCategoryProperty() throws MissingFileException {
+    return Configuration.get("artemis.node.category");
+  }
+
+  /**
+   * Get the different values of the detection property
+   * @return
+   * @throws MissingFileException
+   */
+  public static List<String> getListDetectionValues() throws MissingFileException {
+    return Arrays.stream(DetectionCategory.values()).map(Objects::toString).collect(Collectors.toList());
   }
 }

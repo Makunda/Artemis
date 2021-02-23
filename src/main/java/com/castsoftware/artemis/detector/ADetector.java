@@ -223,12 +223,43 @@ public abstract class ADetector {
    * Apply a the Artemis detection property on a node
    * @param n
    */
-  public void applyNodeProperty(Node n) {
-
+  public void applyNodeProperty(Node n, DetectionCategory detectedAs) {
+    String artemisProperty = Configuration.get("artemis.node.detection");
+    n.setProperty(artemisProperty, detectedAs.toString());
   }
 
+  /**
+   * Apply a category to the node
+   * @param n
+   * @param category
+   */
+  public void applyCategory(Node n, String category) throws Neo4jQueryException {
+    String artemisProperty = Configuration.get("artemis.node.category");
+    n.setProperty(artemisProperty, category);
+  }
 
-  public void applyDescriptionProperty
+  /**
+   * Apply a description to the node
+   * @param n
+   * @param description
+   */
+  public void applyDescriptionProperty(Node n, String description) throws Neo4jQueryException {
+    String propertyName = Configuration.get("artemis.sub_node.description.property");
+    String req = "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty " +
+            "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
+    Map<String, Object> params = Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
+
+    neo4jAL.executeQuery(req, params);
+  }
+
+  public void applyOtherApplicationsProperty(Node n, String description) throws Neo4jQueryException {
+    String propertyName = Configuration.get("artemis.sub_node.in_other_apps.property");
+    String req = "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty " +
+            "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
+    Map<String, Object> params = Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
+
+    neo4jAL.executeQuery(req, params);
+  }
 
   /**
    * Apply tag based on the configuration

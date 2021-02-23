@@ -23,6 +23,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 
 import java.util.*;
@@ -612,7 +613,7 @@ public class FrameworkController {
     return numFramework;
   }
 
-  public static Boolean updateById(Neo4jAL neo4jAl, String id, String name, String discoveryDate, String location, String description, String type, String category, List<String> internalTypes) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+  public static Boolean updateById(Neo4jAL neo4jAl, Long id, String name, String discoveryDate, String location, String description, String type, String category, List<String> internalTypes) throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
     Map<String, Object> params = Map.of("idNode", id);
 
@@ -621,12 +622,62 @@ public class FrameworkController {
       Node oldFramework = (Node) res.next().get("framework");
 
       FrameworkNode newFramework = addFramework(neo4jAl, name, discoveryDate, location, description, type, category, internalTypes);
+      for(Relationship rel : oldFramework.getRelationships()) rel.delete();
       oldFramework.delete();
 
+      newFramework.createNode();
       return true;
     } else {
       return false;
     }
 
+  }
+
+  /**
+   * Delete a Framework node by its ID
+   * @param neo4jAl Neo4j Access Layer
+   * @param id Id of the Framework node
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static Boolean deleteById(Neo4jAL neo4jAl, Long id) throws Neo4jQueryException {
+    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+    Map<String, Object> params = Map.of("idNode", id);
+
+    Result res = neo4jAl.executeQuery(req, params);
+    if(res.hasNext()) {
+      Node oldFramework = (Node) res.next().get("framework");
+      for(Relationship rel : oldFramework.getRelationships()) rel.delete();
+      oldFramework.delete();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static Boolean toggleValidationById(Neo4jAL neo4jAl, Long id) throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+    Map<String, Object> params = Map.of("idNode", id);
+
+    Result res = neo4jAl.executeQuery(req, params);
+    if(res.hasNext()) {
+      Node oldFramework = (Node) res.next().get("framework");
+      FrameworkNode frameworkNode = FrameworkNode.fromNode(neo4jAl, oldFramework);
+      FrameworkType ft = frameworkNode.getFrameworkType();
+
+      switch (ft) {
+        case FRAMEWORK:
+          frameworkNode.updateType(FrameworkType.NOT_FRAMEWORK);
+          break;
+        case TO_INVESTIGATE:
+        case NOT_FRAMEWORK:
+        case NOT_KNOWN:
+          frameworkNode.updateType(FrameworkType.FRAMEWORK);
+          break;
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 }

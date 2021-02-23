@@ -45,8 +45,8 @@ public class UtilsController {
    *
    * @return
    */
-  public static String getArtemisDirectory() {
-    return Configuration.get("artemis.workspace.folder");
+  public static String getArtemisDirectory(Neo4jAL neo4jAL) {
+    return Workspace.getWorkspacePath(neo4jAL).toAbsolutePath().toString();
   }
 
   /**

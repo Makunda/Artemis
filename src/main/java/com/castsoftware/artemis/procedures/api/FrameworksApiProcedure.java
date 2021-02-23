@@ -40,7 +40,7 @@ public class FrameworksApiProcedure {
 
   @Procedure(value = "artemis.api.add.framework", mode = Mode.WRITE)
   @Description(
-      "artemis.api.add.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalType) - Add a framework")
+      "artemis.api.add.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes) - Add a framework")
   public Stream<FrameworkResult> addFramework(
       @Name(value = "Name") String name,
       @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
@@ -72,7 +72,7 @@ public class FrameworksApiProcedure {
   @Description(
           "artemis.api.update.framework.by.id(Long id, String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalType) - Update a framework with a specific id")
   public Stream<BooleanResult> updateFrameworkById(
-          @Name(value = "Id") String id,
+          @Name(value = "Id") Long id,
           @Name(value = "Name") String name,
           @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
           @Name(value = "Location", defaultValue = "") String location,
@@ -98,6 +98,51 @@ public class FrameworksApiProcedure {
       throw ex;
     }
   }
+
+  @Procedure(value = "artemis.api.delete.framework.by.id", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.delete.framework.by.id(Long id) - Delete a framework with a specific id")
+  public Stream<BooleanResult> updateFrameworkById(
+          @Name(value = "Id") Long id)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean updated =
+              FrameworkController.deleteById(
+                      nal, id);
+
+      return Stream.of(new BooleanResult(updated));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.toggle.validation.framework.by.id", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.toggle.framework.by.id(Long id) - Toggle a framework with a specific id")
+  public Stream<BooleanResult> toggleFrameworkById(
+          @Name(value = "Id") Long id)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean updated =
+              FrameworkController.toggleValidationById(
+                      nal, id);
+
+      return Stream.of(new BooleanResult(updated));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
 
 
   @Procedure(value = "artemis.api.update.framework", mode = Mode.WRITE)

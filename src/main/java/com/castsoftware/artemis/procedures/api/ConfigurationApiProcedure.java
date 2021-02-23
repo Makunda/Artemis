@@ -23,6 +23,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public class ConfigurationApiProcedure {
@@ -91,6 +92,55 @@ public class ConfigurationApiProcedure {
       Boolean changed = ConfigurationController.setTokenPythia(nal, token);
       return Stream.of(new BooleanResult(changed));
     } catch (Exception | Neo4jConnectionError | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.configuration.get.detection.property", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.configuration.get.detection.property - Get the name of detection property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeDetectionProperty()
+          throws ProcedureException {
+
+    try {
+      String detectionProperty = ConfigurationController.getNodeDetectionProperty();
+      return Stream.of(new OutputMessage(detectionProperty));
+    } catch (Exception | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.configuration.get.category.property", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.configuration.get.category.property - Get the name of category property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeCategoryProperty()
+          throws ProcedureException {
+
+    try {
+      String detectionProperty = ConfigurationController.getNodeCategoryProperty();
+      return Stream.of(new OutputMessage(detectionProperty));
+    } catch (Exception  | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+  @Procedure(value = "artemis.api.configuration.get.detection.property.values", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.configuration.get.detection.property.values - Get the different values of the detection property")
+  public Stream<OutputMessage> getListDetectionValues()
+          throws ProcedureException {
+
+    try {
+      List<String> values = ConfigurationController.getListDetectionValues();
+      return values.stream().map(OutputMessage::new);
+    } catch (Exception  | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

@@ -40,9 +40,10 @@ public class UtilsProcedure {
   @Description("artemis.get.workspace() - Get the workspace directory of the Artemis extension.")
   public Stream<OutputMessage> getWorkspace() throws ProcedureException {
     try {
-      String message = UtilsController.getArtemisDirectory();
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String message = UtilsController.getArtemisDirectory(nal);
       return Stream.of(new OutputMessage(message));
-    } catch (Exception e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

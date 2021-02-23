@@ -176,6 +176,13 @@ public class FrameworkNode {
     node.setProperty(getDescriptionProperty(), description);
   }
 
+  public void updateType(FrameworkType ft) {
+    this.frameworkType = ft;
+
+    if(node == null) return;
+    node.setProperty(getTypeProperty(), ft.toString());
+  }
+
   public void updateDetectionScore(Double score) {
     this.percentageOfDetection = score;
 
