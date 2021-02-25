@@ -23,7 +23,6 @@ import org.neo4j.graphdb.Result;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
@@ -38,11 +37,14 @@ public class IOController {
    * @throws ProcedureException
    */
   public static Stream<OutputMessage> exportFrameworks(Neo4jAL neo4jAL, String path)
-          throws ProcedureException, Neo4jQueryException {
+      throws ProcedureException, Neo4jQueryException {
     List<String> listLabel = Arrays.asList(FrameworkNode.getLabel());
     List<Node> listNode = new ArrayList<>();
 
-    String req = String.format("MATCH (o:%s) WHERE o.%s=$frameworkType RETURN o as framework", FrameworkNode.getLabel(), FrameworkNode.getTypeProperty());
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE o.%s=$frameworkType RETURN o as framework",
+            FrameworkNode.getLabel(), FrameworkNode.getTypeProperty());
     Map<String, Object> params = Map.of("frameworkType", "Framework");
     Result res = neo4jAL.executeQuery(req, params);
     while (res.hasNext()) {
@@ -52,27 +54,15 @@ public class IOController {
     return exportNodes(neo4jAL, path, listLabel, listNode);
   }
 
-  public static Stream<OutputMessage> exportAllFrameworks(Neo4jAL neo4jAL, String path)
-          throws ProcedureException, Neo4jQueryException {
-    List<String> listLabel = Arrays.asList(FrameworkNode.getLabel());
-    List<Node> listNode = new ArrayList<>();
-
-    String req = String.format("MATCH (o:%s) RETURN o as framework", FrameworkNode.getLabel());
-    Map<String, Object> params = Map.of("frameworkType", "Framework");
-    Result res = neo4jAL.executeQuery(req, params);
-    while (res.hasNext()) {
-      listNode.add((Node) res.next().get("framework"));
-    }
-
-    return exportNodes(neo4jAL, path, listLabel, listNode);
-  }
-
-
-  private static Stream<OutputMessage>exportNodes(Neo4jAL neo4jAL, String path, List<String> labels, List<Node> listNode) throws ProcedureException, Neo4jQueryException {
+  private static Stream<OutputMessage> exportNodes(
+      Neo4jAL neo4jAL, String path, List<String> labels, List<Node> listNode)
+      throws ProcedureException, Neo4jQueryException {
     Path exportPath = null;
     if (path.isBlank() || Files.exists(Path.of(path))) {
-      neo4jAL.logInfo(String.format("The path '%s' doesn't seem to be valid. Will use default path : %s ", path,
-              Workspace.getExportFolder(neo4jAL).toString()));
+      neo4jAL.logInfo(
+          String.format(
+              "The path '%s' doesn't seem to be valid. Will use default path : %s ",
+              path, Workspace.getExportFolder(neo4jAL).toString()));
       exportPath = Workspace.getExportFolder(neo4jAL);
     } else {
       exportPath = Path.of(path);
@@ -84,5 +74,20 @@ public class IOController {
 
     Exporter exporter = new Exporter(neo4jAL);
     return exporter.save(labels, listNode, exportPath, "Export_" + asString, false);
+  }
+
+  public static Stream<OutputMessage> exportAllFrameworks(Neo4jAL neo4jAL, String path)
+      throws ProcedureException, Neo4jQueryException {
+    List<String> listLabel = Arrays.asList(FrameworkNode.getLabel());
+    List<Node> listNode = new ArrayList<>();
+
+    String req = String.format("MATCH (o:%s) RETURN o as framework", FrameworkNode.getLabel());
+    Map<String, Object> params = Map.of("frameworkType", "Framework");
+    Result res = neo4jAL.executeQuery(req, params);
+    while (res.hasNext()) {
+      listNode.add((Node) res.next().get("framework"));
+    }
+
+    return exportNodes(neo4jAL, path, listLabel, listNode);
   }
 }

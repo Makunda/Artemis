@@ -47,7 +47,8 @@ public class NLPSaver implements Closeable {
    */
   private void init() throws IOException {
     Path reportFolderPath =
-        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.nlp_enrichment.folder"));
+        Workspace.getWorkspacePath(neo4jAL)
+            .resolve(Configuration.get("artemis.nlp_enrichment.folder"));
     if (!Files.exists(reportFolderPath)) {
       Files.createDirectories(reportFolderPath);
     }

@@ -13,7 +13,6 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.controllers.api.LanguageController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
@@ -24,117 +23,144 @@ import java.util.stream.Collectors;
 
 public class ApplicationController {
 
-	private static String SCANNED_LANGUAGES_PROPERTY = "ScannedLanguages";
+  private static String SCANNED_LANGUAGES_PROPERTY = "ScannedLanguages";
 
-	/**
-	 * Get languages scanned in an application
-	 * @param neo4jAL Neo4j Access Layer
-	 * @param application Name of the application
-	 * @return
-	 * @throws Neo4jQueryException
-	 */
-	public static List<SupportedLanguage> getScannedLanguages(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
-		String req = String.format("MATCH (a:Application) WHERE a.Name=$Name RETURN a.%s as languages", SCANNED_LANGUAGES_PROPERTY);
-		Map<String, Object> params = Map.of("Name", application);
+  /**
+   * Add a language detected to an application (if the language isn't already present)
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application concerned by this adding
+   * @param language Language to add
+   * @throws Neo4jQueryException
+   */
+  public static void addLanguage(Neo4jAL neo4jAL, String application, String language)
+      throws Neo4jQueryException {
+    if (!SupportedLanguage.has(language)) return; // ignore if the language is not supported
 
-		Result res = neo4jAL.executeQuery(req, params);
-		if(res.hasNext()) {
-			String[] languages = (String[]) res.next().get("languages");
-			if(languages != null) {
-				System.out.printf("Application %s has [%s]", application, String.join(", ", languages));
-				return Arrays.stream(languages).map(SupportedLanguage::getLanguage).collect(Collectors.toList());
-			}
-		}
+    SupportedLanguage supLang = SupportedLanguage.getLanguage(language);
+    String req =
+        String.format(
+            String.format(
+                "MATCH (o:Application) WHERE o.Name=$Name "
+                    + "SET o.%1$s = CASE WHEN NOT EXISTS(o.%1$s) THEN [$Language]  WHEN NOT ($Language in o.%1$s) THEN o.%1$s + $Language END",
+                SCANNED_LANGUAGES_PROPERTY),
+            SCANNED_LANGUAGES_PROPERTY);
 
-		return new ArrayList<>(); // Default value
-	}
+    Map<String, Object> params = Map.of("Name", application, "Language", supLang.toString());
+    neo4jAL.executeQuery(req, params);
+  }
 
-	/**
-	 * Add a language detected to an application (if the language isn't already present)
-	 * @param neo4jAL Neo4j Access Layer
-	 * @param application Name of the application concerned by this adding
-	 * @param language Language to add
-	 * @throws Neo4jQueryException
-	 */
-	public static void addLanguage(Neo4jAL neo4jAL, String application, String language) throws Neo4jQueryException {
-		if(!SupportedLanguage.has(language)) return; // ignore if the language is not supported
+  /**
+   * Reset the languages scanned for one application
+   *
+   * @param neo4jAL
+   * @param application
+   * @throws Neo4jQueryException
+   */
+  public static void resetLanguages(Neo4jAL neo4jAL, String application)
+      throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (a:Application) WHERE a.Name=$Name SET a.%s = [] ", SCANNED_LANGUAGES_PROPERTY);
+    Map<String, Object> params = Map.of("Name", application);
 
-		SupportedLanguage supLang = SupportedLanguage.getLanguage(language);
-		String req = String.format(String.format("MATCH (o:Application) WHERE o.Name=$Name " +
-						"SET o.%1$s = CASE WHEN NOT EXISTS(o.%1$s) THEN [$Language]  WHEN NOT ($Language in o.%1$s) THEN o.%1$s + $Language END", SCANNED_LANGUAGES_PROPERTY), SCANNED_LANGUAGES_PROPERTY);
+    neo4jAL.executeQuery(req, params);
+  }
 
-		Map<String, Object> params = Map.of("Name", application, "Language", supLang.toString());
-		neo4jAL.executeQuery(req, params);
-	}
+  /**
+   * Get the complete list of candidate applications for a scan
+   *
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static Map<String, List<SupportedLanguage>> getAllCandidates(Neo4jAL neo4jAL)
+      throws Neo4jQueryException {
+    // Get the list of the application
+    String reqApp = "MATCH (a:Application) RETURN a.Name as name";
+    Result resApp = neo4jAL.executeQuery(reqApp);
 
-	/**
-	 * Reset the languages scanned for one application
-	 * @param neo4jAL
-	 * @param application
-	 * @throws Neo4jQueryException
-	 */
-	public static void resetLanguages(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
-		String req = String.format("MATCH (a:Application) WHERE a.Name=$Name SET a.%s = [] ", SCANNED_LANGUAGES_PROPERTY);
-		Map<String, Object> params = Map.of("Name", application);
+    // Parse the list of application and extract the languages
+    Map<String, List<SupportedLanguage>> appLanguageMap = new HashMap<>();
+    while (resApp.hasNext()) {
+      String app = (String) resApp.next().get("name");
+      List<SupportedLanguage> languages = getCandidatesLanguages(neo4jAL, app);
 
-		neo4jAL.executeQuery(req, params);
-	}
+      if (!languages.isEmpty()) {
+        appLanguageMap.put(app, languages);
+      }
+    }
 
-	/**
-	 * Get the Candidate languages for a detection in an application
-	 * @param neo4jAL Neo4j Access Layer
-	 * @param application Name of the application to parse
-	 * @return The list of languages languages for a detection
-	 * @throws Neo4jQueryException
-	 */
-	public static List<SupportedLanguage> getCandidatesLanguages(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
+    return appLanguageMap;
+  }
 
-		String reqTypeCheck = String.format("MATCH (o:`%s`:Object) WHERE o.InternalType IN $internalTypes RETURN o as detection LIMIT 1", application);
+  /**
+   * Get the Candidate languages for a detection in an application
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application to parse
+   * @return The list of languages languages for a detection
+   * @throws Neo4jQueryException
+   */
+  public static List<SupportedLanguage> getCandidatesLanguages(Neo4jAL neo4jAL, String application)
+      throws Neo4jQueryException {
 
-		// Get languages in the application
-		Map<String, Object> params;
-		Map<String, LanguageProp> map = LanguageConfiguration.getInstance().getLanguageMap();
+    String reqTypeCheck =
+        String.format(
+            "MATCH (o:`%s`:Object) WHERE o.InternalType IN $internalTypes RETURN o as detection LIMIT 1",
+            application);
 
-		List<String> languageList = new ArrayList<>();
+    // Get languages in the application
+    Map<String, Object> params;
+    Map<String, LanguageProp> map = LanguageConfiguration.getInstance().getLanguageMap();
 
-		// Parse the languages and check for Object Types detected
-		for(LanguageProp lp : map.values()) {
-			params = Map.of("internalTypes", lp.getObjectsInternalType());
-			Result res = neo4jAL.executeQuery(reqTypeCheck, params);
+    List<String> languageList = new ArrayList<>();
 
-			if(res.hasNext()) {
-				languageList.add(lp.getName());
-			}
-		}
+    // Parse the languages and check for Object Types detected
+    for (LanguageProp lp : map.values()) {
+      params = Map.of("internalTypes", lp.getObjectsInternalType());
+      Result res = neo4jAL.executeQuery(reqTypeCheck, params);
 
-		// Compare languages detected with the languages already detected in the application, and filter
-		List<SupportedLanguage> scannedLanguages = getScannedLanguages(neo4jAL, application);
+      if (res.hasNext()) {
+        languageList.add(lp.getName());
+      }
+    }
 
-		return languageList.stream().map(SupportedLanguage::getLanguage).filter(x -> !scannedLanguages.contains(x)).collect(Collectors.toList());
-	}
+    // Compare languages detected with the languages already detected in the application, and filter
+    List<SupportedLanguage> scannedLanguages = getScannedLanguages(neo4jAL, application);
 
-	/**
-	 * Get the complete list of candidate applications for a scan
-	 * @param neo4jAL
-	 * @return
-	 * @throws Neo4jQueryException
-	 */
-	public static Map<String, List<SupportedLanguage>> getAllCandidates(Neo4jAL neo4jAL) throws Neo4jQueryException {
-		// Get the list of the application
-		String reqApp = "MATCH (a:Application) RETURN a.Name as name";
-		Result resApp = neo4jAL.executeQuery(reqApp);
+    return languageList.stream()
+        .map(SupportedLanguage::getLanguage)
+        .filter(x -> !scannedLanguages.contains(x))
+        .collect(Collectors.toList());
+  }
 
-		// Parse the list of application and extract the languages
-		Map<String, List<SupportedLanguage>> appLanguageMap = new HashMap<>();
-		while (resApp.hasNext()) {
-			String app = (String) resApp.next().get("name");
-			List<SupportedLanguage> languages = getCandidatesLanguages(neo4jAL, app);
+  /**
+   * Get languages scanned in an application
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param application Name of the application
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<SupportedLanguage> getScannedLanguages(Neo4jAL neo4jAL, String application)
+      throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (a:Application) WHERE a.Name=$Name RETURN a.%s as languages",
+            SCANNED_LANGUAGES_PROPERTY);
+    Map<String, Object> params = Map.of("Name", application);
 
-			if(!languages.isEmpty()) {
-				appLanguageMap.put(app, languages);
-			}
-		}
+    Result res = neo4jAL.executeQuery(req, params);
+    if (res.hasNext()) {
+      String[] languages = (String[]) res.next().get("languages");
+      if (languages != null) {
+        return Arrays.stream(languages)
+            .map(SupportedLanguage::getLanguage)
+            .collect(Collectors.toList());
+      }
+    }
 
-		return appLanguageMap;
-	}
+    return new ArrayList<>(); // Default value
+  }
 }

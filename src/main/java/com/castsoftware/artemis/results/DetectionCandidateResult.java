@@ -18,11 +18,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DetectionCandidateResult {
-	public String application;
-	public List<String> languages;
+  public String application;
+  public List<String> languages;
 
-	public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
-		this.application = application;
-		this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
-	}
+  public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
+    this.application = application;
+    this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
+  }
 }

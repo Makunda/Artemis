@@ -13,9 +13,7 @@ package com.castsoftware.artemis.database;
 
 import org.neo4j.graphdb.Node;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class Neo4jTypeManager {
@@ -139,6 +137,5 @@ public class Neo4jTypeManager {
     }
 
     return Arrays.asList(strings);
-
   }
 }

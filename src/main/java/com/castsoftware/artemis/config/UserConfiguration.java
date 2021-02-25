@@ -14,7 +14,6 @@ package com.castsoftware.artemis.config;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.utils.Workspace;
-import org.neo4j.kernel.impl.security.User;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -24,7 +23,7 @@ import java.util.*;
 /** Retrieve the Configuration of the user config file */
 public class UserConfiguration {
 
-  private static Properties PROPERTIES ;
+  private static Properties PROPERTIES;
 
   /**
    * Get the corresponding value for the specified key as a String If the configuration file doesn't
@@ -39,31 +38,6 @@ public class UserConfiguration {
       PROPERTIES = loadConfiguration(neo4jAL);
     }
 
-    return PROPERTIES.get(key).toString();
-  }
-
-  /**
-   * Verify if the key is present
-   *
-   * @param key
-   * @return
-   */
-  public static Boolean has(Neo4jAL neo4jAL, String key) {
-    if (PROPERTIES == null) {
-      PROPERTIES = loadConfiguration(neo4jAL);
-    }
-
-    if(PROPERTIES == null) return false;
-    return PROPERTIES.contains(key);
-  }
-
-  public static String set(Neo4jAL neo4jAL, String key, String value) throws MissingFileException {
-    if (PROPERTIES == null) {
-      PROPERTIES = loadConfiguration(neo4jAL);
-    }
-
-    PROPERTIES.setProperty(key, value);
-    saveAndReload(neo4jAL);
     return PROPERTIES.get(key).toString();
   }
 
@@ -97,6 +71,31 @@ public class UserConfiguration {
       System.err.println(ex.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Verify if the key is present
+   *
+   * @param key
+   * @return
+   */
+  public static Boolean has(Neo4jAL neo4jAL, String key) {
+    if (PROPERTIES == null) {
+      PROPERTIES = loadConfiguration(neo4jAL);
+    }
+
+    if (PROPERTIES == null) return false;
+    return PROPERTIES.contains(key);
+  }
+
+  public static String set(Neo4jAL neo4jAL, String key, String value) throws MissingFileException {
+    if (PROPERTIES == null) {
+      PROPERTIES = loadConfiguration(neo4jAL);
+    }
+
+    PROPERTIES.setProperty(key, value);
+    saveAndReload(neo4jAL);
+    return PROPERTIES.get(key).toString();
   }
 
   /**
@@ -189,7 +188,7 @@ public class UserConfiguration {
    */
   public static boolean isKey(Neo4jAL neo4jAL, String key) {
     try {
-      if(PROPERTIES == null) {
+      if (PROPERTIES == null) {
         PROPERTIES = loadConfiguration(neo4jAL);
       }
 

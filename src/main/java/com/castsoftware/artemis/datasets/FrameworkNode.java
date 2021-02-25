@@ -17,6 +17,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.pythia.PythiaCom;
 import org.neo4j.graphdb.*;
 
 import java.sql.Timestamp;
@@ -118,32 +119,12 @@ public class FrameworkNode {
     return NAME_PROPERTY;
   }
 
-  public static String getInternalTypeProperty() {
-    return INTERNAL_TYPE_PROPERTY;
-  }
-
   public static String getCreationDateProperty() {
     return CREATION_DATE_PROPERTY;
   }
 
-  public static String getTypeProperty() {
-    return TYPE_PROPERTY;
-  }
-
-  public static String getLocationProperty() {
-    return LOCATION_PROPERTY;
-  }
-
-  public static String getDescriptionProperty() {
-    return DESCRIPTION_PROPERTY;
-  }
-
   public static String getNumberOfDetectionProperty() {
     return NUMBER_OF_DETECTION_PROPERTY;
-  }
-
-  public static String getPercentageOfDetectionProperty() {
-    return PERCENTAGE_OF_DETECTION_PROPERTY;
   }
 
   public static String getConfirmedProperty() {
@@ -157,46 +138,6 @@ public class FrameworkNode {
   public static String getUserCreatedProperty() {
     return USER_CREATED_PROPERTY;
   }
-
-  /**
-   * Update the internal types of the node
-   * @param listTypes
-   */
-  public void updateInternalTypes(List<String> listTypes) {
-    this.internalTypes = listTypes;
-
-    if(node == null) return;
-    node.setProperty(getInternalTypeProperty(), listTypes.toArray(new String[0]));
-  }
-
-  public void updateDescription(String description) {
-    this.description = description;
-
-    if(node == null) return;
-    node.setProperty(getDescriptionProperty(), description);
-  }
-
-  public void updateType(FrameworkType ft) {
-    this.frameworkType = ft;
-
-    if(node == null) return;
-    node.setProperty(getTypeProperty(), ft.toString());
-  }
-
-  public void updateDetectionScore(Double score) {
-    this.percentageOfDetection = score;
-
-    if(node == null) return;
-    node.setProperty(getPercentageOfDetectionProperty(), score);
-  }
-
-  public void updateLocation(String location) {
-    this.location = location;
-
-    if(node == null) return;
-    node.setProperty(getLocationProperty(), location);
-  }
-
 
   /**
    * Check if a Framework exists in the database, searching by its name.
@@ -270,9 +211,9 @@ public class FrameworkNode {
 
       // Categories
       String category = CategoryController.getDefaultName(neo4jAL);
-      if(n.hasProperty(CATEGORY_PROPERTY)) {
+      if (n.hasProperty(CATEGORY_PROPERTY)) {
         String temp = (String) n.getProperty(CATEGORY_PROPERTY);
-        if(!temp.isBlank()) category = temp;
+        if (!temp.isBlank()) category = temp;
       }
 
       // User created
@@ -323,7 +264,7 @@ public class FrameworkNode {
       fn.setNode(n);
 
       return fn;
-    } catch (Exception  e) {
+    } catch (Exception e) {
       String msg =
           String.format("The Framework node with id: %d is not in a correct format", n.getId());
       neo4jAL.logError(msg, e);
@@ -349,8 +290,7 @@ public class FrameworkNode {
             "MATCH (n:%s) WHERE n.%s=$frameworkName AND $internalType in n.%s RETURN n as node LIMIT 1;",
             LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
 
-    Map<String, Object> params =
-        Map.of("frameworkName", objectName, "internalType", internalType);
+    Map<String, Object> params = Map.of("frameworkName", objectName, "internalType", internalType);
 
     Result res = neo4jAL.executeQuery(matchReq, params);
     // Check if the query returned a correct result
@@ -374,7 +314,11 @@ public class FrameworkNode {
    * @throws Neo4jBadNodeFormatException
    */
   public static FrameworkNode updateFrameworkByName(
-      Neo4jAL neo4jAL, String frameworkName, List<String> internalType, String category, FrameworkNode fn)
+      Neo4jAL neo4jAL,
+      String frameworkName,
+      List<String> internalType,
+      String category,
+      FrameworkNode fn)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     deleteFrameworkByNameAndType(neo4jAL, frameworkName, internalType);
     fn.createNode();
@@ -387,12 +331,13 @@ public class FrameworkNode {
   }
 
   public static void deleteFrameworkByNameAndType(
-      Neo4jAL neo4jAL, String frameworkName, List<String> internalTypes) throws Neo4jQueryException {
+      Neo4jAL neo4jAL, String frameworkName, List<String> internalTypes)
+      throws Neo4jQueryException {
 
     String matchReq =
-            String.format(
-                    "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalTypes DETACH DELETE n ;",
-                    LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+        String.format(
+            "MATCH (n:%s) WHERE n.%s=$frameworkName AND n.%s=$internalTypes DETACH DELETE n ;",
+            LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
 
     neo4jAL.logInfo(
         String.format(
@@ -536,6 +481,66 @@ public class FrameworkNode {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Update the internal types of the node
+   *
+   * @param listTypes
+   */
+  public void updateInternalTypes(List<String> listTypes) {
+    this.internalTypes = listTypes;
+
+    if (node == null) return;
+    node.setProperty(getInternalTypeProperty(), listTypes.toArray(new String[0]));
+  }
+
+  public static String getInternalTypeProperty() {
+    return INTERNAL_TYPE_PROPERTY;
+  }
+
+  public void updateDescription(String description) {
+    this.description = description;
+
+    if (node == null) return;
+    node.setProperty(getDescriptionProperty(), description);
+  }
+
+  public static String getDescriptionProperty() {
+    return DESCRIPTION_PROPERTY;
+  }
+
+  public void updateType(FrameworkType ft) {
+    this.frameworkType = ft;
+
+    if (node == null) return;
+    node.setProperty(getTypeProperty(), ft.toString());
+  }
+
+  public static String getTypeProperty() {
+    return TYPE_PROPERTY;
+  }
+
+  public void updateDetectionScore(Double score) {
+    this.percentageOfDetection = score;
+
+    if (node == null) return;
+    node.setProperty(getPercentageOfDetectionProperty(), score);
+  }
+
+  public static String getPercentageOfDetectionProperty() {
+    return PERCENTAGE_OF_DETECTION_PROPERTY;
+  }
+
+  public void updateLocation(String location) {
+    this.location = location;
+
+    if (node == null) return;
+    node.setProperty(getLocationProperty(), location);
+  }
+
+  public static String getLocationProperty() {
+    return LOCATION_PROPERTY;
+  }
+
   public Node getNode() {
     return this.node;
   }
@@ -621,6 +626,7 @@ public class FrameworkNode {
 
   /**
    * Get the category of the node, if no category node is connected, it will create a custom one
+   *
    * @return
    */
   public String getCategory() {
@@ -641,9 +647,10 @@ public class FrameworkNode {
       }
     } else {
       try {
-        if(category == null) category = "Externals";
+        if (category == null) category = "Externals";
         CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, this.category);
-        cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
+        cn.getNode()
+            .createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
         return cn.getName();
       } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
         return CategoryController.getDefaultName(neo4jAL); // Default value
@@ -654,10 +661,10 @@ public class FrameworkNode {
   public void setCategory(CategoryNode cn) {
     if (this.node == null || cn.getNode() == null) return;
     Iterator<Relationship> itCat =
-            this.node
-                    .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
-                    .iterator();
-    while(itCat.hasNext()) {
+        this.node
+            .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
+            .iterator();
+    while (itCat.hasNext()) {
       itCat.next().delete();
     }
 
@@ -667,18 +674,28 @@ public class FrameworkNode {
   public void setCategory(String category) {
     if (this.node == null || category.isBlank()) return;
     Iterator<Relationship> itCat =
-            this.node
-                    .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
-                    .iterator();
-    while(itCat.hasNext()) {
+        this.node
+            .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
+            .iterator();
+    while (itCat.hasNext()) {
       itCat.next().delete();
 
       try {
         CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-        cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
+        cn.getNode()
+            .createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
       } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
         neo4jAL.logError("Failed to attach a new category to the node", e);
       }
+    }
+  }
+
+  /**
+   * Send this framework node to the Pythia repository
+   */
+  public void sendToPythia() {
+    if (PythiaCom.isSet(neo4jAL)) {
+      PythiaCom.getInstance(neo4jAL).asyncSendFramework(this);
     }
   }
 }

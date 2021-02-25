@@ -14,9 +14,8 @@ package com.castsoftware.artemis.config;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 
-import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /** Singleton in charge of the communication with the configuration file (Read Only) */
@@ -33,20 +32,10 @@ public class Configuration {
    */
   public static String getBestOfAllWorlds(Neo4jAL neo4jAL, String property) {
     // Add the Node configuration
-    if (UserConfiguration.has(neo4jAL, property) && UserConfiguration.get(neo4jAL, property) != null)
+    if (UserConfiguration.has(neo4jAL, property)
+        && UserConfiguration.get(neo4jAL, property) != null)
       return UserConfiguration.get(neo4jAL, property);
     return Configuration.get(property);
-  }
-
-  /**
-   * Check if a key is present in the Properties
-   *
-   * @param key
-   * @return
-   */
-  public static Boolean has(String key) {
-    PROPERTIES = loadConfiguration();
-    return PROPERTIES.contains(key);
   }
 
   /**
@@ -60,28 +49,6 @@ public class Configuration {
     PROPERTIES = loadConfiguration();
     return PROPERTIES.get(key).toString();
   }
-
-  /**
-   * Get the corresponding value for the specified key as an object
-   *
-   * @param key
-   * @return <Object>String</code> value for the key as a string
-   */
-  public static Object getAsObject(String key) {
-    return PROPERTIES.get(key);
-  }
-
-  /**
-   * Set the corresponding value for the specified key
-   *
-   * @param key
-   * @param value
-   */
-  public static Object set(String key, String value) throws MissingFileException {
-    PROPERTIES.setProperty(key, value);
-    return PROPERTIES.get(key);
-  }
-
 
   private static Properties loadConfiguration() {
     try (InputStream input =
@@ -103,5 +70,37 @@ public class Configuration {
       System.err.println(ex.getMessage());
     }
     return null;
+  }
+
+  /**
+   * Check if a key is present in the Properties
+   *
+   * @param key
+   * @return
+   */
+  public static Boolean has(String key) {
+    PROPERTIES = loadConfiguration();
+    return PROPERTIES.contains(key);
+  }
+
+  /**
+   * Get the corresponding value for the specified key as an object
+   *
+   * @param key
+   * @return <Object>String</code> value for the key as a string
+   */
+  public static Object getAsObject(String key) {
+    return PROPERTIES.get(key);
+  }
+
+  /**
+   * Set the corresponding value for the specified key
+   *
+   * @param key
+   * @param value
+   */
+  public static Object set(String key, String value) throws MissingFileException {
+    PROPERTIES.setProperty(key, value);
+    return PROPERTIES.get(key);
   }
 }

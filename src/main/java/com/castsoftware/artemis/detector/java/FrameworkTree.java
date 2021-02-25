@@ -77,6 +77,10 @@ public class FrameworkTree extends ATree {
     this.recInsert(root, packageName, "", 1);
   }
 
+  public String getDelimiterLeaves() {
+    return ".";
+  }
+
   /**
    * Get the root of the tree
    *
@@ -84,10 +88,6 @@ public class FrameworkTree extends ATree {
    */
   public FrameworkTreeLeaf getRoot() {
     return root;
-  }
-
-  public String getDelimiterLeaves() {
-    return ".";
   }
 
   /** Print the tree */

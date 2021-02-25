@@ -33,7 +33,8 @@ public class NetDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public NetDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties) throws IOException, Neo4jQueryException {
+  public NetDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties)
+      throws IOException, Neo4jQueryException {
     super(neo4jAL, application, SupportedLanguage.NET, detectionProperties);
   }
 
@@ -59,17 +60,16 @@ public class NetDetector extends ADetector {
   }
 
   @Override
-  public void extractUnknownNonUtilities() {}
+  public List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException {
+    return null;
+  }
+
+  @Override
+  public void extractUnknownApp() {}
 
   @Override
   public void extractOtherApps() {}
 
   @Override
-  public void extractUnknownApp() {}
-
-
-  @Override
-  public List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException {
-    return null;
-  }
+  public void extractUnknownNonUtilities() {}
 }

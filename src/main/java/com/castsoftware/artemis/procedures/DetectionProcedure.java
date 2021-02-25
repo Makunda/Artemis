@@ -46,8 +46,7 @@ public class DetectionProcedure {
       @Name(value = "ApplicationContext") String applicationContext,
       @Name(value = "Language", defaultValue = "") String language,
       @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes,
-      @Name(value = "Parameters", defaultValue = "") String jsonParameters
-      )
+      @Name(value = "Parameters", defaultValue = "") String jsonParameters)
       throws ProcedureException {
 
     try {
@@ -56,7 +55,11 @@ public class DetectionProcedure {
           DetectionController.launchDetection(nal, applicationContext, language, jsonParameters);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | MissingFileException e) {
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -77,7 +80,11 @@ public class DetectionProcedure {
           DetectionController.launchBulkDetection(nal, language, flagNodes);
 
       return detectedFrameworks.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | MissingFileException e) {
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

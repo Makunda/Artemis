@@ -14,20 +14,15 @@ package com.castsoftware.artemis.config.detection;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.utils.Workspace;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.json.JSONObject;
 
-import java.io.*;
-import java.lang.reflect.Type;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
 
 public class DetectionParameters {
 
@@ -49,85 +44,95 @@ public class DetectionParameters {
 
       String buff;
       StringBuilder responseStrBuilder = new StringBuilder();
-      BufferedReader streamReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+      BufferedReader streamReader =
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
       while ((buff = streamReader.readLine()) != null) responseStrBuilder.append(buff);
 
-
       ObjectMapper objectMapper = new ObjectMapper();
-      defaultParameters = objectMapper.readValue(responseStrBuilder.toString(), DetectionProp.class);
+      defaultParameters =
+          objectMapper.readValue(responseStrBuilder.toString(), DetectionProp.class);
 
     } catch (IOException | MissingFileException | NullPointerException e) {
-        System.err.printf("Failed to read the default detection parameters at 'resources/%s' . Error : %s%n", CONFIG_FILE_NAME, e.getMessage());
-        System.out.println(e.getLocalizedMessage());
-        throw e;
-      }
+      System.err.printf(
+          "Failed to read the default detection parameters at 'resources/%s' . Error : %s%n",
+          CONFIG_FILE_NAME, e.getMessage());
+      System.out.println(e.getLocalizedMessage());
+      throw e;
     }
+  }
 
-    /** @return Actual instance of Detection configuration */
-  public static DetectionParameters getInstance() throws IOException, MissingFileException {
-    if(INSTANCE == null) INSTANCE = new DetectionParameters();
-    return INSTANCE;
+  /**
+   * Verify if a provided set of parameters is valid or not
+   *
+   * @param parameters Parameters to deserialize
+   * @return
+   */
+  public static boolean isParametersValid(String parameters) {
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.readValue(parameters, DetectionProp.class);
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Try to instantiate the parameters provided or return the default parameters
+   *
+   * @param parameters Parameters to deserialize
+   * @return
+   */
+  public static DetectionProp deserializeOrDefault(String parameters)
+      throws IOException, MissingFileException {
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      return objectMapper.readValue(parameters, DetectionProp.class);
+    } catch (IOException e) {
+      System.err.printf(
+          "Failed to deserialize the configuration provided. Will use the default configuration. Error : %s ",
+          e.getMessage());
+      return getInstance().getDefaultParameters();
+    }
   }
 
   /**
    * Get the defaults detections parameters in the resources
+   *
    * @return The Default parameters configuration
    */
   public DetectionProp getDefaultParameters() {
     return defaultParameters;
   }
 
-  /**
-   * Verify if a provided set of parameters is valid or not
-   * @param parameters Parameters to deserialize
-   * @return
-   */
-  public static boolean isParametersValid(String parameters) {
-      try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.readValue(parameters, DetectionProp.class);
-        return true;
-      } catch (IOException e) {
-        return false;
-      }
-  }
-
-  /**
-   * Try to instantiate the parameters provided or return the default parameters
-   * @param parameters Parameters to deserialize
-   * @return
-   */
-  public static DetectionProp deserializeOrDefault(String parameters) throws IOException, MissingFileException {
-    try {
-      ObjectMapper objectMapper = new ObjectMapper();
-      return objectMapper.readValue(parameters, DetectionProp.class);
-    } catch (IOException e) {
-      System.err.printf("Failed to deserialize the configuration provided. Will use the default configuration. Error : %s ", e.getMessage());
-      return getInstance().getDefaultParameters();
-    }
+  /** @return Actual instance of Detection configuration */
+  public static DetectionParameters getInstance() throws IOException, MissingFileException {
+    if (INSTANCE == null) INSTANCE = new DetectionParameters();
+    return INSTANCE;
   }
 
   /**
    * Get user configuration or system's default one
+   *
    * @return
    * @throws IOException
    * @throws MissingFileException
    */
-  public static DetectionProp getUserOrDefault(Neo4jAL neo4jAL) throws IOException, MissingFileException {
+  public static DetectionProp getUserOrDefault(Neo4jAL neo4jAL)
+      throws IOException, MissingFileException {
 
     Path configPath = Workspace.getUserDetectionConfigPath(neo4jAL);
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       return objectMapper.readValue(configPath.toFile(), DetectionProp.class);
 
-    } catch (IOException  | NullPointerException e) {
-      System.err.printf("Failed to read the default detection parameters at '%s' will use default . Error : %s%n", configPath.toString(), e.getMessage());
+    } catch (IOException | NullPointerException e) {
+      System.err.printf(
+          "Failed to read the default detection parameters at '%s' will use default . Error : %s%n",
+          configPath.toString(), e.getMessage());
       System.out.println(e.getLocalizedMessage());
       return getInstance().getDefaultParameters();
     }
-
   }
-
-
 }

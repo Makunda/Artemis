@@ -13,9 +13,9 @@ package com.castsoftware.artemis.utils;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.NodeConfiguration;
+import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
@@ -200,16 +200,6 @@ public class Workspace {
   }
 
   /**
-   * Get the full path of the export folder
-   * @return
-   */
-  public static Path getExportFolder(Neo4jAL neo4jAL) {
-    Path workspace = getWorkspacePath(neo4jAL);
-    String exportFolder = Configuration.get("artemis.exports.folder");
-    return workspace.resolve(exportFolder);
-  }
-
-  /**
    * Check if the folder exist. If not, create it
    *
    * @param folderPath Path of the folder to check
@@ -234,13 +224,13 @@ public class Workspace {
   }
 
   /**
-   * Path to the user configuration file
-   *
+   * Get the full path of the export folder
    * @return
    */
-  public static Path getUserConfigPath(Neo4jAL neo4jAL) {
+  public static Path getExportFolder(Neo4jAL neo4jAL) {
     Path workspace = getWorkspacePath(neo4jAL);
-    return workspace.resolve(Configuration.get("artemis.config.user.conf_file"));
+    String exportFolder = Configuration.get("artemis.exports.folder");
+    return workspace.resolve(exportFolder);
   }
 
   /**
@@ -261,6 +251,16 @@ public class Workspace {
     Path workspace = getUserConfigPath(neo4jAL);
     Path dataFolder = workspace.resolve(Configuration.get("artemis.install_data.folder"));
     return dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
+  }
+
+  /**
+   * Path to the user configuration file
+   *
+   * @return
+   */
+  public static Path getUserConfigPath(Neo4jAL neo4jAL) {
+    Path workspace = getWorkspacePath(neo4jAL);
+    return workspace.resolve(Configuration.get("artemis.config.user.conf_file"));
   }
 
   /**

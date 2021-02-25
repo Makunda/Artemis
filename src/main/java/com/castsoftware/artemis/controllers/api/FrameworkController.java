@@ -11,9 +11,9 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.datasets.CategoryNode;
@@ -72,51 +72,10 @@ public class FrameworkController {
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static void deleteFrameworkByNameAndType(Neo4jAL neo4jAL, String name, List<String> internalTypes)
+  public static void deleteFrameworkByNameAndType(
+      Neo4jAL neo4jAL, String name, List<String> internalTypes)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     FrameworkNode.deleteFrameworkByNameAndType(neo4jAL, name, internalTypes);
-  }
-
-  /**
-   * Create a Framework node in the Database
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param name Name of the Framework
-   * @param discoveryDate Date of the discovery
-   * @param location Location of the Framework ( repository, url, etc...)
-   * @param description Description
-   * @param type Framework category ( Framework, NotFramework, etc..)
-   * @param category Category of the framework
-   * @param internalTypes Internal type of the object detected
-   * @return The node created
-   * @throws Neo4jQueryException
-   */
-  public static FrameworkNode addFramework(
-      Neo4jAL neo4jAL,
-      String name,
-      String discoveryDate,
-      String location,
-      String description,
-      String type,
-      String category,
-      List<String> internalTypes)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-
-    FrameworkNode fn =
-        new FrameworkNode(
-            neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
-    fn.setInternalTypes(internalTypes);
-    fn.setFrameworkType(FrameworkType.getType(type));
-    fn.createNode();
-
-    // Set cateogry
-    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-    fn.setCategory(cn);
-
-    neo4jAL.logInfo(
-        String.format("Framework with name %s has been inserted through API call", name));
-
-    return fn;
   }
 
   /**
@@ -169,7 +128,9 @@ public class FrameworkController {
   }
 
   /**
-   * Merge a Framework node if its overlapping with a current framework node, if not create a new one
+   * Merge a Framework node if its overlapping with a current framework node, if not create a new
+   * one
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param name Name of the Framework
    * @param discoveryDate Date of the discovery
@@ -185,34 +146,40 @@ public class FrameworkController {
    * @throws Neo4jBadNodeFormatException
    */
   public static FrameworkNode mergeFramework(
-          Neo4jAL neo4jAL,
-          String name,
-          String discoveryDate,
-          String location,
-          String description,
-          String type,
-          String category,
-          Long numberOfDetection,
-          Double percentageOfDetection,
-          List<String> internalTypes)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+      Neo4jAL neo4jAL,
+      String name,
+      String discoveryDate,
+      String location,
+      String description,
+      String type,
+      String category,
+      Long numberOfDetection,
+      Double percentageOfDetection,
+      List<String> internalTypes)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     // Find framework with same name and overlapping type
-    String req = String.format("MATCH (o:%s) WHERE o.%s=$frameworkName " +
-            "AND any( x IN $internalTypes WHERE x IN o.%s) AND o.%s=$type RETURN o as framework LIMIT 1",
-            FrameworkNode.getLabel(), FrameworkNode.getNameProperty(),
-            FrameworkNode.getInternalTypeProperty(), FrameworkNode.getTypeProperty());
-    Map<String, Object> params = Map.of("frameworkName", name, "internalTypes", internalTypes, "type", type);
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE o.%s=$frameworkName "
+                + "AND any( x IN $internalTypes WHERE x IN o.%s) AND o.%s=$type RETURN o as framework LIMIT 1",
+            FrameworkNode.getLabel(),
+            FrameworkNode.getNameProperty(),
+            FrameworkNode.getInternalTypeProperty(),
+            FrameworkNode.getTypeProperty());
+    Map<String, Object> params =
+        Map.of("frameworkName", name, "internalTypes", internalTypes, "type", type);
 
     Result res = neo4jAL.executeQuery(req, params);
 
     FrameworkNode fn = null;
-    if(res.hasNext()) {
+    if (res.hasNext()) {
       // Overlapping Framework // Merge
       Node n = (Node) res.next().get("framework");
       fn = FrameworkNode.fromNode(neo4jAL, n);
 
-      List<String> oldInternal = Neo4jTypeManager.getAsStringList(n, FrameworkNode.getInternalTypeProperty());
+      List<String> oldInternal =
+          Neo4jTypeManager.getAsStringList(n, FrameworkNode.getInternalTypeProperty());
 
       // Update the categories
       Set<String> setCategories = new HashSet<>();
@@ -222,30 +189,33 @@ public class FrameworkController {
       fn.updateInternalTypes(new ArrayList<>(setCategories));
 
       // Description update
-      if(!description.isBlank()) {
+      if (!description.isBlank()) {
         fn.updateDescription(description);
       }
 
       // Location update
-      if(!location.isBlank()) {
+      if (!location.isBlank()) {
         fn.updateLocation(location);
       }
 
       // Percentage update
-      if(percentageOfDetection > fn.getPercentageOfDetection()) {
+      if (percentageOfDetection > fn.getPercentageOfDetection()) {
         fn.updateDetectionScore(percentageOfDetection);
       }
 
+      fn.sendToPythia();
+
     } else {
-      fn = new FrameworkNode(
-                      neo4jAL,
-                      name,
-                      discoveryDate,
-                      location,
-                      description,
-                      numberOfDetection,
-                      percentageOfDetection,
-                      new Date().getTime());
+      fn =
+          new FrameworkNode(
+              neo4jAL,
+              name,
+              discoveryDate,
+              location,
+              description,
+              numberOfDetection,
+              percentageOfDetection,
+              new Date().getTime());
 
       fn.setInternalTypes(internalTypes);
       fn.setFrameworkType(FrameworkType.getType(type));
@@ -254,11 +224,11 @@ public class FrameworkController {
       fn.setCategory(cn);
 
       fn.createNode();
+      fn.sendToPythia();
     }
 
     return fn;
   }
-
 
   /**
    * Get the complete list of framework in the database (Not recommended, prefer the batch search)
@@ -549,6 +519,117 @@ public class FrameworkController {
   }
 
   /**
+   * Get duplicate nodes in the configuration, for user manual review
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<FrameworkNode> getDuplicates(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (n:%s) WITH n.Name as name, COLLECT(n) as nodes  WHERE SIZE(nodes) > 1 UNWIND nodes as n RETURN n as framework",
+            FrameworkNode.getLabel());
+
+    Node n;
+    List<FrameworkNode> frameworkNodeList = new ArrayList<>();
+    Result res = neo4jAL.executeQuery(req);
+    while (res.hasNext()) {
+      n = (Node) res.next().get("framework");
+      try {
+        frameworkNodeList.add(FrameworkNode.fromNode(neo4jAL, n));
+      } catch (Neo4jBadNodeFormatException e) {
+        neo4jAL.logError("Failed to retrieve a framework.", e);
+      }
+    }
+
+    return frameworkNodeList;
+  }
+
+  /**
+   * Automatically clean the framework in the database, taking the best candidate if duplicates are
+   * found
+   *
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static Long autoClean(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    String req =
+        String.format(
+            "MATCH (n:%s) WITH n.Name as name, COLLECT(n) as nodes  WHERE SIZE(nodes) > 1 RETURN nodes as nodes",
+            FrameworkNode.getLabel());
+
+    Node[] nodes;
+    List<Node> nodesList;
+    List<FrameworkNode> frameworkNodeList = new ArrayList<>();
+    Long numGroupClean = 0L;
+    Result res = neo4jAL.executeQuery(req);
+    while (res.hasNext()) {
+      nodesList = (List<Node>) res.next().get("nodes"); // Get the list of duplicates
+
+      ListIterator<Node> itNode = nodesList.listIterator();
+
+      FrameworkNode bestCandidate =
+          null; // Get the first node considered as a framework. The first node otherwise
+      while (itNode.hasNext()) {
+        Node next = itNode.next();
+
+        try {
+          FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, next);
+          if (bestCandidate == null || fn.getFrameworkType() == FrameworkType.FRAMEWORK) {
+            bestCandidate = fn;
+          }
+        } catch (Exception | Neo4jBadNodeFormatException e) {
+          // Not a valid node, delete
+          next.getRelationships().forEach(Relationship::delete);
+          next.delete();
+          itNode.remove();
+        }
+      }
+
+      // If there is no best candidate, go to the next group
+      if (bestCandidate == null) continue;
+
+      // Reiterate and merge other properties
+      itNode = nodesList.listIterator();
+      while (itNode.hasNext()) {
+        Node next = itNode.next();
+        try {
+          FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, next);
+
+          // Merge description, locations and type
+
+          if (bestCandidate.getDescription().isBlank() && !fn.getDescription().isBlank()) {
+            bestCandidate.updateDescription(fn.getDescription());
+          }
+
+          if (bestCandidate != null
+              && bestCandidate.getLocation().isBlank()
+              && !fn.getLocation().isBlank()) {
+            bestCandidate.updateLocation(fn.getLocation());
+          }
+
+          // Delete other nodes ( if its not the best candidate)
+          if (next.getId() != bestCandidate.getNode().getId()) {
+            next.getRelationships().forEach(Relationship::delete);
+            next.delete();
+          }
+
+        } catch (Exception | Neo4jBadNodeFormatException e) {
+          // Not a valid node, delete
+          next.getRelationships().forEach(Relationship::delete);
+          next.delete();
+          itNode.remove();
+        }
+      }
+      numGroupClean++;
+    }
+
+    return numGroupClean;
+  }
+
+  /**
    * Get the number of frameworks younger than a certain timestamp
    *
    * @param neo4jAL Neo4J Access Layer
@@ -613,41 +694,118 @@ public class FrameworkController {
     return numFramework;
   }
 
-  public static Boolean updateById(Neo4jAL neo4jAl, Long id, String name, String discoveryDate, String location, String description, String type, String category, List<String> internalTypes) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+  /**
+   * Update the framework using its ID ( will deleted the previuous node and recreate a new one)
+   *
+   * @param neo4jAl
+   * @param id
+   * @param name
+   * @param discoveryDate
+   * @param location
+   * @param description
+   * @param type
+   * @param category
+   * @param internalTypes
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static Boolean updateById(
+      Neo4jAL neo4jAl,
+      Long id,
+      String name,
+      String discoveryDate,
+      String location,
+      String description,
+      String type,
+      String category,
+      List<String> internalTypes)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1",
+            FrameworkNode.getLabel());
     Map<String, Object> params = Map.of("idNode", id);
 
     Result res = neo4jAl.executeQuery(req, params);
-    if(res.hasNext()) {
+    if (res.hasNext()) {
       Node oldFramework = (Node) res.next().get("framework");
 
-      FrameworkNode newFramework = addFramework(neo4jAl, name, discoveryDate, location, description, type, category, internalTypes);
-      for(Relationship rel : oldFramework.getRelationships()) rel.delete();
+      FrameworkNode newFramework =
+          addFramework(
+              neo4jAl, name, discoveryDate, location, description, type, category, internalTypes);
+      for (Relationship rel : oldFramework.getRelationships()) rel.delete();
       oldFramework.delete();
 
-      newFramework.createNode();
       return true;
     } else {
       return false;
     }
+  }
 
+  /**
+   * Create a Framework node in the Database
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param name Name of the Framework
+   * @param discoveryDate Date of the discovery
+   * @param location Location of the Framework ( repository, url, etc...)
+   * @param description Description
+   * @param type Framework category ( Framework, NotFramework, etc..)
+   * @param category Category of the framework
+   * @param internalTypes Internal type of the object detected
+   * @return The node created
+   * @throws Neo4jQueryException
+   */
+  public static FrameworkNode addFramework(
+      Neo4jAL neo4jAL,
+      String name,
+      String discoveryDate,
+      String location,
+      String description,
+      String type,
+      String category,
+      List<String> internalTypes)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+
+    FrameworkNode fn =
+        new FrameworkNode(
+            neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
+    fn.setInternalTypes(internalTypes);
+    fn.setFrameworkType(FrameworkType.getType(type));
+    fn.createNode();
+
+    // Set cateogry
+    CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+    fn.setCategory(cn);
+
+    neo4jAL.logInfo(
+        String.format("Framework with name %s has been inserted through API call", name));
+    neo4jAL.logInfo(
+            String.format("Sending to Pythia", name));
+    fn.sendToPythia();
+    return fn;
   }
 
   /**
    * Delete a Framework node by its ID
+   *
    * @param neo4jAl Neo4j Access Layer
    * @param id Id of the Framework node
    * @return
    * @throws Neo4jQueryException
    */
   public static Boolean deleteById(Neo4jAL neo4jAl, Long id) throws Neo4jQueryException {
-    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1",
+            FrameworkNode.getLabel());
     Map<String, Object> params = Map.of("idNode", id);
 
     Result res = neo4jAl.executeQuery(req, params);
-    if(res.hasNext()) {
+    if (res.hasNext()) {
       Node oldFramework = (Node) res.next().get("framework");
-      for(Relationship rel : oldFramework.getRelationships()) rel.delete();
+      for (Relationship rel : oldFramework.getRelationships()) rel.delete();
       oldFramework.delete();
       return true;
     } else {
@@ -655,12 +813,16 @@ public class FrameworkController {
     }
   }
 
-  public static Boolean toggleValidationById(Neo4jAL neo4jAl, Long id) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    String req = String.format("MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1", FrameworkNode.getLabel());
+  public static Boolean toggleValidationById(Neo4jAL neo4jAl, Long id)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE ID(o)=$idNode RETURN o as framework LIMIT 1",
+            FrameworkNode.getLabel());
     Map<String, Object> params = Map.of("idNode", id);
 
     Result res = neo4jAl.executeQuery(req, params);
-    if(res.hasNext()) {
+    if (res.hasNext()) {
       Node oldFramework = (Node) res.next().get("framework");
       FrameworkNode frameworkNode = FrameworkNode.fromNode(neo4jAl, oldFramework);
       FrameworkType ft = frameworkNode.getFrameworkType();

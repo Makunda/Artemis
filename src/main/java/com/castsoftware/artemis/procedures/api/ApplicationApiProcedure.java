@@ -14,12 +14,10 @@ package com.castsoftware.artemis.procedures.api;
 import com.castsoftware.artemis.controllers.ApplicationController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.results.DetectionCandidateResult;
-import com.castsoftware.artemis.results.LeafResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -32,106 +30,97 @@ import java.util.stream.Stream;
 
 public class ApplicationApiProcedure {
 
-	@Context
-	public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+  @Context public Transaction transaction;
 
-	@Context public Log log;
+  @Context public Log log;
 
-	@Procedure(value = "artemis.api.application.get.scanned.languages", mode = Mode.WRITE)
-	@Description(
-			"artemis.api.application.get.scanned.languages(String application) - Check the languages already scanned in an application")
-	public Stream<DetectionCandidateResult> getLanguages(
-			@Name(value = "Application") String application)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-		    List<SupportedLanguage> sup = ApplicationController.getScannedLanguages(nal, application);
+  @Procedure(value = "artemis.api.application.get.scanned.languages", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.application.get.scanned.languages(String application) - Check the languages already scanned in an application")
+  public Stream<DetectionCandidateResult> getLanguages(
+      @Name(value = "Application") String application) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<SupportedLanguage> sup = ApplicationController.getScannedLanguages(nal, application);
 
-			return Stream.of(new DetectionCandidateResult(application, sup));
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+      return Stream.of(new DetectionCandidateResult(application, sup));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 
+  @Procedure(value = "artemis.api.application.add.scanned.languages", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.application.add.scanned.languages(String application, String language) - Check the languages already scanned in an application")
+  public Stream<DetectionCandidateResult> addLanguage(
+      @Name(value = "Application") String application, @Name(value = "Language") String language)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<SupportedLanguage> sup = ApplicationController.getScannedLanguages(nal, application);
 
-	@Procedure(value = "artemis.api.application.add.scanned.languages", mode = Mode.WRITE)
-	@Description(
-			"artemis.api.application.add.scanned.languages(String application, String language) - Check the languages already scanned in an application")
-	public Stream<DetectionCandidateResult> addLanguage(
-			@Name(value = "Application") String application,
-			@Name(value = "Language") String language)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			List<SupportedLanguage> sup = ApplicationController.getScannedLanguages(nal, application);
+      return Stream.of(new DetectionCandidateResult(application, sup));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 
-			return Stream.of(new DetectionCandidateResult(application, sup));
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+  @Procedure(value = "artemis.api.application.reset.scanned.languages", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.application.reset.scanned.languages(String application) - Reset the languages already scanned in an application")
+  public void resetLanguages(@Name(value = "Application") String application)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      ApplicationController.resetLanguages(nal, application);
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 
+  @Procedure(value = "artemis.api.application.get.candidate.languages", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.application.get.candidate.languages(String application) - Get the candidate languages for one application")
+  public Stream<DetectionCandidateResult> getCandidateLanguages(
+      @Name(value = "Application") String application) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<SupportedLanguage> sup = ApplicationController.getCandidatesLanguages(nal, application);
 
-	@Procedure(value = "artemis.api.application.reset.scanned.languages", mode = Mode.WRITE)
-	@Description(
-			"artemis.api.application.reset.scanned.languages(String application) - Reset the languages already scanned in an application")
-	public void resetLanguages(
-			@Name(value = "Application") String application)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ApplicationController.resetLanguages(nal, application);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+      return Stream.of(new DetectionCandidateResult(application, sup));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 
-	@Procedure(value = "artemis.api.application.get.candidate.languages", mode = Mode.WRITE)
-	@Description(
-			"artemis.api.application.get.candidate.languages(String application) - Get the candidate languages for one application")
-	public Stream<DetectionCandidateResult> getCandidateLanguages(
-			@Name(value = "Application") String application)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			List<SupportedLanguage> sup = ApplicationController.getCandidatesLanguages(nal, application);
+  @Procedure(value = "artemis.api.application.get.all.candidate.languages", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.application.get.all.candidate.languages() - Get all the applications candidate for the language detection")
+  public Stream<DetectionCandidateResult> getAllCandidateLanguages() throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Map<String, List<SupportedLanguage>> sup = ApplicationController.getAllCandidates(nal);
+      List<DetectionCandidateResult> arr = new ArrayList<>();
 
-			return Stream.of(new DetectionCandidateResult(application, sup));
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+      for (Map.Entry<String, List<SupportedLanguage>> en : sup.entrySet()) {
+        arr.add(new DetectionCandidateResult(en.getKey(), en.getValue()));
+      }
 
-	@Procedure(value = "artemis.api.application.get.all.candidate.languages", mode = Mode.WRITE)
-	@Description(
-			"artemis.api.application.get.all.candidate.languages() - Get all the applications candidate for the language detection")
-	public Stream<DetectionCandidateResult> getAllCandidateLanguages()
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			Map<String, List<SupportedLanguage>> sup = ApplicationController.getAllCandidates(nal);
-			List<DetectionCandidateResult> arr = new ArrayList<>();
-
-			for(Map.Entry<String, List<SupportedLanguage>> en : sup.entrySet()) {
-				arr.add(new DetectionCandidateResult(en.getKey(), en.getValue()));
-			}
-
-			return arr.stream();
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
+      return arr.stream();
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 }

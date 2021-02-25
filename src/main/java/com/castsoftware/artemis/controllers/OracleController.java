@@ -67,6 +67,6 @@ public class OracleController {
     fn.setInternalTypes(Collections.singletonList("Internal Type"));
     fn.setFrameworkType(FrameworkType.NOT_KNOWN);
 
-    return PythiaCom.getInstance(neo4jAL).addFramework(fn);
+    return PythiaCom.getInstance(neo4jAL).sendFramework(fn);
   }
 }

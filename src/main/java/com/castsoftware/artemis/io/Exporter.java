@@ -21,14 +21,12 @@ import com.castsoftware.artemis.exceptions.file.FileIOException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.results.OutputMessage;
-import org.apache.commons.collections4.MapIterator;
 import org.neo4j.graphdb.*;
 import org.neo4j.logging.Log;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -62,22 +60,6 @@ public class Exporter {
   private Map<String, List<Node>> labelNodeMap; // To visit Node labels
   private Set<String> createdFilenameList; // Filename created during this session
 
-
-  public String neo4jTypeToString(Node n, String property) {
-    if(!n.hasProperty(property)) {
-      return "\"\"";
-    }
-
-    Object obj = n.getProperty(property);
-
-    if(obj instanceof String[]) {
-      String[] temp = (String[]) obj;
-      return String.format("\"[%s]\"", String.join(", ", temp));
-    }
-
-    return String.format("\"%s\"", obj);
-  }
-
   public Exporter(Neo4jAL neo4jAL) {
     this.db = neo4jAL.getDb();
     this.log = neo4jAL.getLogger();
@@ -89,7 +71,7 @@ public class Exporter {
   }
 
   public Stream<OutputMessage> save(
-          List<String> labels,
+      List<String> labels,
       List<Node> nodeList,
       Path path,
       String zipFileName,
@@ -103,15 +85,14 @@ public class Exporter {
 
     // Init members
     labelNodeMap = new HashMap<>();
-    for(Node n : nodeList) {
+    for (Node n : nodeList) {
       // Get the label of the node
-      for(Label l : n.getLabels()) {
-        if( labels.contains(l.name()) ) {
+      for (Label l : n.getLabels()) {
+        if (labels.contains(l.name())) {
 
-          if(!labelNodeMap.containsKey(l.name())) labelNodeMap.put(l.name(), new ArrayList<>());
+          if (!labelNodeMap.containsKey(l.name())) labelNodeMap.put(l.name(), new ArrayList<>());
           labelNodeMap.get(l.name()).add(n);
           continue;
-
         }
       }
     }
@@ -318,7 +299,8 @@ public class Exporter {
    * @return <code>String</code> the list of node as CSV
    * @throws Neo4jNoResult No node with the label provided where found during parsing
    */
-  private String exportLabelToCSV(Label label, List<Node> nodeList) throws Neo4jNoResult, Neo4jQueryException {
+  private String exportLabelToCSV(Label label, List<Node> nodeList)
+      throws Neo4jNoResult, Neo4jQueryException {
     Set<String> headers = new HashSet<>();
 
     for (Node n : nodeList) {
@@ -351,15 +333,13 @@ public class Exporter {
         String value = "";
         try {
           value = neo4jTypeToString(n, prop);
-          value = value.replaceAll("\\n", " ")
-                  .replaceAll("\\r\\n", " ");
+          value = value.replaceAll("\\n", " ").replaceAll("\\r\\n", " ");
         } catch (NotFoundException ignored) {
         }
 
         valueList.add(value);
       }
       csv.append(String.join(DELIMITER, valueList)).append("\n");
-
     }
 
     // Mark the label as visited
@@ -367,5 +347,18 @@ public class Exporter {
     return csv.toString();
   }
 
+  public String neo4jTypeToString(Node n, String property) {
+    if (!n.hasProperty(property)) {
+      return "\"\"";
+    }
 
+    Object obj = n.getProperty(property);
+
+    if (obj instanceof String[]) {
+      String[] temp = (String[]) obj;
+      return String.format("\"[%s]\"", String.join(", ", temp));
+    }
+
+    return String.format("\"%s\"", obj);
+  }
 }

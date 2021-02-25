@@ -46,14 +46,14 @@ public class PythiaCom {
     this.neo4jAL = neo4jAL;
 
     // If configuration is empty
-    if (!UserConfiguration.isKey(neo4jAL, "oracle.server") || !UserConfiguration.isKey(neo4jAL,"oracle.token")) {
+    if (!UserConfiguration.isKey(neo4jAL, "oracle.server")
+        || !UserConfiguration.isKey(neo4jAL, "oracle.token")) {
       neo4jAL.logInfo("The Oracle has not been set up. Please check your configuration");
     }
-    ;
 
     // Else get the properties
-    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
-    this.token = UserConfiguration.get(neo4jAL,"oracle.token");
+    this.uri = UserConfiguration.get(neo4jAL, "oracle.server");
+    this.token = UserConfiguration.get(neo4jAL, "oracle.token");
 
     this.connected = pingApi();
   }
@@ -64,25 +64,26 @@ public class PythiaCom {
    * @return True if the API is reachable, false otherwise
    */
   public boolean pingApi() {
-    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
+    this.uri = UserConfiguration.get(neo4jAL, "oracle.server");
 
     // If configuration is empty
-    if (!UserConfiguration.isKey(neo4jAL,"oracle.server") || !UserConfiguration.isKey(neo4jAL,"oracle.token")) {
+    if (!UserConfiguration.isKey(neo4jAL, "oracle.server")
+        || !UserConfiguration.isKey(neo4jAL, "oracle.token")) {
       neo4jAL.logInfo(
           String.format(
               "The Oracle has not been set up. Please check your configuration at %s",
               Workspace.getUserConfigPath(neo4jAL).toString()));
-      if (!UserConfiguration.isKey(neo4jAL,"oracle.server"))
+      if (!UserConfiguration.isKey(neo4jAL, "oracle.server"))
         neo4jAL.logInfo("Missing oracle.server parameter.");
-      if (!UserConfiguration.isKey(neo4jAL,"oracle.token"))
+      if (!UserConfiguration.isKey(neo4jAL, "oracle.token"))
         neo4jAL.logInfo("Missing oracle.token parameter.");
       return false;
     }
     ;
 
     // Else get the properties
-    this.uri = UserConfiguration.get(neo4jAL,"oracle.server");
-    this.token = UserConfiguration.get(neo4jAL,"oracle.token");
+    this.uri = UserConfiguration.get(neo4jAL, "oracle.server");
+    this.token = UserConfiguration.get(neo4jAL, "oracle.token");
 
     if (uri == null || uri.isEmpty()) return false;
 
@@ -117,6 +118,21 @@ public class PythiaCom {
   }
 
   /**
+   * Check if the token is set in the configuration
+   *
+   * @param neo4jAL
+   * @return
+   */
+  public static boolean isSet(Neo4jAL neo4jAL) {
+    try {
+      return (UserConfiguration.isKey(neo4jAL, "oracle.server")
+          && UserConfiguration.isKey(neo4jAL, "oracle.token"));
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  /**
    * Get the instance of the OracleCom
    *
    * @return
@@ -145,7 +161,7 @@ public class PythiaCom {
     UserConfiguration.saveAndReload(neo4jAL);
     this.uri = newURI;
 
-    return UserConfiguration.get(neo4jAL,"oracle.server");
+    return UserConfiguration.get(neo4jAL, "oracle.server");
   }
 
   /**
@@ -160,7 +176,7 @@ public class PythiaCom {
     UserConfiguration.saveAndReload(neo4jAL);
     this.token = newToken;
 
-    return newToken == UserConfiguration.get(neo4jAL,"oracle.token");
+    return newToken == UserConfiguration.get(neo4jAL, "oracle.token");
   }
 
   /**
@@ -185,10 +201,6 @@ public class PythiaCom {
   public boolean getConnected() {
     return connected;
   }
-
-
-
-
 
   /**
    * Find a framework
@@ -377,42 +389,59 @@ public class PythiaCom {
   }
 
   /**
+   * Send a Framework to the oracle in an another thread
+   *
+   * @param frameworkNode Framework to send to the Oracle
+   * @return
+   */
+  public void asyncSendFramework(FrameworkNode frameworkNode) {
+    new Thread(() -> {
+      try {
+        this.sendFramework(frameworkNode);
+        System.out.println(String.format("Async :: Send Framework : Framework %s was sent to Pythia.", this.toString()) );
+      } catch (Exception e) {
+        System.err.println(String.format("Async :: Send Framework : Failed to send the framework to Pythia. Error : %s.", e.getLocalizedMessage()) );
+      }
+    }).start();
+  }
+
+  /**
    * Send a Framework to the oracle
    *
    * @param frameworkNode Framework to send to the Oracle
    * @return
    */
-  public boolean addFramework(FrameworkNode frameworkNode) {
+  public boolean sendFramework(FrameworkNode frameworkNode) {
 
     StringBuilder url = new StringBuilder();
     url.append(this.uri);
-    url.append("/api/artemis/frameworks");
+    url.append("/api/artemis/frameworks/add");
 
     try {
-      HttpResponse<JsonNode> jsonResponse =
+      HttpResponse<String> jsonResponse =
           Unirest.post(url.toString())
               .header("Content-Type", "application/json")
               .header("Authorization", "Bearer " + token)
               .body(frameworkNode.toJSON())
-              .asJson();
+              .asString();
 
-      if (jsonResponse.getStatus() != 201) {
+      if (jsonResponse.getStatus() != 201 || jsonResponse.getStatus() != 200 ) {
         neo4jAL.logError(
             String.format(
-                "PYTHIA COM : Failed to add the framework : %s", frameworkNode.toString()));
+                "PYTHIA COM : Failed to add the framework : %s. Response: %s", frameworkNode.toString(), jsonResponse.getBody()));
         return false;
       } else {
         neo4jAL.logInfo(
             String.format(
                 "PYTHIA COM : The framework with name %s has been added",
-                frameworkNode.toString()));
+                frameworkNode.toJSON()));
         return true;
       }
     } catch (UnirestException e) {
       neo4jAL.logError(
           String.format(
               "PYTHIA COM : Failed to add the framework (%s) with error : %s",
-              frameworkNode.toString(), e.getMessage()));
+              frameworkNode.toJSON(), e.getMessage()));
       return false;
     }
   }

@@ -30,8 +30,8 @@ public class CategoryController {
    * @return
    */
   public static String getDefaultName(Neo4jAL neo4jAL) {
-    String temp =  Configuration.getBestOfAllWorlds(neo4jAL, "artemis.default_category");
-    if(temp == null || temp.isBlank()) return Configuration.get("artemis.default_category");
+    String temp = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.default_category");
+    if (temp == null || temp.isBlank()) return Configuration.get("artemis.default_category");
 
     return temp;
   }

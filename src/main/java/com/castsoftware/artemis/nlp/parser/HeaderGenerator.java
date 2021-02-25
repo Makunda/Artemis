@@ -30,7 +30,8 @@ public class HeaderGenerator {
 
   private HeaderGenerator(Neo4jAL neo4jAL) throws IOException {
     Path headerFilePath =
-        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.parser.header_file.name"));
+        Workspace.getWorkspacePath(neo4jAL)
+            .resolve(Configuration.get("artemis.parser.header_file.name"));
     this.headerFile = headerFilePath.toFile();
     this.neo4jAL = neo4jAL;
 

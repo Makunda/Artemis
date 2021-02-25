@@ -116,7 +116,8 @@ public class ReportGenerator {
    */
   public void generate(Neo4jAL neo4jAL) throws IOException {
     Path reportFolderPath =
-        Workspace.getWorkspacePath(neo4jAL).resolve(Configuration.get("artemis.reports_generator.folder"));
+        Workspace.getWorkspacePath(neo4jAL)
+            .resolve(Configuration.get("artemis.reports_generator.folder"));
 
     if (!Files.exists(reportFolderPath)) {
       Files.createDirectories(reportFolderPath);

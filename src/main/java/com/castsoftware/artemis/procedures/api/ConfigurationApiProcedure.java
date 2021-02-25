@@ -103,7 +103,6 @@ public class ConfigurationApiProcedure {
           "artemis.api.configuration.get.detection.property - Get the name of detection property applied on the nodes during the detection")
   public Stream<OutputMessage> getNodeDetectionProperty()
           throws ProcedureException {
-
     try {
       String detectionProperty = ConfigurationController.getNodeDetectionProperty();
       return Stream.of(new OutputMessage(detectionProperty));

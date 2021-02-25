@@ -11,15 +11,6 @@
 
 package com.castsoftware.artemis.mailer;
 
-import com.castsoftware.artemis.config.UserConfiguration;
-
-import javax.mail.Message;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import java.util.Properties;
-
 /* public class Mailer {
 
   static final String FROM = UserConfiguration.get("smtp.mail.username");

@@ -73,6 +73,7 @@ public class ConfigurationController {
 
   /**
    * Get the property of the node detection
+   *
    * @return
    * @throws MissingFileException
    */
@@ -82,6 +83,7 @@ public class ConfigurationController {
 
   /**
    * Get the name of category property applied on the nodes
+   *
    * @return
    * @throws MissingFileException
    */
@@ -91,10 +93,13 @@ public class ConfigurationController {
 
   /**
    * Get the different values of the detection property
+   *
    * @return
    * @throws MissingFileException
    */
   public static List<String> getListDetectionValues() throws MissingFileException {
-    return Arrays.stream(DetectionCategory.values()).map(Objects::toString).collect(Collectors.toList());
+    return Arrays.stream(DetectionCategory.values())
+        .map(Objects::toString)
+        .collect(Collectors.toList());
   }
 }

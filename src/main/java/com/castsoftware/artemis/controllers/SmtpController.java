@@ -86,6 +86,4 @@ public class SmtpController {
     neo4jAL.logInfo("Address of the smtp server : " + smtpServer);
     return returnList;
   }
-
-
 }

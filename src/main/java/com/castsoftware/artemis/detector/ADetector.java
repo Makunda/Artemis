@@ -88,13 +88,20 @@ public abstract class ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public ADetector(Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProperties)
+  public ADetector(
+      Neo4jAL neo4jAL,
+      String application,
+      SupportedLanguage language,
+      DetectionProp detectionProperties)
       throws IOException, Neo4jQueryException {
     this.neo4jAL = neo4jAL;
     this.application = application;
     this.detectionProp = detectionProperties;
 
-    neo4jAL.logInfo(String.format("[1/9] The instantiation of %s detector started.\nThis operation can take up to one minute.", language.toString()));
+    neo4jAL.logInfo(
+        String.format(
+            "[1/9] The instantiation of %s detector started.\nThis operation can take up to one minute.",
+            language.toString()));
 
     neo4jAL.logInfo("[2/9] Retrieving the list of candidates nodes...");
     // To investigate nodes
@@ -108,8 +115,7 @@ public abstract class ADetector {
     this.pythiaFrameworks = new ArrayList<>();
     this.isPythiaUp = this.pythiaCom.getConnected();
     if (!this.isPythiaUp) {
-      neo4jAL.logInfo(
-          String.format("[4/9] Failed to reach Pythia."));
+      neo4jAL.logInfo(String.format("[4/9] Failed to reach Pythia."));
     } else {
       neo4jAL.logInfo("[4/9] Connection to Pythia successful.");
     }
@@ -138,7 +144,6 @@ public abstract class ADetector {
 
     getNodes();
     neo4jAL.logInfo("[9/9] The instantiation is successful !");
-
   }
 
   /**
@@ -189,7 +194,10 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public static ADetector getDetector(
-      Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProperties)
+      Neo4jAL neo4jAL,
+      String application,
+      SupportedLanguage language,
+      DetectionProp detectionProperties)
       throws IOException, Neo4jQueryException {
 
     ADetector aDetector;
@@ -212,15 +220,9 @@ public abstract class ADetector {
 
   public abstract ATree getExternalBreakdown();
 
-  public boolean getOnlineMode() {
-    String config = Configuration.get("artemis.onlineMode"); // Get configuration
-    if(config != null && config.equals("true")) return true;
-    return false;
-
-  }
-
   /**
    * Apply a the Artemis detection property on a node
+   *
    * @param n
    */
   public void applyNodeProperty(Node n, DetectionCategory detectedAs) {
@@ -230,6 +232,7 @@ public abstract class ADetector {
 
   /**
    * Apply a category to the node
+   *
    * @param n
    * @param category
    */
@@ -240,96 +243,82 @@ public abstract class ADetector {
 
   /**
    * Apply a description to the node
+   *
    * @param n
    * @param description
    */
   public void applyDescriptionProperty(Node n, String description) throws Neo4jQueryException {
     String propertyName = Configuration.get("artemis.sub_node.description.property");
-    String req = "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty " +
-            "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
-    Map<String, Object> params = Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
+    String req =
+        "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty "
+            + "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
+    Map<String, Object> params =
+        Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
 
     neo4jAL.executeQuery(req, params);
   }
 
-  public void applyOtherApplicationsProperty(Node n, String description) throws Neo4jQueryException {
+  public void applyOtherApplicationsProperty(Node n, String description)
+      throws Neo4jQueryException {
     String propertyName = Configuration.get("artemis.sub_node.in_other_apps.property");
-    String req = "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty " +
-            "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
-    Map<String, Object> params = Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
+    String req =
+        "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty "
+            + "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
+    Map<String, Object> params =
+        Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
 
     neo4jAL.executeQuery(req, params);
   }
 
   /**
    * Apply tag based on the configuration
+   *
    * @param n Node to flag
    * @param groupName Name of the group to extract
-   * @param arrangementParameters Parameters of the arrangement ( containing the destinations of the grouping )
+   * @param arrangementParameters Parameters of the arrangement ( containing the destinations of the
+   *     grouping )
    */
   public void applyDemeterTags(Node n, String groupName, List<String> arrangementParameters) {
-    if(arrangementParameters.contains("level")) {
+    if (arrangementParameters.contains("level")) {
       try {
         UtilsController.applyDemeterLevelTag(neo4jAL, n, groupName);
       } catch (Neo4jQueryException e) {
-        neo4jAL.logError(String.format("Failed to apply demeter level tag on node with Id: %s", n.getId()), e);
+        neo4jAL.logError(
+            String.format("Failed to apply demeter level tag on node with Id: %s", n.getId()), e);
       }
     }
 
-    if(arrangementParameters.contains("view")) {
+    if (arrangementParameters.contains("view")) {
       // Not implemented yet
     }
 
-    if(arrangementParameters.contains("architecture")) {
+    if (arrangementParameters.contains("architecture")) {
       try {
         UtilsController.applyDemeterArchitectureTag(neo4jAL, n, groupName);
       } catch (Neo4jQueryException e) {
-        neo4jAL.logError(String.format("Failed to apply demeter architecture tag on node with Id: %s", n.getId()), e);
+        neo4jAL.logError(
+            String.format(
+                "Failed to apply demeter architecture tag on node with Id: %s", n.getId()),
+            e);
       }
     }
 
-    if(arrangementParameters.contains("module")) {
+    if (arrangementParameters.contains("module")) {
       try {
         UtilsController.applyDemeterModuleTag(neo4jAL, n, groupName);
       } catch (Neo4jQueryException e) {
-        neo4jAL.logError(String.format("Failed to apply demeter module tag on node with Id: %s", n.getId()), e);
+        neo4jAL.logError(
+            String.format("Failed to apply demeter module tag on node with Id: %s", n.getId()), e);
       }
     }
-
-  }
-
-  public boolean getLearningMode() {
-    return Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
-  }
-
-  public void printConfig() {
-    neo4jAL.logInfo("_________________________________________________________________________________");
-    neo4jAL.logInfo("| -----------------  Artemis parameters  ----------------------- ");
-    neo4jAL.logInfo(String.format("| Detection launched on application                      : %s ", application) );
-    neo4jAL.logInfo(String.format("| Language of the detection is                           : %s ", languageProperties.getName()));
-    neo4jAL.logInfo(String.format("| Online Mode (Google search, repository, etc..) set on  : %s ", getOnlineMode()) );
-    neo4jAL.logInfo(String.format("| Persistent Mode set on                                 : %s ", getPersistentMode()) );
-    neo4jAL.logInfo(String.format("| Learning mode set on                                   : %s ", getLearningMode()) );
-    neo4jAL.logInfo(String.format("| Candidates for the detection (before filtering)        : %s ", toInvestigateNodes.size()) );
-    neo4jAL.logInfo("| ----------------  Detection parameters  ---------------------- ");
-    neo4jAL.logInfo(String.format("| Known Utilities will be extracted to                   : %s ", String.join(",", detectionProp.getKnownUtilities())) );
-    neo4jAL.logInfo(String.format("| Known non-utilities will be extracted to               : %s ", String.join(",", detectionProp.getKnownNotUtilities())) );
-    neo4jAL.logInfo(String.format("| Utilities in other applications will be extracted to   : %s ", String.join(",", detectionProp.getInOtherApplication())) );
-    neo4jAL.logInfo(String.format("| Potentially missing code will be extracted to          : %s ", String.join(",", detectionProp.getPotentiallyMissing())) );
-    neo4jAL.logInfo(String.format("| Unknown utilities will be extracted to                 : %s ", String.join(",", detectionProp.getUnknownUtilities())) );
-    neo4jAL.logInfo(String.format("| Unknown non-utilities will be extracted to             : %s ", String.join(",", detectionProp.getUnknownNonUtilities())) );
-    neo4jAL.logInfo("| ----------------  Exclusions parameters  --------------------- ");
-    neo4jAL.logInfo(String.format("| Exclusion on fullName                                  : %s ", String.join(",", detectionProp.getPatternFullNameToExclude())) );
-    neo4jAL.logInfo(String.format("| Exclusion on object type                               : %s ", String.join(",", detectionProp.getPatternObjectTypeToExclude())) );
-    neo4jAL.logInfo("__________________________________________________________________________________");
   }
 
   protected boolean isNameExcluded(Node n) {
     if (!n.hasProperty("FullName")) return true;
     String fullName = (String) n.getProperty("FullName");
 
-    for(String regex : detectionProp.getPatternFullNameToExclude()) {
-      if(fullName.matches(regex)) return true;
+    for (String regex : detectionProp.getPatternFullNameToExclude()) {
+      if (fullName.matches(regex)) return true;
     }
 
     return false;
@@ -339,14 +328,12 @@ public abstract class ADetector {
     if (!n.hasProperty("InternalType")) return true;
     String internalType = (String) n.getProperty("InternalType");
 
-    for(String regex : detectionProp.getPatternObjectTypeToExclude()) {
-      if(internalType.matches(regex)) return true;
+    for (String regex : detectionProp.getPatternObjectTypeToExclude()) {
+      if (internalType.matches(regex)) return true;
     }
 
     return false;
-
   }
-
 
   /**
    * Launch the detection in the Application
@@ -377,13 +364,74 @@ public abstract class ADetector {
     return frameworkNodes;
   }
 
+  public void printConfig() {
+    neo4jAL.logInfo(
+        "_________________________________________________________________________________");
+    neo4jAL.logInfo("| -----------------  Artemis parameters  ----------------------- ");
+    neo4jAL.logInfo(
+        String.format(
+            "| Detection launched on application                      : %s ", application));
+    neo4jAL.logInfo(
+        String.format(
+            "| Language of the detection is                           : %s ",
+            languageProperties.getName()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Online Mode (Google search, repository, etc..) set on  : %s ", getOnlineMode()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Persistent Mode set on                                 : %s ", getPersistentMode()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Learning mode set on                                   : %s ", getLearningMode()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Candidates for the detection (before filtering)        : %s ",
+            toInvestigateNodes.size()));
+    neo4jAL.logInfo("| ----------------  Detection parameters  ---------------------- ");
+    neo4jAL.logInfo(
+        String.format(
+            "| Known Utilities will be extracted to                   : %s ",
+            String.join(",", detectionProp.getKnownUtilities())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Known non-utilities will be extracted to               : %s ",
+            String.join(",", detectionProp.getKnownNotUtilities())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Utilities in other applications will be extracted to   : %s ",
+            String.join(",", detectionProp.getInOtherApplication())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Potentially missing code will be extracted to          : %s ",
+            String.join(",", detectionProp.getPotentiallyMissing())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Unknown utilities will be extracted to                 : %s ",
+            String.join(",", detectionProp.getUnknownUtilities())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Unknown non-utilities will be extracted to             : %s ",
+            String.join(",", detectionProp.getUnknownNonUtilities())));
+    neo4jAL.logInfo("| ----------------  Exclusions parameters  --------------------- ");
+    neo4jAL.logInfo(
+        String.format(
+            "| Exclusion on fullName                                  : %s ",
+            String.join(",", detectionProp.getPatternFullNameToExclude())));
+    neo4jAL.logInfo(
+        String.format(
+            "| Exclusion on object type                               : %s ",
+            String.join(",", detectionProp.getPatternObjectTypeToExclude())));
+    neo4jAL.logInfo(
+        "__________________________________________________________________________________");
+  }
+
   /**
    * Extract utilities
    *
    * @return List of findings
    */
-  public abstract List<FrameworkNode> extractUtilities()
-      throws IOException, Neo4jQueryException;
+  public abstract List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException;
 
   /** Extract unknown non utilities */
   public abstract void extractUnknownApp();
@@ -399,14 +447,29 @@ public abstract class ADetector {
     if (!isPythiaUp) {
       neo4jAL.logInfo("Pythia is unreachable. The upload of the result was skipped.");
       return;
-    };
+    }
+    ;
 
     // Filter the frameworks discovered by Pythia
     for (FrameworkNode fn : frameworkNodeList) {
       if (!pythiaFrameworks.contains(fn)) { // Upload only new ones
-        pythiaCom.addFramework(fn);
+        pythiaCom.sendFramework(fn);
       }
     }
+  }
+
+  public boolean getOnlineMode() {
+    String config = Configuration.get("artemis.onlineMode"); // Get configuration
+    if (config != null && config.equals("true")) return true;
+    return false;
+  }
+
+  public boolean getPersistentMode() {
+    return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
+  }
+
+  public boolean getLearningMode() {
+    return Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
   }
 
   /**
@@ -482,9 +545,5 @@ public abstract class ADetector {
     }
 
     return fb;
-  }
-
-  public boolean getPersistentMode() {
-    return Boolean.parseBoolean(Configuration.get("artemis.persistent_mode"));
   }
 }

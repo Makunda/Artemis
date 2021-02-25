@@ -54,71 +54,29 @@ public class JavaDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public JavaDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties) throws IOException, Neo4jQueryException {
+  public JavaDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties)
+      throws IOException, Neo4jQueryException {
     super(neo4jAL, application, SupportedLanguage.JAVA, detectionProperties);
     this.externalTree = getExternalBreakdown();
     this.internalTree = getInternalBreakDown();
     this.corePrefix = "";
   }
 
-  /**
-   * Get the number of match on the fullname for a given regex expression
-   *
-   * @param regex
-   * @return
-   * @throws Neo4jQueryException
-   */
-  public Long numMatchByFullName(String regex) throws Neo4jQueryException {
-    // Get the package with the biggest number of objects
-    String req = "MATCH (o:Object:`%s`) WHERE o.FullName=~$regex RETURN COUNT(o) as numObj";
-    Map<String, Object> params = Map.of("regex", regex);
-
-    Result res = neo4jAL.executeQuery(req, params);
-    if (!res.hasNext()) return 0L;
-
-    return (Long) res.next().get("numObj");
-  }
-
-  public FrameworkNode assignResult(String name, NLPResults results) {
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-    Date date = Calendar.getInstance().getTime();
-    String strDate = dateFormat.format(date);
-
-    FrameworkType fType = null;
-
-    if (results.getConfidence()
-        == NLPConfidence.NOT_CONFIDENT) { // If the confidence score is not high enough it
-      // will be added on the to investigate dt
-      fType = FrameworkType.TO_INVESTIGATE;
-    } else if (results.getCategory() == NLPCategory.FRAMEWORK) { // Detected as a framework
-      fType = FrameworkType.FRAMEWORK;
-    } else { // Detected as a not framework
-      fType = FrameworkType.NOT_FRAMEWORK;
+  @Override
+  public FrameworkTree getExternalBreakdown() {
+    // Filter nodes for java
+    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
+    while (listIterator.hasNext()) {
+      Node n = listIterator.next();
+      // Get node in Java Classes
+      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
+        listIterator.remove();
+        continue;
+      }
     }
 
-    // Retrieve highest detection score
-    double[] prob = results.getProbabilities();
-    double detectionScore = 0.0;
-    if (prob.length > 0) {
-      detectionScore = prob[0];
-    }
-
-    FrameworkNode fb =
-        new FrameworkNode(
-            neo4jAL,
-            name,
-            strDate,
-            "No location discovered",
-            "",
-            1L,
-            detectionScore,
-            new Date().getTime());
-    fb.setFrameworkType(fType);
-    fb.setInternalTypes(languageProperties.getObjectsInternalType());
-
-    // Save the Node to the local database
-
-    return fb;
+    externalTree = createTree(toInvestigateNodes);
+    return externalTree;
   }
 
   @Override
@@ -174,12 +132,108 @@ public class JavaDetector extends ADetector {
     FrameworkTree externals = createTree(toInvestigateNodes);
     listFramework.addAll(exploreCandidates(externals));
 
-
     // Internal match for java
     FrameworkTree internalTree = getInternalBreakDown();
     listFramework.addAll(getInternalCandidates(internalTree));
 
     return listFramework;
+  }
+
+  /**
+   * Treat the external nodes
+   *
+   * @return
+   */
+  private List<FrameworkNode> exploreCandidates(FrameworkTree tree) {
+    List<FrameworkTreeLeaf> branchStarterList = new ArrayList<>(tree.getRoot().getChildren());
+
+    List<FrameworkTreeLeaf> packages = new ArrayList<>();
+    for (FrameworkTreeLeaf ftl : branchStarterList) {
+      packages.addAll(ftl.getChildren());
+    }
+
+    List<FrameworkNode> frameworkNodes = new ArrayList<>();
+
+    for (FrameworkTreeLeaf ftl : packages) {
+      try {
+        frameworkNodes.addAll(explodeLeaf(ftl)); // Explode the modules
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+            String.format("Failed to explode the functional leaf with name %s", ftl.getFullName()));
+      }
+    }
+
+    return frameworkNodes;
+  }
+
+  /**
+   * Get the logic of the application
+   *
+   * @param tree
+   * @return
+   */
+  public List<FrameworkNode> getInternalCandidates(FrameworkTree tree) {
+    neo4jAL.logInfo("Extract Internal utilities");
+    String bestMatch = "";
+    Integer biggestBranch = 0;
+    List<FunctionalModule> functionalModules = new ArrayList<>();
+
+    List<FrameworkTreeLeaf> toVisit = new ArrayList<>();
+    for (FrameworkTreeLeaf ftl : tree.getRoot().getChildren()) {
+      toVisit.addAll(ftl.getChildren());
+    }
+
+    // Todo review the logic
+    for (FrameworkTreeLeaf treeLeaf : toVisit) {
+      try {
+        FunctionalModule fm =
+            new FunctionalModule(
+                neo4jAL,
+                application,
+                treeLeaf.getFullName(),
+                languageProperties,
+                treeLeaf.getDepth());
+        if (fm.isOnlyUsed()) {
+          functionalModules.add(fm);
+        }
+
+        if (treeLeaf.getNumChildren() >= biggestBranch) {
+          biggestBranch = treeLeaf.getNumChildren();
+          bestMatch = treeLeaf.getFullName();
+        }
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError("Failed to create architecture view", e);
+      }
+    }
+
+    // Get name of the company
+    neo4jAL.logInfo(String.format("The logic core seems to be located under '%s'", bestMatch));
+
+    String companyName = "";
+    if (bestMatch.split("\\.").length > 1) {
+      companyName = "of " + bestMatch.split("\\.")[1];
+      corePrefix = bestMatch.split("\\.")[1];
+    }
+
+    // Convert the functional modules found to FrameworkNodes
+    List<FrameworkNode> frameworkNodes = new ArrayList<>();
+    for (FunctionalModule fm : functionalModules) {
+      FrameworkNode fn =
+          new FrameworkNode(
+              neo4jAL,
+              fm.getIdentifier(),
+              new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
+              "Internal Match " + application,
+              "Internal framework " + companyName,
+              1L);
+      fn.setInternalTypes(languageProperties.getObjectsInternalType());
+      fn.setCategory(String.format("Internal frameworks %s", companyName));
+      fn.setFrameworkType(FrameworkType.TO_INVESTIGATE);
+
+      frameworkNodes.add(fn);
+    }
+
+    return frameworkNodes;
   }
 
   /**
@@ -194,11 +248,10 @@ public class JavaDetector extends ADetector {
     // Get base leaf detection rate
     NLPResults res = null;
     MavenPackage candidate = null;
-    if(getOnlineMode()){
+    if (getOnlineMode()) {
       res = getGoogleResult(ftl.getFullName());
       candidate = parseMaven(ftl.getFullName());
     }
-
 
     // If the package on maven match the exact name or fullName, validate the Framework
     if (candidate != null
@@ -264,34 +317,8 @@ public class JavaDetector extends ADetector {
   }
 
   /**
-   * Treat the external nodes
-   *
-   * @return
-   */
-  private List<FrameworkNode> exploreCandidates(FrameworkTree tree) {
-    List<FrameworkTreeLeaf> branchStarterList = new ArrayList<>(tree.getRoot().getChildren());
-
-    List<FrameworkTreeLeaf> packages = new ArrayList<>();
-    for (FrameworkTreeLeaf ftl : branchStarterList) {
-      packages.addAll(ftl.getChildren());
-    }
-
-    List<FrameworkNode> frameworkNodes = new ArrayList<>();
-
-    for (FrameworkTreeLeaf ftl : packages) {
-      try {
-        frameworkNodes.addAll(explodeLeaf(ftl)); // Explode the modules
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-            String.format("Failed to explode the functional leaf with name %s", ftl.getFullName()));
-      }
-    }
-
-    return frameworkNodes;
-  }
-
-  /**
    * Get Google Results
+   *
    * @param name
    * @return
    */
@@ -342,73 +369,220 @@ public class JavaDetector extends ADetector {
     return bestCandidate;
   }
 
-  /**
-   * Get the logic of the application
-   *
-   * @param tree
-   * @return
-   */
-  public List<FrameworkNode> getInternalCandidates(FrameworkTree tree) {
-    neo4jAL.logInfo("Extract Internal utilities");
-    String bestMatch = "";
-    Integer biggestBranch = 0;
-    List<FunctionalModule> functionalModules = new ArrayList<>();
+  public FrameworkNode assignResult(String name, NLPResults results) {
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    Date date = Calendar.getInstance().getTime();
+    String strDate = dateFormat.format(date);
 
-    List<FrameworkTreeLeaf> toVisit = new ArrayList<>();
-    for (FrameworkTreeLeaf ftl : tree.getRoot().getChildren()) {
-      toVisit.addAll(ftl.getChildren());
+    FrameworkType fType = null;
+
+    if (results.getConfidence()
+        == NLPConfidence.NOT_CONFIDENT) { // If the confidence score is not high enough it
+      // will be added on the to investigate dt
+      fType = FrameworkType.TO_INVESTIGATE;
+    } else if (results.getCategory() == NLPCategory.FRAMEWORK) { // Detected as a framework
+      fType = FrameworkType.FRAMEWORK;
+    } else { // Detected as a not framework
+      fType = FrameworkType.NOT_FRAMEWORK;
     }
 
-    // Todo review the logic
-    for (FrameworkTreeLeaf treeLeaf : toVisit) {
+    // Retrieve highest detection score
+    double[] prob = results.getProbabilities();
+    double detectionScore = 0.0;
+    if (prob.length > 0) {
+      detectionScore = prob[0];
+    }
+
+    FrameworkNode fb =
+        new FrameworkNode(
+            neo4jAL,
+            name,
+            strDate,
+            "No location discovered",
+            "",
+            1L,
+            detectionScore,
+            new Date().getTime());
+    fb.setFrameworkType(fType);
+    fb.setInternalTypes(languageProperties.getObjectsInternalType());
+
+    // Save the Node to the local database
+
+    return fb;
+  }
+
+  @Override
+  public void extractUnknownApp() {
+    try {
+      if (corePrefix.isBlank()) return;
+      neo4jAL.logInfo(
+          String.format(
+              "Extract the unkown matching the core of the application : %s", corePrefix));
+
+      // If the object match the Ngram
+      ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+      while (itNode.hasNext()) {
+        Node n = itNode.next();
+        if (!n.hasProperty("FullName")) continue;
+
+        String name = (String) n.getProperty("FullName");
+
+        // The name match the nGram
+        if (name.contains(corePrefix)) {
+          UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Application code");
+          itNode.remove();
+        }
+      }
+
+    } catch (Neo4jQueryException e) {
+      neo4jAL.logError("Failed to retrieve the core of the application.", e);
+      return;
+    }
+  }
+
+  @Override
+  public void extractOtherApps() {
+    neo4jAL.logInfo("Extracting package in other applications");
+    // Start for n = 2
+    List<Node> createdNodes = new ArrayList<>();
+
+    // Build new tree with remaining nodes
+    FrameworkTree frameworkTree = createTree(toInvestigateNodes);
+
+    List<FrameworkTreeLeaf> toVisit =
+        Collections.synchronizedList(frameworkTree.getRoot().getChildren());
+    Map<String, Set<String>> mapPackageApp = new HashMap<>();
+
+    for (ListIterator<FrameworkTreeLeaf> itRel = toVisit.listIterator(); itRel.hasNext(); ) {
       try {
-        FunctionalModule fm =
-            new FunctionalModule(
-                neo4jAL,
-                application,
-                treeLeaf.getFullName(),
-                languageProperties,
-                treeLeaf.getDepth());
-        if (fm.isOnlyUsed()) {
-          functionalModules.add(fm);
+        FrameworkTreeLeaf ftl = itRel.next();
+
+        if (ftl.getDepth() < 3) {
+          // Add the children
+          for (FrameworkTreeLeaf l : ftl.getChildren()) itRel.add(l);
         }
 
-        if (treeLeaf.getNumChildren() >= biggestBranch) {
-          biggestBranch = treeLeaf.getNumChildren();
-          bestMatch = treeLeaf.getFullName();
+        // Skip for a depth  inferior to the company name package
+        if (ftl.getDepth() < 2) continue;
+
+        Set<String> applications =
+            SofUtilities.getPresenceInOtherApplications(neo4jAL, application, ftl.getFullName());
+        for (String app : applications) {
+          if (!mapPackageApp.containsKey(ftl.getFullName())) {
+            mapPackageApp.put(ftl.getFullName(), new HashSet<>());
+          }
+          mapPackageApp.compute(
+              ftl.getFullName(),
+              (key, val) -> {
+                val.add(app);
+                return val;
+              });
         }
       } catch (Neo4jQueryException e) {
-        neo4jAL.logError("Failed to create architecture view", e);
+        neo4jAL.logError("Failed to treat a node for external extraction.", e);
       }
     }
 
-    // Get name of the company
-    neo4jAL.logInfo(String.format("The logic core seems to be located under '%s'", bestMatch));
-
-    String companyName = "";
-    if (bestMatch.split("\\.").length > 1) {
-      companyName = "of " + bestMatch.split("\\.")[1];
-      corePrefix = bestMatch.split("\\.")[1];
+    // Map the package used
+    for (Map.Entry<String, Set<String>> entry : mapPackageApp.entrySet()) {
+      try {
+        String nameObj =
+            entry.getKey() + " presents  on [ " + String.join(", ", entry.getValue()) + " ]";
+        Node n = SofUtilities.createSofObject(neo4jAL, application, nameObj);
+        SofUtilities.fromLevelConceptRel(neo4jAL, application, n.getId(), "Java Class");
+        createdNodes.add(n);
+      } catch (Neo4jQueryException | Neo4jBadRequestException e) {
+        e.printStackTrace();
+      }
     }
 
-    // Convert the functional modules found to FrameworkNodes
-    List<FrameworkNode> frameworkNodes = new ArrayList<>();
-    for (FunctionalModule fm : functionalModules) {
-      FrameworkNode fn = new FrameworkNode(
-              neo4jAL,
-              fm.getIdentifier(),
-              new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
-              "Internal Match " + application,
-              "Internal framework " + companyName,
-              1L);
-      fn.setInternalTypes(languageProperties.getObjectsInternalType());
-      fn.setCategory(String.format("Internal frameworks %s", companyName));
-      fn.setFrameworkType(FrameworkType.TO_INVESTIGATE);
+    // Extract the objects
+    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+    while (itNode.hasNext()) {
+      try {
 
-      frameworkNodes.add(fn);
+        Node n = itNode.next();
+        if (!n.hasProperty("Name") || !n.hasProperty("InternalType")) continue;
+
+        String name = (String) n.getProperty("Name");
+        String internalType = (String) n.getProperty("InternalType");
+
+        String req =
+            "MATCH (o:Object) WHERE NOT $appName in LABELS(o) AND o.Name=$nodeName AND o.InternalType=$internalType "
+                + "RETURN [ x in LABELS(o) WHERE NOT x='Object'][0] as app";
+        Map<String, Object> params =
+            Map.of("appName", application, "nodeName", name, "internalType", internalType);
+
+        Result res = neo4jAL.executeQuery(req, params);
+        if (res.hasNext()) {
+          UtilsController.applyDemeterParentTag(neo4jAL, n, " : Unknowns other Applications");
+          itNode.remove();
+        }
+
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+            String.format("Failed to extract node with name %s to  Unknown other applications", e));
+      }
+    }
+  }
+
+  @Override
+  public void extractUnknownNonUtilities() {
+    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+    while (itNode.hasNext()) {
+      Node n = itNode.next();
+      try {
+        UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Non Utilities");
+      } catch (Neo4jQueryException e) {
+        neo4jAL.logError(
+            String.format("Failed to extract node with name %s to Unknown Non Utilities", e));
+      }
+      itNode.remove();
+    }
+  }
+
+  /**
+   * Get the internal breakdown of the package
+   *
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public FrameworkTree getInternalBreakDown() throws Neo4jQueryException {
+    List<Node> nodeList = getInternalNodes();
+    this.internalTree = new FrameworkTree();
+
+    String fullName;
+    for (Node n : nodeList) {
+      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+      fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+
+      internalTree.insert(fullName);
     }
 
-    return frameworkNodes;
+    return internalTree;
+  }
+
+  public FrameworkTree createTree(List<Node> nodeList) {
+    FrameworkTree frameworkTree = new FrameworkTree();
+
+    // Top Bottom approach
+    String fullName;
+    ListIterator<Node> listIterator = nodeList.listIterator();
+    while (listIterator.hasNext()) {
+      Node n = listIterator.next();
+
+      // Get node in Java Classes
+      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
+        listIterator.remove();
+        continue;
+      }
+
+      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+      fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+      frameworkTree.insert(fullName);
+    }
+
+    return frameworkTree;
   }
 
   /**
@@ -453,186 +627,20 @@ public class JavaDetector extends ADetector {
   }
 
   /**
-   * Get the internal breakdown of the package
+   * Get the number of match on the fullname for a given regex expression
    *
+   * @param regex
    * @return
    * @throws Neo4jQueryException
    */
-  public FrameworkTree getInternalBreakDown() throws Neo4jQueryException {
-    List<Node> nodeList = getInternalNodes();
-    this.internalTree = new FrameworkTree();
+  public Long numMatchByFullName(String regex) throws Neo4jQueryException {
+    // Get the package with the biggest number of objects
+    String req = "MATCH (o:Object:`%s`) WHERE o.FullName=~$regex RETURN COUNT(o) as numObj";
+    Map<String, Object> params = Map.of("regex", regex);
 
-    String fullName;
-    for (Node n : nodeList) {
-      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
-      fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+    Result res = neo4jAL.executeQuery(req, params);
+    if (!res.hasNext()) return 0L;
 
-      internalTree.insert(fullName);
-    }
-
-    return internalTree;
-  }
-
-  public FrameworkTree createTree(List<Node> nodeList) {
-    FrameworkTree frameworkTree = new FrameworkTree();
-
-    // Top Bottom approach
-    String fullName;
-    ListIterator<Node> listIterator = nodeList.listIterator();
-    while (listIterator.hasNext()) {
-      Node n = listIterator.next();
-
-      // Get node in Java Classes
-      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
-        listIterator.remove();
-        continue;
-      }
-
-
-      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
-      fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-      frameworkTree.insert(fullName);
-    }
-
-    return frameworkTree;
-  }
-
-  @Override
-  public FrameworkTree getExternalBreakdown() {
-    // Filter nodes for java
-    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
-    while (listIterator.hasNext()) {
-      Node n = listIterator.next();
-      // Get node in Java Classes
-      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
-        listIterator.remove();
-        continue;
-      }
-    }
-
-    externalTree = createTree(toInvestigateNodes);
-    return externalTree;
-  }
-
-  @Override
-  public void extractUnknownNonUtilities() {
-    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
-    while (itNode.hasNext()) {
-      Node n = itNode.next();
-      try {
-        UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Non Utilities");
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-                String.format("Failed to extract node with name %s to Unknown Non Utilities", e));
-      }
-      itNode.remove();
-    }
-  }
-
-  @Override
-  public void extractOtherApps() {
-    neo4jAL.logInfo("Extracting package in other applications");
-    // Start for n = 2
-    List<Node> createdNodes = new ArrayList<>();
-
-    // Build new tree with remaining nodes
-    FrameworkTree frameworkTree = createTree(toInvestigateNodes);
-
-    List<FrameworkTreeLeaf> toVisit = Collections.synchronizedList(frameworkTree.getRoot().getChildren());
-    Map<String, Set<String>> mapPackageApp = new HashMap<>();
-
-    for (ListIterator<FrameworkTreeLeaf> itRel = toVisit.listIterator(); itRel.hasNext(); ) {
-      try {
-        FrameworkTreeLeaf ftl = itRel.next();
-
-        if (ftl.getDepth() < 3) {
-          // Add the children
-          for (FrameworkTreeLeaf l : ftl.getChildren()) itRel.add(l);
-        }
-
-        // Skip for a depth  inferior to the company name package
-        if (ftl.getDepth() < 2) continue;
-
-        Set<String> applications =
-                SofUtilities.getPresenceInOtherApplications(neo4jAL, application, ftl.getFullName());
-        for (String app : applications) {
-          if(!mapPackageApp.containsKey(ftl.getFullName())) {
-            mapPackageApp.put(ftl.getFullName(), new HashSet<>());
-          }
-          mapPackageApp.compute(ftl.getFullName(), (key, val) -> { val.add(app); return val; });
-
-        }
-      } catch ( Neo4jQueryException e) {
-        neo4jAL.logError("Failed to treat a node for external extraction.", e);
-      }
-    }
-
-    // Map the package used
-    for(Map.Entry<String, Set<String>> entry : mapPackageApp.entrySet()) {
-      try {
-        String nameObj = entry.getKey() + " presents  on [ " + String.join(", ", entry.getValue()) + " ]";
-        Node n = SofUtilities.createSofObject(neo4jAL, application, nameObj);
-        SofUtilities.fromLevelConceptRel(neo4jAL, application, n.getId(), "Java Class");
-        createdNodes.add(n);
-      } catch (Neo4jQueryException | Neo4jBadRequestException e) {
-        e.printStackTrace();
-      }
-    }
-
-    // Extract the objects
-    ListIterator<Node> itNode = toInvestigateNodes.listIterator();
-    while (itNode.hasNext()) {
-      try {
-
-        Node n = itNode.next();
-        if (!n.hasProperty("Name") || !n.hasProperty("InternalType")) continue;
-
-        String name = (String) n.getProperty("Name");
-        String internalType = (String) n.getProperty("InternalType");
-
-        String req =
-                "MATCH (o:Object) WHERE NOT $appName in LABELS(o) AND o.Name=$nodeName AND o.InternalType=$internalType "
-                        + "RETURN [ x in LABELS(o) WHERE NOT x='Object'][0] as app";
-        Map<String, Object> params =
-                Map.of("appName", application, "nodeName", name, "internalType", internalType);
-
-        Result res = neo4jAL.executeQuery(req, params);
-        if (res.hasNext()) {
-          UtilsController.applyDemeterParentTag(neo4jAL, n, " : Unknowns other Applications");
-          itNode.remove();
-        }
-
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-                String.format("Failed to extract node with name %s to  Unknown other applications", e));
-      }
-    }
-  }
-
-  @Override
-  public void extractUnknownApp() {
-    try {
-      if (corePrefix.isBlank()) return;
-      neo4jAL.logInfo(String.format("Extract the unkown matching the core of the application : %s", corePrefix));
-
-      // If the object match the Ngram
-      ListIterator<Node> itNode = toInvestigateNodes.listIterator();
-      while (itNode.hasNext()) {
-        Node n = itNode.next();
-        if (!n.hasProperty("FullName")) continue;
-
-        String name = (String) n.getProperty("FullName");
-
-        // The name match the nGram
-        if (name.contains(corePrefix)) {
-          UtilsController.applyDemeterParentTag(neo4jAL, n, ": Unknowns Application code");
-          itNode.remove();
-        }
-      }
-
-    } catch (Neo4jQueryException e) {
-      neo4jAL.logError("Failed to retrieve the core of the application.", e);
-      return;
-    }
+    return (Long) res.next().get("numObj");
   }
 }

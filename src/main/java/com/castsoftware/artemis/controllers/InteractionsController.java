@@ -123,7 +123,7 @@ public class InteractionsController {
       List<String> appToSearch,
       String language,
       String fullNameRegex)
-          throws Neo4jQueryException, IOException, MissingFileException {
+      throws Neo4jQueryException, IOException, MissingFileException {
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
 

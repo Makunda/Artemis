@@ -27,12 +27,10 @@ public class NodeConfiguration {
   private static final String NODE_LABEL = "ArtemisConfiguration";
   private static final String LAST_UPDATE_PROP = "LastUpdate";
   private static final String WORKSPACE_PROP = "Workspace";
-
+  private static NodeConfiguration INSTANCE;
   private Node node;
   private Long lastUpdate;
   private String workspace;
-
-  private static NodeConfiguration INSTANCE;
 
   private NodeConfiguration(Node node) {
     this.node = node;
@@ -54,6 +52,81 @@ public class NodeConfiguration {
 
     this.lastUpdate = lastUpdate;
     this.workspace = workspace;
+  }
+
+  /**
+   * Get the workspace path contained in the node configuration
+   *
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadRequestException
+   */
+  public static Path getWorkspaceNodeConf(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
+
+    if (nc.getWorkspace().isBlank()) return Path.of(Configuration.get("artemis.workspace.folder"));
+    return Path.of(nc.getWorkspace());
+  }
+
+  /**
+   * Get the current instance of the node configuration$
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadRequestException
+   */
+  public static NodeConfiguration getInstance(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    if (INSTANCE == null) INSTANCE = retrieveConfiguration(neo4jAL);
+
+    return INSTANCE;
+  }
+
+  public String getWorkspace() {
+    return workspace;
+  }
+
+  /**
+   * Get the configuration in the database. If no configuration is detected it will create a new one
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return The configuration
+   * @throws Neo4jQueryException
+   */
+  private static NodeConfiguration retrieveConfiguration(Neo4jAL neo4jAL)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    String req = String.format("MATCH (o:%s) RETURN o as node LIMIT 1", NODE_LABEL);
+    Result res = neo4jAL.executeQuery(req);
+
+    // Create if not exists
+    if (!res.hasNext()) return createConfiguration(neo4jAL);
+
+    // else get the parameters
+    Node n = (Node) res.next().get("node");
+
+    return new NodeConfiguration(n);
+  }
+
+  public void setWorkspace(String workspace) {
+    this.workspace = workspace;
+  }
+
+  /**
+   * Check if the workspace is present in the configuration
+   *
+   * @param neo4jAL
+   * @return
+   */
+  public static boolean isWorkspaceSet(Neo4jAL neo4jAL) {
+    try {
+      NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
+      return nc.getWorkspace().isBlank();
+    } catch (Neo4jBadRequestException | Neo4jQueryException e) {
+      return false;
+    }
   }
 
   /**
@@ -99,83 +172,12 @@ public class NodeConfiguration {
     return new NodeConfiguration(n);
   }
 
-  /**
-   * Get the configuration in the database. If no configuration is detected it will create a new one
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @return The configuration
-   * @throws Neo4jQueryException
-   */
-  private static  NodeConfiguration retrieveConfiguration(Neo4jAL neo4jAL)
-      throws Neo4jQueryException, Neo4jBadRequestException {
-    String req = String.format("MATCH (o:%s) RETURN o as node LIMIT 1", NODE_LABEL);
-    Result res = neo4jAL.executeQuery(req);
-
-    // Create if not exists
-    if (!res.hasNext()) return createConfiguration(neo4jAL);
-
-    // else get the parameters
-    Node n = (Node) res.next().get("node");
-
-    return new NodeConfiguration(n);
-  }
-
-  /**
-   * Get the current instance of the node configuration$
-   * @param neo4jAL Neo4j Access Layer
-   * @return
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadRequestException
-   */
-  public static NodeConfiguration getInstance(Neo4jAL neo4jAL)
-      throws Neo4jQueryException, Neo4jBadRequestException {
-    if(INSTANCE == null) INSTANCE = retrieveConfiguration(neo4jAL);
-
-    return INSTANCE;
-  }
-
   public Long getLastUpdate() {
     return lastUpdate;
   }
 
   public void setLastUpdate(Long lastUpdate) {
     this.lastUpdate = lastUpdate;
-  }
-
-  public String getWorkspace() {
-    return workspace;
-  }
-
-  public void setWorkspace(String workspace) {
-    this.workspace = workspace;
-  }
-
-  /**
-   * Get the workspace path contained in the node configuration
-    * @param neo4jAL
-   * @return
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadRequestException
-   */
-  public static Path getWorkspaceNodeConf(Neo4jAL neo4jAL) throws Neo4jQueryException, Neo4jBadRequestException {
-    NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
-
-    if(nc.getWorkspace().isBlank()) return Path.of(Configuration.get("artemis.workspace.folder"));
-    return Path.of(nc.getWorkspace());
-  }
-
-  /**
-   * Check if the workspace is present in the configuration
-   * @param neo4jAL
-   * @return
-   */
-  public static boolean isWorkspaceSet(Neo4jAL neo4jAL)  {
-    try {
-      NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
-      return nc.getWorkspace().isBlank();
-    } catch (Neo4jBadRequestException | Neo4jQueryException e) {
-      return false;
-    }
   }
 
   /**
@@ -190,7 +192,6 @@ public class NodeConfiguration {
     return timestamp;
   }
 
-
   /**
    * Update the value of the workspace
    *
@@ -202,5 +203,4 @@ public class NodeConfiguration {
     this.workspace = newWorkspace;
     return workspace;
   }
-
 }

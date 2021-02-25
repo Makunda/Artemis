@@ -52,5 +52,4 @@ public enum SupportedLanguage {
   public String toString() {
     return this.value;
   }
-
 }

@@ -68,7 +68,7 @@ public class DetectionController {
   @Deprecated
   public static List<FrameworkResult> launchBulkDetection(
       Neo4jAL neo4jAL, String language, Boolean flagNodes)
-          throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
+      throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
     List<FrameworkResult> resultList = new ArrayList<>();
 
     // Application
@@ -88,44 +88,11 @@ public class DetectionController {
     DetectionProp detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
 
     for (String appName : appNameList) {
-      resultList.addAll(getFrameworkList(neo4jAL, appName, SupportedLanguage.getLanguage(language), detectionProp)
+      resultList.addAll(
+          getFrameworkList(neo4jAL, appName, SupportedLanguage.getLanguage(language), detectionProp)
               .stream()
               .map(FrameworkResult::new)
               .collect(Collectors.toList()));
-    }
-
-    return resultList;
-  }
-
-  /**
-   * Launch the Artemis Detection against the specified application
-   *
-   * @param neo4jAL Neo4J Access Layer
-   * @param application Application used during the detection
-   * @param language Specify the language of the application to pick the correct dt
-   * @return The list of detected frameworks
-   * @throws Neo4jQueryException
-   * @throws IOException
-   */
-  public static List<FrameworkResult> launchDetection(
-      Neo4jAL neo4jAL, String application, String language, String detectionPropAsJson)
-          throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
-
-    DetectionProp detectionProp;
-    if(!detectionPropAsJson.isBlank()) {
-      detectionProp = DetectionParameters.deserializeOrDefault(detectionPropAsJson);
-    } else {
-      detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
-    }
-
-    List<FrameworkNode> frameworkList =
-        getFrameworkList(neo4jAL, application, SupportedLanguage.getLanguage(language), detectionProp);
-    List<FrameworkResult> resultList = new ArrayList<>();
-
-    // Convert the framework detected to Framework Results
-    for (FrameworkNode fn : frameworkList) {
-      FrameworkResult fr = new FrameworkResult(fn);
-      resultList.add(fr);
     }
 
     return resultList;
@@ -143,9 +110,44 @@ public class DetectionController {
    */
   private static List<FrameworkNode> getFrameworkList(
       Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProp)
-          throws IOException, Neo4jQueryException, Neo4jBadRequestException, MissingFileException {
+      throws IOException, Neo4jQueryException, Neo4jBadRequestException, MissingFileException {
 
     ADetector aDetector = ADetector.getDetector(neo4jAL, application, language, detectionProp);
     return aDetector.launch();
+  }
+
+  /**
+   * Launch the Artemis Detection against the specified application
+   *
+   * @param neo4jAL Neo4J Access Layer
+   * @param application Application used during the detection
+   * @param language Specify the language of the application to pick the correct dt
+   * @return The list of detected frameworks
+   * @throws Neo4jQueryException
+   * @throws IOException
+   */
+  public static List<FrameworkResult> launchDetection(
+      Neo4jAL neo4jAL, String application, String language, String detectionPropAsJson)
+      throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
+
+    DetectionProp detectionProp;
+    if (!detectionPropAsJson.isBlank()) {
+      detectionProp = DetectionParameters.deserializeOrDefault(detectionPropAsJson);
+    } else {
+      detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
+    }
+
+    List<FrameworkNode> frameworkList =
+        getFrameworkList(
+            neo4jAL, application, SupportedLanguage.getLanguage(language), detectionProp);
+    List<FrameworkResult> resultList = new ArrayList<>();
+
+    // Convert the framework detected to Framework Results
+    for (FrameworkNode fn : frameworkList) {
+      FrameworkResult fr = new FrameworkResult(fn);
+      resultList.add(fr);
+    }
+
+    return resultList;
   }
 }

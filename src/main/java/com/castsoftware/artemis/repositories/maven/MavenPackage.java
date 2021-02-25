@@ -51,7 +51,9 @@ public class MavenPackage implements SPackage {
         + ", tags="
         + Arrays.toString(tags)
         + "} \n";
-  }  public String getGroupId() {
+  }
+
+  public String getGroupId() {
     return groupId;
   }
 
@@ -112,6 +114,4 @@ public class MavenPackage implements SPackage {
     o.put("Tags", this.getTags());
     return o;
   }
-
-
 }
