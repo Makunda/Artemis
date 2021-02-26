@@ -18,6 +18,7 @@ import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.pythia.PythiaCom;
+import org.json.JSONObject;
 import org.neo4j.graphdb.*;
 
 import java.sql.Timestamp;
@@ -45,12 +46,16 @@ public class FrameworkNode {
       Configuration.get("artemis.frameworkNode.confirmed");
   private static final String CATEGORY_PROPERTY =
       Configuration.get("artemis.frameworkNode.category");
+  private static final String DETECTION_DATA_PROPERTY =
+          Configuration.get("artemis.frameworkNode.detection_data");
   private static final String INTERNAL_TYPE_PROPERTY =
       Configuration.get("artemis.frameworkNode.internal_type");
   private static final String USER_CREATED_PROPERTY =
       Configuration.get("artemis.frameworkNode.user_created");
   private static final String CREATION_DATE_PROPERTY =
       Configuration.get("artemis.frameworkNode.creation_date");
+  private static final String MODIFIED_PROPERTY =
+          Configuration.get("artemis.frameworkNode.modified_property");
 
   private static final String CATEGORY_RELATIONSHIP =
       Configuration.get("artemis.category.to.frameworkNode");
@@ -67,6 +72,7 @@ public class FrameworkNode {
   private String location = "";
   private String description = "";
   private String category;
+  private String detectionData= "";
   private List<String> internalTypes = new ArrayList<>();
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
@@ -134,6 +140,8 @@ public class FrameworkNode {
   public static String getCategoryProperty() {
     return CATEGORY_PROPERTY;
   }
+
+  public static String getDetectionDataProperty() { return DETECTION_DATA_PROPERTY; }
 
   public static String getUserCreatedProperty() {
     return USER_CREATED_PROPERTY;
@@ -216,6 +224,11 @@ public class FrameworkNode {
         if (!temp.isBlank()) category = temp;
       }
 
+      String detectionData = "";
+      if(n.hasProperty(DETECTION_DATA_PROPERTY)) {
+        detectionData = (String) n.getProperty(DETECTION_DATA_PROPERTY);
+      }
+
       // User created
       Boolean userCreated = false;
       if (n.hasProperty(USER_CREATED_PROPERTY)) {
@@ -251,6 +264,7 @@ public class FrameworkNode {
               percentageDetection,
               timestamp);
 
+      fn.setDetectionData(detectionData);
       fn.setFrameworkType(type);
       fn.setInternalTypes(internalType);
       fn.setUserCreated(userCreated);
@@ -427,12 +441,20 @@ public class FrameworkNode {
     this.percentageOfDetection = percentageOfDetection;
   }
 
+  public String getDetectionData() {
+    return this.detectionData;
+  }
+
   public FrameworkType getFrameworkType() {
     return frameworkType;
   }
 
   public void setFrameworkType(FrameworkType frameworkType) {
     this.frameworkType = frameworkType;
+  }
+
+  public void setDetectionData(String detectionData) {
+    this.detectionData = detectionData;
   }
 
   public List<String> getInternalTypes() {
@@ -493,6 +515,11 @@ public class FrameworkNode {
     node.setProperty(getInternalTypeProperty(), listTypes.toArray(new String[0]));
   }
 
+  public void flagAsModified() {
+    if (node == null) return;
+    node.setProperty(MODIFIED_PROPERTY, true );
+  }
+
   public static String getInternalTypeProperty() {
     return INTERNAL_TYPE_PROPERTY;
   }
@@ -502,6 +529,13 @@ public class FrameworkNode {
 
     if (node == null) return;
     node.setProperty(getDescriptionProperty(), description);
+  }
+
+  public void updateDetectionData(String detectionData) {
+    this.detectionData = detectionData;
+
+    if (node == null) return;
+    node.setProperty(getDetectionDataProperty(), detectionData);
   }
 
   public static String getDescriptionProperty() {
@@ -593,36 +627,21 @@ public class FrameworkNode {
     return Objects.equals(name, that.name) && Objects.equals(internalTypes, that.internalTypes);
   }
 
-  public String toJSON() {
-    return "{  \"name\" : \""
-        + name
-        + '\"'
-        + ", \"discoveryDate\" : \""
-        + discoveryDate
-        + '\"'
-        + ", \"location\" : \""
-        + location
-        + '\"'
-        + ", \"description\" : \""
-        + description
-        + '\"'
-        + ", \"category\" : \""
-        + getCategory()
-        + '\"'
-        + ", \"internalType\" : \""
-        + internalTypes
-        + '\"'
-        + ", \"numberOfDetection\" : "
-        + numberOfDetection
-        + ", \"percentageOfDetection\" : "
-        + percentageOfDetection
-        + ", \"type\" : \""
-        + frameworkType.toString()
-        + '\"'
-        + ", \"userCreated\" : "
-        + userCreated
-        + '}';
+  public JSONObject toJSON() {
+    JSONObject o = new JSONObject();
+    o.put("name", this.name);
+    o.put("discoveryDate", this.discoveryDate);
+    o.put("location", this.location);
+    o.put("description", this.description);
+    o.put("category", this.category);
+    o.put("internalType", this.internalTypes);
+    o.put("numberOfDetection", this.numberOfDetection);
+    o.put("percentageOfDetection", this.percentageOfDetection);
+    o.put("type", this.frameworkType.toString());
+    o.put("userCreated", this.userCreated);
+    return o;
   }
+
 
   /**
    * Get the category of the node, if no category node is connected, it will create a custom one

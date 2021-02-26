@@ -428,7 +428,7 @@ public class PythiaCom {
       if (jsonResponse.getStatus() != 201 || jsonResponse.getStatus() != 200 ) {
         neo4jAL.logError(
             String.format(
-                "PYTHIA COM : Failed to add the framework : %s. Response: %s", frameworkNode.toString(), jsonResponse.getBody()));
+                "PYTHIA COM : Failed to add the framework : %s. Response: %s", frameworkNode.toJSON(), jsonResponse.getBody()));
         return false;
       } else {
         neo4jAL.logInfo(

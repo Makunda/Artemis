@@ -459,7 +459,7 @@ public abstract class ADetector {
   }
 
   public boolean getOnlineMode() {
-    String config = Configuration.get("artemis.onlineMode"); // Get configuration
+    String config = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"); // Get configuration
     if (config != null && config.equals("true")) return true;
     return false;
   }

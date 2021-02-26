@@ -153,7 +153,7 @@ public class NodeConfiguration {
    */
   private static NodeConfiguration createConfiguration(Neo4jAL neo4jAL)
       throws Neo4jQueryException, Neo4jBadRequestException {
-    String workspace = Workspace.getWorkspacePath(neo4jAL).toString();
+    String workspace = Configuration.get("artemis.workspace.folder");
     Long lastUpdate = 0L;
 
     String req =

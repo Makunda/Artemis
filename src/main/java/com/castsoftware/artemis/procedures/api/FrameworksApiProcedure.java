@@ -222,6 +222,47 @@ public class FrameworksApiProcedure {
     }
   }
 
+  @Procedure(value = "artemis.api.merge.framework.pythia", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.merge.framework.pythia( String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
+  public Stream<FrameworkResult> mergeFrameworkPythia(
+          @Name(value = "Name") String name,
+          @Name(value = "DiscoveryDate") String discoveryDate,
+          @Name(value = "Location") String location,
+          @Name(value = "Description") String description,
+          @Name(value = "Type") String type,
+          @Name(value = "Category") String category,
+          @Name(value = "InternalTypes") List<String> internalTypes,
+          @Name(value = "NumberOfDetection", defaultValue = "0") Long numberOfDetection,
+          @Name(value = "PercentageOfDetection", defaultValue = "0") Double percentageOfDetection)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      FrameworkNode addedFramework =
+              FrameworkController.mergeFramework(
+                      nal,
+                      name,
+                      discoveryDate,
+                      location,
+                      description,
+                      type,
+                      category,
+                      numberOfDetection,
+                      percentageOfDetection,
+                      internalTypes);
+      addedFramework.flagAsModified();
+      return Stream.of(new FrameworkResult(addedFramework));
+    } catch (Exception
+            | Neo4jConnectionError
+            | Neo4jQueryException
+            | Neo4jBadNodeFormatException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
   @Procedure(value = "artemis.api.find.framework", mode = Mode.WRITE)
   @Description(
       "artemis.api.find.framework(String Name, Optional String InternalType) - Find a framework using its name")

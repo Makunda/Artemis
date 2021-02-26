@@ -22,6 +22,7 @@ public class FrameworkResult {
   public String description;
   public String category;
   public String type;
+  public String detectionData;
   public List<String> internalType = new ArrayList<>();
   public String location = "";
   public String discoveryDate = "";
@@ -37,5 +38,6 @@ public class FrameworkResult {
     this.location = fn.getLocation();
     this.discoveryDate = fn.getDiscoveryDate();
     this.percentageOfDetection = fn.getPercentageOfDetection();
+    this.detectionData = fn.getDetectionData();
   }
 }

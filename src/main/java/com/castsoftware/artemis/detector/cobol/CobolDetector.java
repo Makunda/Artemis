@@ -128,6 +128,7 @@ public class CobolDetector extends ADetector {
             // Apply a malus on Node with name containing number, exclude it
 
             fb = saveFrameworkResult(objectName, nlpResult, internalType);
+            fb.updateDetectionData(requestResult);
 
             if (getLearningMode()) {
               nlpSaver.writeNLPResult(nlpResult.getCategory(), requestResult);
@@ -143,7 +144,7 @@ public class CobolDetector extends ADetector {
               applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
               applyDescriptionProperty(n, description);
               applyCategory(n, cat);
-              applyDemeterTags(n, cat, detectionProp.getKnownUtilities());
+              //applyDemeterTags(n, cat, detectionProp.getKnownUtilities());
 
               listIterator.remove(); // Remove the node from the to investigate list
             }
@@ -200,7 +201,7 @@ public class CobolDetector extends ADetector {
         // The name match the nGram
         if (name.startsWith(corePrefix)) {
           applyNodeProperty(n, DetectionCategory.MISSING_CODE);
-          applyDemeterTags(n, "Missing code", detectionProp.getPotentiallyMissing());
+          //applyDemeterTags(n, "Missing code", detectionProp.getPotentiallyMissing());
           itNode.remove();
         }
       }
@@ -253,8 +254,8 @@ public class CobolDetector extends ADetector {
       try {
         applyNodeProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
         applyOtherApplicationsProperty(en.getKey(), groupName);
-        applyDemeterTags(
-            en.getKey(), "In applications " + groupName, detectionProp.getInOtherApplication());
+        //applyDemeterTags(
+        //    en.getKey(), "In applications " + groupName, detectionProp.getInOtherApplication());
       } catch (Neo4jQueryException e) {
         neo4jAL.logError("Failed to create a 'other application' property", e);
       }
@@ -267,7 +268,7 @@ public class CobolDetector extends ADetector {
     while (itNode.hasNext()) {
       Node n = itNode.next();
       applyNodeProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
-      applyDemeterTags(n, "Unknown not utility ", detectionProp.getUnknownNonUtilities());
+      //applyDemeterTags(n, "Unknown not utility ", detectionProp.getUnknownNonUtilities());
       itNode.remove();
     }
   }
