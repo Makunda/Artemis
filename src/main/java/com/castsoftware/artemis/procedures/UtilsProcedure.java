@@ -108,6 +108,35 @@ public class UtilsProcedure {
     }
   }
 
+  @Procedure(value = "artemis.set.pythiaMode", mode = Mode.WRITE)
+  @Description("artemis.set.pythiaMode(Boolean value) - Set the value of pythia mode ")
+  public Stream<BooleanResult> setPythiaMode(
+          @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.setPythiaMode(nal, value);
+      return Stream.of(new BooleanResult(mode));
+    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.get.pythiaMode", mode = Mode.WRITE)
+  @Description("artemis.get.pythiaMode() - Get the value of pythia mode.")
+  public Stream<BooleanResult> getPythiaMode() throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Boolean mode = UtilsController.getPythiaMode(nal);
+      return Stream.of(new BooleanResult(mode));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
   @Procedure(value = "artemis.set.repositoryMode", mode = Mode.WRITE)
   @Description("artemis.set.repositoryMode(Boolean value) - Set the value of repository mode.")
   public Stream<BooleanResult> setRepositoryMode(

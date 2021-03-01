@@ -108,7 +108,7 @@ public class CobolDetector extends ADetector {
                     "The object with name '%s' is already known by Artemis as a '%s'.",
                     objectName, fb.getFrameworkType()));
           } else {
-            if (isPythiaUp) fb = findFrameworkOnPythia(objectName, internalType); // Check on pythia
+            if (getPythiaMode() && isPythiaUp) fb = findFrameworkOnPythia(objectName, internalType); // Check on pythia
           }
 
           // If the Framework is not known and the connection to google still possible, launch the

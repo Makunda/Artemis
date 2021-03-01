@@ -460,8 +460,13 @@ public abstract class ADetector {
 
   public boolean getOnlineMode() {
     String config = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"); // Get configuration
-    if (config != null && config.equals("true")) return true;
-    return false;
+    return Boolean.parseBoolean(config);
+  }
+
+  // artemis.pythia_mode
+  public boolean getPythiaMode() {
+    String config = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"); // Get configuration
+    return Boolean.parseBoolean(config);
   }
 
   public boolean getPersistentMode() {

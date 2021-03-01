@@ -32,10 +32,29 @@ public class Configuration {
    */
   public static String getBestOfAllWorlds(Neo4jAL neo4jAL, String property) {
     // Add the Node configuration
-    if (UserConfiguration.has(neo4jAL, property)
-        && UserConfiguration.get(neo4jAL, property) != null)
-      return UserConfiguration.get(neo4jAL, property);
-    return Configuration.get(property);
+    String content = UserConfiguration.get(neo4jAL, property);
+    if ( content == null) {
+      content = Configuration.get(property);
+    } else {
+    }
+
+    return content;
+  }
+
+  /**
+   * Change the value of a property in the configuration
+   * @param neo4jAL Neo4j Access Layer
+   * @param property Name of the property to change
+   * @param value Value
+   * @throws MissingFileException
+   */
+  public static void setEverywhere(Neo4jAL neo4jAL, String property, String value) throws MissingFileException {
+    try {
+      UserConfiguration.set(neo4jAL, property, value);
+    } catch (Exception ignored) {
+      neo4jAL.logInfo("Failed to set the property in User Configuration.");
+    }
+    Configuration.set(property, value);
   }
 
   /**

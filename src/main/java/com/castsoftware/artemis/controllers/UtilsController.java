@@ -205,10 +205,8 @@ public class UtilsController {
    * @throws MissingFileException
    */
   public static Boolean setOnlineMode(Neo4jAL neo4jAL, Boolean active) throws MissingFileException {
-    if (UserConfiguration.isLoaded()) {
-      UserConfiguration.set(neo4jAL, "artemis.onlineMode", active.toString());
-    }
-    return Boolean.parseBoolean(UserConfiguration.get(neo4jAL, "artemis.onlineMode"));
+    Configuration.setEverywhere(neo4jAL, "artemis.onlineMode", active.toString());
+    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"));
   }
 
   /**
@@ -217,7 +215,21 @@ public class UtilsController {
    * @return
    */
   public static Boolean getOnlineMode(Neo4jAL neo4jAL) {
-    return Boolean.parseBoolean(UserConfiguration.get(neo4jAL, "artemis.onlineMode"));
+    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"));
+  }
+
+  public static Boolean setPythiaMode(Neo4jAL neo4jAL, Boolean active) throws MissingFileException {
+    Configuration.setEverywhere(neo4jAL, "artemis.pythia_mode", active.toString());
+    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"));
+  }
+
+  /**
+   * Get the value of the Pythia mode
+   *
+   * @return
+   */
+  public static Boolean getPythiaMode(Neo4jAL neo4jAL) {
+    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"));
   }
 
   /**

@@ -35,10 +35,12 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
+import java.awt.*;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 
 public class JavaDetector extends ADetector {
 
@@ -101,6 +103,13 @@ public class JavaDetector extends ADetector {
           String fullName2 = String.join(".", Arrays.copyOfRange(split, 0, 2));
           FrameworkNode fn =
               FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName2, internalType);
+
+          // Get on Pythia
+          if(fn == null) {
+            // Parse pythia
+            fn = getFromPythia(fullName2, internalType);
+          }
+
           if (fn != null) {
             frameworkSet.add(fn);
             listIterator.remove();
@@ -113,6 +122,13 @@ public class JavaDetector extends ADetector {
           String fullName3 = String.join(".", Arrays.copyOfRange(split, 0, 3));
           FrameworkNode fn =
               FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName3, internalType);
+
+          // Get on Pythia
+          if(fn == null) {
+            // Parse pythia
+            fn = getFromPythia(fullName3, internalType);
+          }
+
           if (fn != null) {
             frameworkSet.add(fn);
             listIterator.remove();
@@ -248,6 +264,8 @@ public class JavaDetector extends ADetector {
     // Get base leaf detection rate
     NLPResults res = null;
     MavenPackage candidate = null;
+
+    // Parse online
     if (getOnlineMode()) {
       res = getGoogleResult(ftl.getFullName());
       candidate = parseMaven(ftl.getFullName());
@@ -367,6 +385,18 @@ public class JavaDetector extends ADetector {
     }
 
     return bestCandidate;
+  }
+
+  /**
+   * Check if the package / object is present on Pythia
+   * @param objectName Name of the object
+   * @param internalType Internal type of the object
+   * @return
+   */
+  private FrameworkNode getFromPythia(String objectName, String internalType) {
+    FrameworkNode fb = null;
+    if (getPythiaMode() && isPythiaUp) fb = findFrameworkOnPythia(objectName, internalType); // Check on pythia
+    return fb;
   }
 
   public FrameworkNode assignResult(String name, NLPResults results) {

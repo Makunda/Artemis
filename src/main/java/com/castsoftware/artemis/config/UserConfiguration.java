@@ -38,7 +38,9 @@ public class UserConfiguration {
       PROPERTIES = loadConfiguration(neo4jAL);
     }
 
-    return PROPERTIES.get(key).toString();
+    assert PROPERTIES != null: "Failed to load the user configuration";
+
+    return (String) PROPERTIES.get(key);
   }
 
   /**
@@ -93,8 +95,10 @@ public class UserConfiguration {
       PROPERTIES = loadConfiguration(neo4jAL);
     }
 
+    assert PROPERTIES != null: "Failed to load the configuration";
     PROPERTIES.setProperty(key, value);
     saveAndReload(neo4jAL);
+    PROPERTIES = loadConfiguration(neo4jAL);
     return PROPERTIES.get(key).toString();
   }
 
