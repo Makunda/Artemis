@@ -22,6 +22,7 @@ import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.results.LeafResult;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +41,8 @@ public class BreakdownController {
   public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language)
       throws IOException, Neo4jQueryException, MissingFileException {
     ATree tree = getBreakDownAsTree(neo4jAL, application, language);
+    if(tree == null) return Collections.emptyList();
+
     return tree.flatten().stream()
         .map(x -> new LeafResult(x, tree.getDelimiterLeaves()))
         .collect(Collectors.toList());

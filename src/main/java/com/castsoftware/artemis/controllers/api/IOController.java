@@ -58,7 +58,7 @@ public class IOController {
       Neo4jAL neo4jAL, String path, List<String> labels, List<Node> listNode)
       throws ProcedureException, Neo4jQueryException {
     Path exportPath = null;
-    if (path.isBlank() || Files.exists(Path.of(path))) {
+    if (path.isBlank() || !Files.exists(Path.of(path))) {
       neo4jAL.logInfo(
           String.format(
               "The path '%s' doesn't seem to be valid. Will use default path : %s ",

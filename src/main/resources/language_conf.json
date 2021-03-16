@@ -21,7 +21,11 @@
     "interaction_detector": false,
     "package_delimiter": "",
     "repository_search": [],
-    "keywords": "IBM Knowledge Center|Knowledge Center",
+    "keywords": [
+      "IBM Knowledge Center",
+      "Knowledge Center",
+      "ibm.com"
+    ],
     "nlp_model": "artemis_cobol_model.bin"
   },
   "JAVA": {
@@ -43,7 +47,11 @@
       "Maven",
       "Github"
     ],
-    "keywords": "maven|stackoverflow|github",
+    "keywords": [
+      "maven",
+      "stackoverflow",
+      "github"
+    ],
     "nlp_model": "artemis_java_model.bin"
   },
   "NET": {
@@ -71,7 +79,9 @@
     "interaction_detector": false,
     "package_delimiter": ".",
     "repository_search": [],
-    "keywords": "nuget|github",
+    "keywords": [
+      "nuget"
+    ],
     "nlp_model": "artemis_net_model.bin"
   }
 }

@@ -23,8 +23,13 @@ import org.neo4j.graphdb.Node;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ListIterator;
 
 public class NetDetector extends ADetector {
+
+  private FrameworkTree externalTree;
+  private FrameworkTree internalTree;
+
   /**
    * Detector constructor
    *
@@ -43,15 +48,16 @@ public class NetDetector extends ADetector {
     FrameworkTree frameworkTree = new FrameworkTree();
 
     // Top Bottom approach
-    for (Node n : toInvestigateNodes) {
-
+    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
+    while (listIterator.hasNext()) {
+      Node n = listIterator.next();
       // Get node in Java Classes
-      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("C# Class")) continue;
+      if (!n.hasProperty("Level") ||
+              (!((String) n.getProperty("Level")).equals("C# Class") &&
+              !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-      String objectName = (String) n.getProperty(IMAGING_OBJECT_NAME);
-      String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
 
       frameworkTree.insert(fullName);
     }

@@ -61,6 +61,7 @@ public class LanguageConfiguration {
         JSONObject j = jsonConfig.getJSONObject(key);
         List<String> repoList = new ArrayList<>();
         List<String> objectTypeList = new ArrayList<>();
+        List<String> keywordsList = new ArrayList<>();
 
         Iterator<Object> repoIterator = j.getJSONArray("repository_search").iterator();
         while (repoIterator.hasNext()) {
@@ -74,6 +75,12 @@ public class LanguageConfiguration {
           objectTypeList.add(o.toString());
         }
 
+        Iterator<Object> keywordIterator = j.getJSONArray("keywords").iterator();
+        while (keywordIterator.hasNext()) {
+          Object o = keywordIterator.next();
+          keywordsList.add(o.toString());
+        }
+
         LanguageProp lp =
             new LanguageProp(
                 j.getString("name"),
@@ -82,6 +89,7 @@ public class LanguageConfiguration {
                 j.getString("package_delimiter"),
                 repoList,
                 objectTypeList,
+                keywordsList,
                 j.getString("nlp_model"));
 
         languageMap.put(key, lp);

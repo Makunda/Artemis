@@ -80,9 +80,8 @@ public class NodeConfiguration {
    */
   public static NodeConfiguration getInstance(Neo4jAL neo4jAL)
       throws Neo4jQueryException, Neo4jBadRequestException {
-    if (INSTANCE == null) INSTANCE = retrieveConfiguration(neo4jAL);
 
-    return INSTANCE;
+    return retrieveConfiguration(neo4jAL);
   }
 
   public String getWorkspace() {
@@ -199,8 +198,18 @@ public class NodeConfiguration {
    * @return
    */
   public String updateWorkspace(String newWorkspace) {
+    if(this.node == null) return null;
+
     this.node.setProperty(WORKSPACE_PROP, newWorkspace);
     this.workspace = newWorkspace;
     return workspace;
+  }
+
+
+  public static String updateWorkspace(Neo4jAL neo4jAL, String newWorkspace) throws Neo4jQueryException, Neo4jBadRequestException {
+    NodeConfiguration nc = getInstance(neo4jAL);
+    nc.node.setProperty(WORKSPACE_PROP, newWorkspace);
+    nc.workspace = newWorkspace;
+    return newWorkspace;
   }
 }

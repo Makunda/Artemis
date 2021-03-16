@@ -20,6 +20,7 @@ public class LanguageProp {
   String packageDelimiter = "";
   List<String> repositorySearch;
   List<String> objectsInternalType;
+  List<String> keywords;
   String modelFileName;
 
   public LanguageProp() {}
@@ -31,6 +32,7 @@ public class LanguageProp {
       String packageDelimiter,
       List<String> repositorySearch,
       List<String> objectsInternalType,
+      List<String> keywords,
       String modelFileName) {
     this.name = name;
     this.onlineSearch = onlineSearch;
@@ -38,6 +40,7 @@ public class LanguageProp {
     this.packageDelimiter = packageDelimiter;
     this.repositorySearch = repositorySearch;
     this.objectsInternalType = objectsInternalType;
+    this.keywords = keywords;
     this.modelFileName = modelFileName;
   }
 
@@ -67,6 +70,14 @@ public class LanguageProp {
 
   public String getModelFileName() {
     return modelFileName;
+  }
+
+  public List<String> getKeywords() {
+    return keywords;
+  }
+
+  public LanguageProp(List<String> keywords) {
+    this.keywords = keywords;
   }
 
   @Override

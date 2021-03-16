@@ -24,6 +24,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.nlp.SupportedLanguage;
 import com.castsoftware.artemis.nlp.model.NLPResults;
+import com.castsoftware.artemis.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.sof.SystemOfFramework;
 import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
@@ -125,10 +126,9 @@ public class CobolDetector extends ADetector {
             String requestResult = gr.getContent();
             NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
 
-            // Apply a malus on Node with name containing number, exclude it
-
             fb = saveFrameworkResult(objectName, nlpResult, internalType);
             fb.updateDetectionData(requestResult);
+            fb.updateLocation(GoogleParser.getBestUrl(languageProperties, gr.getUrls()));
 
             if (getLearningMode()) {
               nlpSaver.writeNLPResult(nlpResult.getCategory(), requestResult);

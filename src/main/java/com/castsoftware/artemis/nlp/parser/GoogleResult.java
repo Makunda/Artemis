@@ -11,10 +11,14 @@
 
 package com.castsoftware.artemis.nlp.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GoogleResult {
 
   private String title;
   private String content;
+  private List<String> urls;
   private int numberResult;
   private boolean blacklisted;
 
@@ -29,7 +33,16 @@ public class GoogleResult {
     this.title = "";
     this.content = "";
     this.numberResult = 0;
+    this.urls = new ArrayList<>();
     this.blacklisted = false;
+  }
+
+  public List<String> getUrls() {
+    return urls;
+  }
+
+  public void setUrls(List<String> urls) {
+    this.urls = urls;
   }
 
   public String getTitle() {

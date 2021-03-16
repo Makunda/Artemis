@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.nlp.parser;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import org.jsoup.Jsoup;
@@ -27,6 +28,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 public class GoogleParser {
   private static final String GOOGLE_URL =
@@ -107,6 +109,7 @@ public class GoogleParser {
     // Analyze response with JSOUP
     Document document = Jsoup.parse(response.toString());
     List<String> extractedTitle = new ArrayList<>();
+    List<String> extractedUrls = new ArrayList<>();
     List<String> extractedBody = new ArrayList<>();
 
     // Get the title and verify the presence of blacklisted words in the first 4 elements
@@ -119,19 +122,23 @@ public class GoogleParser {
 
     int itTitle = 0;
     for (Element title : titles) {
-      String titleText = null;
       if (!title.getElementsByTag("h3").isEmpty()) {
-        titleText = title.getElementsByTag("h3").get(0).text();
-        if (itTitle < 4) {
-          for (String blackListed : BLACKLISTED_KEYWORDS) {
-            if (titleText.contains(blackListed)) {
-              googleResult.setBlacklisted(true);
-              break;
-            }
+        String titleText = title.getElementsByTag("h3").get(0).text();
+
+        for (String blackListed : BLACKLISTED_KEYWORDS) {
+          if (titleText.contains(blackListed)) {
+            googleResult.setBlacklisted(true);
+            break;
           }
         }
+
+        extractedTitle.add(titleText);
       }
-      extractedTitle.add(titleText);
+
+      if (!title.getElementsByTag("a").isEmpty()) {
+        String urlText = title.getElementsByTag("a").get(0).text();
+        extractedUrls.add(urlText);
+      }
 
       itTitle++;
     }
@@ -165,6 +172,7 @@ public class GoogleParser {
       itWebUrl++;
     }
 
+    googleResult.setUrls(extractedUrls);
     Iterator<String> it1 = extractedTitle.iterator();
     Iterator<String> it2 = extractedBody.iterator();
 
@@ -208,5 +216,29 @@ public class GoogleParser {
     Random r = new Random();
     double delay = r.nextGaussian() * std + mean;
     return (int) Math.round(delay);
+  }
+
+  /**
+   * Get the most probable location of the framework
+   * @param lp Language properties
+   * @param urls List of URL List
+   * @return
+   */
+  public static String getBestUrl(LanguageProp lp, List<String> urls) {
+    if(urls.isEmpty()) return "";
+
+    // Search for buzzword
+    for(String url : urls) {
+      for(String buzzWord : lp.getKeywords()){
+        if(url.contains(buzzWord)) {
+          // If one url matches the buzz words, return
+          return  url;
+        }
+      }
+    }
+
+    // If no url matched, create a bulk string with the first 3 urls
+    List<String> toJoin = urls.size() > 3 ?  urls.subList(0, 3) : urls;
+    return "Potential locations: " + String.join("; ", toJoin);
   }
 }

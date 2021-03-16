@@ -33,9 +33,9 @@ public class Configuration {
   public static String getBestOfAllWorlds(Neo4jAL neo4jAL, String property) {
     // Add the Node configuration
     String content = UserConfiguration.get(neo4jAL, property);
+
     if ( content == null) {
       content = Configuration.get(property);
-    } else {
     }
 
     return content;
@@ -66,6 +66,9 @@ public class Configuration {
    */
   public static String get(String key) {
     PROPERTIES = loadConfiguration();
+
+    assert PROPERTIES != null : "Failed to load Artemis JAR Properties";
+    if(!PROPERTIES.containsKey(key)) return null;
     return PROPERTIES.get(key).toString();
   }
 

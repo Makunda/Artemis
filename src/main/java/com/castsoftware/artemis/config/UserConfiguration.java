@@ -39,7 +39,7 @@ public class UserConfiguration {
     }
 
     assert PROPERTIES != null: "Failed to load the user configuration";
-
+    if(!PROPERTIES.containsKey(key)) return null;
     return (String) PROPERTIES.get(key);
   }
 
