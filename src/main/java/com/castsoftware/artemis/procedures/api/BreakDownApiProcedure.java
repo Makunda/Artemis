@@ -44,7 +44,7 @@ public class BreakDownApiProcedure {
       throws ProcedureException {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language);
+      List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language, externality);
       if (lr == null) return Stream.empty();
 
       return lr.stream();

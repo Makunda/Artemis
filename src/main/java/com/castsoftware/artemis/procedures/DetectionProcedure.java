@@ -45,7 +45,6 @@ public class DetectionProcedure {
   public Stream<FrameworkResult> launchDetection(
       @Name(value = "ApplicationContext") String applicationContext,
       @Name(value = "Language", defaultValue = "") String language,
-      @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes,
       @Name(value = "Parameters", defaultValue = "") String jsonParameters)
       throws ProcedureException {
 

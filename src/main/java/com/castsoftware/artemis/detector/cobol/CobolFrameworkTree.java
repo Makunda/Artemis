@@ -15,7 +15,7 @@ import com.castsoftware.artemis.detector.ATree;
 
 public class CobolFrameworkTree extends ATree {
 
-  private static String PACKAGE_DELIMITER = "\\.";
+  private static String PACKAGE_DELIMITER = "";
 
   private CobolFrameworkTreeLeaf root;
 
@@ -27,58 +27,56 @@ public class CobolFrameworkTree extends ATree {
    * Recursively insert the package in the tree
    *
    * @param leaf Leaf to insert the package
-   * @param packageName Name of the package to insert
+   * @param fullName Name of the program to be inserted
    */
   private void recInsert(
-          CobolFrameworkTreeLeaf leaf, String packageName, String fullName, Integer depth) {
-    String[] splitPackageName = packageName.split(PACKAGE_DELIMITER, 2);
+          CobolFrameworkTreeLeaf leaf, String fullName, Integer depth) {
 
-    // If the split contains for than one element continue
+    try {
+      // Ignore fulllName under 3
+      if(fullName.length() < 2 + depth) return;
+      // If the split contains for than one element continue
 
-    String name = splitPackageName[0];
+      String name = fullName.substring(0, 2 + depth);
+      System.out.printf("Treating object with fullName '%s' Prefix : '%s' on depth %d  %n", fullName, name, depth);
 
-    if (fullName.isEmpty()) {
-      fullName = name;
-    } else {
-      fullName = String.join(".", fullName, name);
-    }
+      CobolFrameworkTreeLeaf matchingLeaf = null;
 
-    CobolFrameworkTreeLeaf matchingLeaf = null;
-
-    // Check if a package already exist or create it
-    for (CobolFrameworkTreeLeaf clf : leaf.getChildren()) {
-      if (clf.getName().equals(name)) {
-        matchingLeaf = clf; // Matching package found
-        break;
+      // Check if a package already exist or create it
+      for (CobolFrameworkTreeLeaf clf : leaf.getChildren()) {
+        if (clf.getName().equals(name)) {
+          matchingLeaf = clf; // Matching package found
+          break;
+        }
       }
-    }
 
-    // If a matching leaf wasn't found, create a new one
-    if (matchingLeaf == null) {
-      matchingLeaf = new CobolFrameworkTreeLeaf(name, fullName);
-      // Add the leaf to the tree
-      leaf.addLeaf(matchingLeaf);
-    }
+      // If a matching leaf wasn't found, create a new one
+      if (matchingLeaf == null) {
+        matchingLeaf = new CobolFrameworkTreeLeaf(name, fullName);
+        // Add the leaf to the tree
+        leaf.addLeaf(matchingLeaf);
+      }
 
-    matchingLeaf.setDepth(depth);
-    matchingLeaf.addOneChild();
+      matchingLeaf.setDepth(depth);
+      matchingLeaf.addOneChild();
 
-    if (splitPackageName.length > 1) {
-      recInsert(matchingLeaf, splitPackageName[1], fullName, depth + 1);
+      recInsert(matchingLeaf, fullName, depth + 1);
+    } catch (Exception e) {
+      // Ignore
     }
   }
 
   /**
    * Insert a package in the tree
    *
-   * @param packageName Full name of the package to insert
+   * @param fullName Name of the program to  insert
    */
-  public void insert(String packageName) {
-    this.recInsert(root, packageName, "", 1);
+  public void insert(String fullName) {
+    this.recInsert(root, fullName, 1);
   }
 
   public String getDelimiterLeaves() {
-    return ".";
+    return PACKAGE_DELIMITER;
   }
 
   /**
@@ -110,7 +108,7 @@ public class CobolFrameworkTree extends ATree {
             + "  ::  "
             + fl.getDepth()
             + " :: Num children "
-            + fl.getNumChildren()
+            + fl.getCount()
             + "\n");
     for (CobolFrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);

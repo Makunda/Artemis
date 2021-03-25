@@ -128,7 +128,7 @@ public class InteractionsController {
     if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
 
     // Get the breakdown of the application
-    List<LeafResult> flattenTree = BreakdownController.getBreakDown(neo4jAL, application, language);
+    List<LeafResult> flattenTree = BreakdownController.getBreakDown(neo4jAL, application, language, false);
 
     // Parse the tree and assign applications matching the leaves
 

@@ -23,7 +23,6 @@ public class FrameworkTreeLeaf extends ALeaf {
   private List<FrameworkTreeLeaf> children;
   private double[] detectionResults;
   private Integer depth;
-  private Integer numChildren = 0;
   private boolean framework;
 
   public FrameworkTreeLeaf(String name, String fullName) {
@@ -33,14 +32,6 @@ public class FrameworkTreeLeaf extends ALeaf {
     this.framework = false;
     this.detectionResults = new double[0];
     this.depth = 0;
-  }
-
-  public Integer getNumChildren() {
-    return numChildren;
-  }
-
-  public void addOneChild() {
-    numChildren += 1;
   }
 
   public String getFullName() {

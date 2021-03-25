@@ -70,6 +70,8 @@ public abstract class ADetector {
   protected NLPEngine nlpEngine;
   protected NLPSaver nlpSaver;
 
+  protected DetectionProp detectionParameters;
+
   /** Pythia communication * */
   protected PythiaCom pythiaCom;
 
@@ -91,12 +93,10 @@ public abstract class ADetector {
   public ADetector(
       Neo4jAL neo4jAL,
       String application,
-      SupportedLanguage language,
-      DetectionProp detectionProperties)
+      SupportedLanguage language)
       throws IOException, Neo4jQueryException {
     this.neo4jAL = neo4jAL;
     this.application = application;
-    this.detectionProp = detectionProperties;
 
     neo4jAL.logInfo(
         String.format(
@@ -154,33 +154,43 @@ public abstract class ADetector {
   public void getNodes() throws Neo4jQueryException {
     List<String> categories = languageProperties.getObjectsInternalType();
     Result res;
+    String forgedRequest =
+            String.format(
+                    "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
+                    application);
+    Map<String, Object> params = Map.of("internalTypes", categories);
+    res = neo4jAL.executeQuery(forgedRequest, params);
 
-    if (categories.isEmpty()) {
-      String forgedRequest =
-          String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.Type in '%s' AND obj.External=true RETURN obj as node",
-              application, languageProperties.getName());
-      res = neo4jAL.executeQuery(forgedRequest);
-
-      while (res.hasNext()) {
-        Map<String, Object> resMap = res.next();
-        Node node = (Node) resMap.get("node");
-        toInvestigateNodes.add(node);
-      }
-    } else {
-      String forgedRequest =
-          String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
-              application);
-      Map<String, Object> params = Map.of("internalTypes", categories);
-      res = neo4jAL.executeQuery(forgedRequest, params);
-
-      while (res.hasNext()) {
-        Map<String, Object> resMap = res.next();
-        Node node = (Node) resMap.get("node");
-        toInvestigateNodes.add(node);
-      }
+    while (res.hasNext()) {
+      Map<String, Object> resMap = res.next();
+      Node node = (Node) resMap.get("node");
+      toInvestigateNodes.add(node);
     }
+  }
+
+  /**
+   * Get full list of internal candidates
+   * @return List of internal candidate
+   * @throws Neo4jQueryException
+   */
+  public List<Node> getInternalNodes() throws Neo4jQueryException {
+    List<String> categories = languageProperties.getObjectsInternalType();
+    List<Node> internalNodes = new ArrayList<>();
+
+    String forgedRequest =
+            String.format(
+                    "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
+                    application);
+    Map<String, Object> params = Map.of("internalTypes", categories);
+    Result res = neo4jAL.executeQuery(forgedRequest, params);
+
+    while (res.hasNext()) {
+      Map<String, Object> resMap = res.next();
+      Node node = (Node) resMap.get("node");
+      internalNodes.add(node);
+    }
+
+    return internalNodes;
   }
 
   /**
@@ -196,20 +206,19 @@ public abstract class ADetector {
   public static ADetector getDetector(
       Neo4jAL neo4jAL,
       String application,
-      SupportedLanguage language,
-      DetectionProp detectionProperties)
+      SupportedLanguage language)
       throws IOException, Neo4jQueryException {
 
     ADetector aDetector;
     switch (language) {
       case COBOL:
-        aDetector = new CobolDetector(neo4jAL, application, detectionProperties);
+        aDetector = new CobolDetector(neo4jAL, application);
         break;
       case JAVA:
-        aDetector = new JavaDetector(neo4jAL, application, detectionProperties);
+        aDetector = new JavaDetector(neo4jAL, application);
         break;
       case NET:
-        aDetector = new NetDetector(neo4jAL, application, detectionProperties);
+        aDetector = new NetDetector(neo4jAL, application);
         break;
       default:
         throw new IllegalArgumentException(
@@ -219,7 +228,15 @@ public abstract class ADetector {
   }
 
   public abstract ATree getExternalBreakdown();
+  public abstract ATree getInternalBreakdown() throws Neo4jQueryException;
 
+  /**
+   * Overload the configuration of the detection
+   * @param params
+   */
+  public void applyDetectionParameters(DetectionProp params) {
+    this.detectionProp = params;
+  }
   /**
    * Apply a the Artemis detection property on a node
    *
@@ -314,6 +331,8 @@ public abstract class ADetector {
   }
 
   protected boolean isNameExcluded(Node n) {
+    if(detectionProp == null) return false;
+
     if (!n.hasProperty("FullName")) return true;
     String fullName = (String) n.getProperty("FullName");
 
@@ -325,12 +344,10 @@ public abstract class ADetector {
   }
 
   protected boolean isInternalTypeExcluded(Node n) {
+    if(detectionProp == null) return false;
+
     if (!n.hasProperty("InternalType")) return true;
     String internalType = (String) n.getProperty("InternalType");
-
-    for (String regex : detectionProp.getPatternObjectTypeToExclude()) {
-      if (internalType.matches(regex)) return true;
-    }
 
     return false;
   }
@@ -388,42 +405,14 @@ public abstract class ADetector {
         String.format(
             "| Candidates for the detection (before filtering)        : %s ",
             toInvestigateNodes.size()));
-    neo4jAL.logInfo("| ----------------  Detection parameters  ---------------------- ");
-    neo4jAL.logInfo(
-        String.format(
-            "| Known Utilities will be extracted to                   : %s ",
-            String.join(",", detectionProp.getKnownUtilities())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Known non-utilities will be extracted to               : %s ",
-            String.join(",", detectionProp.getKnownNotUtilities())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Utilities in other applications will be extracted to   : %s ",
-            String.join(",", detectionProp.getInOtherApplication())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Potentially missing code will be extracted to          : %s ",
-            String.join(",", detectionProp.getPotentiallyMissing())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Unknown utilities will be extracted to                 : %s ",
-            String.join(",", detectionProp.getUnknownUtilities())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Unknown non-utilities will be extracted to             : %s ",
-            String.join(",", detectionProp.getUnknownNonUtilities())));
-    neo4jAL.logInfo("| ----------------  Exclusions parameters  --------------------- ");
-    neo4jAL.logInfo(
-        String.format(
-            "| Exclusion on fullName                                  : %s ",
-            String.join(",", detectionProp.getPatternFullNameToExclude())));
-    neo4jAL.logInfo(
-        String.format(
-            "| Exclusion on object type                               : %s ",
-            String.join(",", detectionProp.getPatternObjectTypeToExclude())));
-    neo4jAL.logInfo(
-        "__________________________________________________________________________________");
+    if(detectionProp != null) {
+      neo4jAL.logInfo("| ----------------  Detection parameters  ---------------------- ");
+      neo4jAL.logInfo(
+              String.format(
+                      "| Overload online                                   : %s ", detectionProp.getOnlineMode()));
+    }
+
+    neo4jAL.logInfo("__________________________________________________________________________________");
   }
 
   /**
@@ -460,12 +449,20 @@ public abstract class ADetector {
 
   public boolean getOnlineMode() {
     String config = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"); // Get configuration
+
+    if(detectionProp != null) {
+      return detectionProp.getOnlineMode();
+    }
+
     return Boolean.parseBoolean(config);
   }
 
   // artemis.pythia_mode
   public boolean getPythiaMode() {
     String config = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"); // Get configuration
+    if(detectionProp != null) {
+      return detectionProp.getPythiaMode();
+    }
     return Boolean.parseBoolean(config);
   }
 
@@ -551,4 +548,6 @@ public abstract class ADetector {
 
     return fb;
   }
+
+
 }

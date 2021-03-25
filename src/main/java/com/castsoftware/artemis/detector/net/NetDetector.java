@@ -38,9 +38,9 @@ public class NetDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public NetDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties)
+  public NetDetector(Neo4jAL neo4jAL, String application)
       throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.NET, detectionProperties);
+    super(neo4jAL, application, SupportedLanguage.NET);
   }
 
   @Override
@@ -55,6 +55,28 @@ public class NetDetector extends ADetector {
       if (!n.hasProperty("Level") ||
               (!((String) n.getProperty("Level")).equals("C# Class") &&
               !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
+
+      if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+      String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+
+      frameworkTree.insert(fullName);
+    }
+
+    return frameworkTree;
+  }
+
+  @Override
+  public ATree getInternalBreakdown() throws Neo4jQueryException {
+    FrameworkTree frameworkTree = new FrameworkTree();
+
+    // Top Bottom approach
+    ListIterator<Node> listIterator = getInternalNodes().listIterator();
+    while (listIterator.hasNext()) {
+      Node n = listIterator.next();
+      // Get node in .NET Class Classes
+      if (!n.hasProperty("Level") ||
+              (!((String) n.getProperty("Level")).equals("C# Class") &&
+                      !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);

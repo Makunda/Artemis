@@ -12,7 +12,6 @@
 package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.database.Neo4jAL;
@@ -85,11 +84,10 @@ public class DetectionController {
         String.format(
             "Launching the analysis on applications : %s", String.join(", ", appNameList)));
 
-    DetectionProp detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
 
     for (String appName : appNameList) {
       resultList.addAll(
-          getFrameworkList(neo4jAL, appName, SupportedLanguage.getLanguage(language), detectionProp)
+          getFrameworkList(neo4jAL, appName, SupportedLanguage.getLanguage(language))
               .stream()
               .map(FrameworkResult::new)
               .collect(Collectors.toList()));
@@ -112,9 +110,25 @@ public class DetectionController {
       Neo4jAL neo4jAL, String application, SupportedLanguage language, DetectionProp detectionProp)
       throws IOException, Neo4jQueryException, Neo4jBadRequestException, MissingFileException {
 
-    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language, detectionProp);
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language);
+    aDetector.applyDetectionParameters(detectionProp); // Overload
+    if(detectionProp != null) {
+      neo4jAL.logInfo("Parameters applied : " + detectionProp);
+    } else {
+      neo4jAL.logInfo("Overload parameters are null");
+    }
     return aDetector.launch();
   }
+
+  private static List<FrameworkNode> getFrameworkList(
+          Neo4jAL neo4jAL, String application, SupportedLanguage language)
+          throws IOException, Neo4jQueryException, Neo4jBadRequestException, MissingFileException {
+
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, language);
+
+    return aDetector.launch();
+  }
+
 
   /**
    * Launch the Artemis Detection against the specified application
@@ -130,18 +144,23 @@ public class DetectionController {
       Neo4jAL neo4jAL, String application, String language, String detectionPropAsJson)
       throws Neo4jQueryException, IOException, Neo4jBadRequestException, MissingFileException {
 
-    DetectionProp detectionProp;
-    if (!detectionPropAsJson.isBlank()) {
-      detectionProp = DetectionParameters.deserializeOrDefault(detectionPropAsJson);
+    List<FrameworkNode> frameworkList = null;
+
+    // Handle parameter overload
+    if(!detectionPropAsJson.isBlank()) {
+      neo4jAL.logInfo(String.format("Launching detection with parameters : %s ", detectionPropAsJson));
+      DetectionProp detectionProp;
+      detectionProp = DetectionProp.deserializeOrDefault(detectionPropAsJson);
+
+      frameworkList = getFrameworkList(
+              neo4jAL, application, SupportedLanguage.getLanguage(language), detectionProp);
+
     } else {
-      detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
+      frameworkList = getFrameworkList(
+              neo4jAL, application, SupportedLanguage.getLanguage(language));
     }
 
-    List<FrameworkNode> frameworkList =
-        getFrameworkList(
-            neo4jAL, application, SupportedLanguage.getLanguage(language), detectionProp);
     List<FrameworkResult> resultList = new ArrayList<>();
-
     // Convert the framework detected to Framework Results
     for (FrameworkNode fn : frameworkList) {
       FrameworkResult fr = new FrameworkResult(fn);

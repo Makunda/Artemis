@@ -11,75 +11,55 @@
 
 package com.castsoftware.artemis.config.detection;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ * { 'OnlineMode': true, 'RepositoryMode': false, 'PythiaMode': true, 'to_exclude': [] }
+ *
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DetectionProp {
 
-  private List<String> knownUtilities = new ArrayList<>();
+  public static DetectionProp deserializeOrDefault(String parameters)
+          throws IOException {
 
-  private List<String> potentiallyMissing = new ArrayList<>();
+    if(parameters.isBlank()) return null;
 
-  private List<String> inOtherApplication = new ArrayList<>();
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      return objectMapper.readValue(parameters, DetectionProp.class);
+    } catch (IOException e) {
+      System.err.printf(
+              "Failed to deserialize the configuration provided. Error : %s ",
+              e.getMessage());
 
-  private List<String> unknownUtilities = new ArrayList<>();
+      return null;
+    }
+  }
 
-  private List<String> unknownNonUtilities = new ArrayList<>();
-
-  private List<String> knownNotUtilities = new ArrayList<>();
 
   private List<String> patternFullNameToExclude = new ArrayList<>();
   private List<String> patternObjectType = new ArrayList<>();
 
   public DetectionProp() {}
 
-  @JsonProperty("arrangement")
-  private void unpackArrangement(Map<String, Object> arrangement) {
-    try {
-      knownUtilities = (List<String>) arrangement.get("known_utilities");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.known_utilities");
-      System.err.println(e.getMessage());
-    }
+  @JsonProperty("OnlineMode")
+  public Boolean onlineMode ;
 
-    try {
-      potentiallyMissing = (List<String>) arrangement.get("potentially_missing_code");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.potentially_missing_code");
-      System.err.println(e.getMessage());
-    }
+  @JsonProperty("RepositoryMode")
+  public Boolean repositoryMode;
 
-    try {
-      unknownNonUtilities = (List<String>) arrangement.get("unknown_non_utilities");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.unknown_non_utilities");
-      System.err.println(e.getMessage());
-    }
-
-    try {
-      inOtherApplication = (List<String>) arrangement.get("in_other_applications");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.in_other_applications");
-      System.err.println(e.getMessage());
-    }
-
-    try {
-      unknownUtilities = (List<String>) arrangement.get("unknown_utilities");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.unknown_utilities");
-      System.err.println(e.getMessage());
-    }
-
-    try {
-      knownNotUtilities = (List<String>) arrangement.get("known_not_utilities");
-    } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of arrangement.known_not_utilities");
-      System.err.println(e.getMessage());
-    }
-  }
+  @JsonProperty("PythiaMode")
+  public Boolean pythiaMode;
 
   @JsonProperty("to_exclude")
   private void unpackToExclude(Map<String, Object> arrangement) {
@@ -87,46 +67,53 @@ public class DetectionProp {
       patternFullNameToExclude = (List<String>) arrangement.get("regex_object_fullName");
     } catch (ClassCastException e) {
       System.err.println("Failed to get the value of to_exclude.regex_object_fullName");
-      System.err.println(e.getMessage());
     }
 
     try {
       patternObjectType = (List<String>) arrangement.get("regex_object_type");
     } catch (ClassCastException e) {
       System.err.println("Failed to get the value of to_exclude.regex_object_type");
-      System.err.println(e.getMessage());
     }
   }
 
-  public List<String> getKnownUtilities() {
-    return knownUtilities;
-  }
-
-  public List<String> getPotentiallyMissing() {
-    return potentiallyMissing;
-  }
-
-  public List<String> getInOtherApplication() {
-    return inOtherApplication;
-  }
-
-  public List<String> getUnknownUtilities() {
-    return unknownUtilities;
-  }
-
-  public List<String> getKnownNotUtilities() {
-    return knownNotUtilities;
-  }
 
   public List<String> getPatternFullNameToExclude() {
     return patternFullNameToExclude;
   }
 
-  public List<String> getPatternObjectTypeToExclude() {
+  public void setPatternFullNameToExclude(List<String> patternFullNameToExclude) {
+    this.patternFullNameToExclude = patternFullNameToExclude;
+  }
+
+  public List<String> getPatternObjectType() {
     return patternObjectType;
   }
 
-  public List<String> getUnknownNonUtilities() {
-    return unknownNonUtilities;
+  public void setPatternObjectType(List<String> patternObjectType) {
+    this.patternObjectType = patternObjectType;
+  }
+
+  public Boolean getOnlineMode() {
+    return onlineMode;
+  }
+
+  public void setOnlineMode(Boolean onlineMode) {
+    this.onlineMode = onlineMode;
+  }
+
+  public Boolean getRepositoryMode() {
+    return repositoryMode;
+  }
+
+  public void setRepositoryMode(Boolean repositoryMode) {
+    this.repositoryMode = repositoryMode;
+  }
+
+  public Boolean getPythiaMode() {
+    return pythiaMode;
+  }
+
+  public void setPythiaMode(Boolean pythiaMode) {
+    this.pythiaMode = pythiaMode;
   }
 }

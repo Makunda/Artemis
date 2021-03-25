@@ -16,12 +16,26 @@ import java.util.List;
 public abstract class ALeaf {
   protected Long id;
   protected Long parentId;
+  protected Long count;
   protected String name;
 
   public ALeaf(String name) {
     this.id = -1L;
     this.parentId = -1L;
     this.name = name;
+    this.count = 0L;
+  }
+
+  public void addOneChild() {
+    this.count += 1;
+  }
+
+  public Long getCount() {
+    return count;
+  }
+
+  public void setCount(Long count) {
+    this.count = count;
   }
 
   public String getName() {

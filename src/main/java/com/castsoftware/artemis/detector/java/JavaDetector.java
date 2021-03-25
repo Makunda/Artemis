@@ -18,6 +18,7 @@ import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.ADetector;
+import com.castsoftware.artemis.detector.ATree;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
@@ -56,9 +57,9 @@ public class JavaDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public JavaDetector(Neo4jAL neo4jAL, String application, DetectionProp detectionProperties)
+  public JavaDetector(Neo4jAL neo4jAL, String application)
       throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.JAVA, detectionProperties);
+    super(neo4jAL, application, SupportedLanguage.JAVA);
     this.externalTree = getExternalBreakdown();
     this.internalTree = getInternalBreakDown();
     this.corePrefix = "";
@@ -79,6 +80,11 @@ public class JavaDetector extends ADetector {
 
     externalTree = createTree(toInvestigateNodes);
     return externalTree;
+  }
+
+  @Override
+  public ATree getInternalBreakdown() throws Neo4jQueryException {
+    return getInternalBreakDown();
   }
 
   @Override
@@ -213,8 +219,8 @@ public class JavaDetector extends ADetector {
           functionalModules.add(fm);
         }
 
-        if (treeLeaf.getNumChildren() >= biggestBranch) {
-          biggestBranch = treeLeaf.getNumChildren();
+        if (treeLeaf.getCount() >= biggestBranch) {
+          biggestBranch = treeLeaf.getCount().intValue();
           bestMatch = treeLeaf.getFullName();
         }
       } catch (Neo4jQueryException e) {

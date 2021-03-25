@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.controllers.api;
 
-import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.detector.ADetector;
@@ -38,9 +37,9 @@ public class BreakdownController {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language)
+  public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language, Boolean externality)
       throws IOException, Neo4jQueryException, MissingFileException {
-    ATree tree = getBreakDownAsTree(neo4jAL, application, language);
+    ATree tree = getBreakDownAsTree(neo4jAL, application, language, externality);
     if(tree == null) return Collections.emptyList();
 
     return tree.flatten().stream()
@@ -54,19 +53,26 @@ public class BreakdownController {
    * @param neo4jAL Neo4j Access Layer
    * @param application Name of the application
    * @param language Language to be used
+   * @param externality Externality of the breakdown
    * @return
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public static ATree getBreakDownAsTree(Neo4jAL neo4jAL, String application, String language)
+  public static ATree getBreakDownAsTree(Neo4jAL neo4jAL, String application, String language, Boolean externality)
       throws IOException, Neo4jQueryException, MissingFileException {
 
     if (!SupportedLanguage.has(language)) return null;
     SupportedLanguage sl = SupportedLanguage.getLanguage(language);
-    DetectionProp detectionProp = DetectionParameters.getUserOrDefault(neo4jAL);
 
-    ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl, detectionProp);
-    ATree tree = aDetector.getExternalBreakdown();
+    ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl);
+    ATree tree = null;
+
+    if(externality) {
+      tree = aDetector.getExternalBreakdown();
+    } else {
+      tree = aDetector.getInternalBreakdown();
+    }
+
     if (tree == null) return null;
 
     return tree;

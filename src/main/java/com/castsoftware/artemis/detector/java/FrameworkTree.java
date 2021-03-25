@@ -110,7 +110,7 @@ public class FrameworkTree extends ATree {
             + "  ::  "
             + fl.getDepth()
             + " :: Num children "
-            + fl.getNumChildren()
+            + fl.getCount()
             + "\n");
     for (FrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);

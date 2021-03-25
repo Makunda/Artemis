@@ -17,11 +17,13 @@ public class LeafResult {
   public Long id;
   public String name;
   public Long parentId;
+  public Long count;
   public String delimiter;
 
   public LeafResult(ALeaf aLeaf, String delimiter) {
     this.id = aLeaf.getId();
     this.name = aLeaf.getName();
+    this.count = aLeaf.getCount();
     this.parentId = aLeaf.getParentId();
     this.delimiter = delimiter;
   }
