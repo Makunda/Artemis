@@ -11,19 +11,21 @@
 
 package com.castsoftware.artemis.detector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 public abstract class ATree {
+
   public abstract String getDelimiterLeaves();
 
+  /**
+   * Flatten a tree in a list of ALeaf with a reference on their parents
+   * @return The List of leaf in the tree
+   */
   public List<ALeaf> flatten() {
     long id = 0L;
     List<ALeaf> leafList = new ArrayList<>();
     leafList.add(getRoot());
 
-    this.print();
 
     // Assign IDs
     for (ListIterator<ALeaf> iLeaf = leafList.listIterator(); iLeaf.hasNext(); ) {
@@ -62,4 +64,7 @@ public abstract class ATree {
   public abstract ALeaf getRoot();
 
   public abstract void print();
+
+  public ATree() {
+  }
 }

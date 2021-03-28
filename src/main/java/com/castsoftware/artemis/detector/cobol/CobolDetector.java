@@ -90,7 +90,7 @@ public class CobolDetector extends ADetector {
 
       if (!n.hasProperty(IMAGING_OBJECT_NAME)) continue;
       fullName = (String) n.getProperty(IMAGING_OBJECT_NAME);
-      frameworkTree.insert(fullName);
+      frameworkTree.insert(fullName, n);
     }
 
     return frameworkTree;

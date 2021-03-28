@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.detector.cobol;
 
 import com.castsoftware.artemis.detector.ATree;
+import org.neo4j.graphdb.Node;
 
 public class CobolFrameworkTree extends ATree {
 
@@ -30,16 +31,14 @@ public class CobolFrameworkTree extends ATree {
    * @param fullName Name of the program to be inserted
    */
   private void recInsert(
-          CobolFrameworkTreeLeaf leaf, String fullName, Integer depth) {
+          CobolFrameworkTreeLeaf leaf, String fullName, Node n, Integer depth) {
 
     try {
-      // Ignore fulllName under 3
+      // Ignore fullName under 3
       if(fullName.length() < 2 + depth) return;
       // If the split contains for than one element continue
 
       String name = fullName.substring(0, 2 + depth);
-      System.out.printf("Treating object with fullName '%s' Prefix : '%s' on depth %d  %n", fullName, name, depth);
-
       CobolFrameworkTreeLeaf matchingLeaf = null;
 
       // Check if a package already exist or create it
@@ -59,8 +58,10 @@ public class CobolFrameworkTree extends ATree {
 
       matchingLeaf.setDepth(depth);
       matchingLeaf.addOneChild();
+      matchingLeaf.addNode(n);
 
-      recInsert(matchingLeaf, fullName, depth + 1);
+
+      recInsert(matchingLeaf, fullName, n, depth + 1);
     } catch (Exception e) {
       // Ignore
     }
@@ -71,8 +72,8 @@ public class CobolFrameworkTree extends ATree {
    *
    * @param fullName Name of the program to  insert
    */
-  public void insert(String fullName) {
-    this.recInsert(root, fullName, 1);
+  public void insert(String fullName, Node n) {
+    this.recInsert(root, fullName, n, 1);
   }
 
   public String getDelimiterLeaves() {
@@ -90,7 +91,7 @@ public class CobolFrameworkTree extends ATree {
 
   /** Print the tree */
   public void print() {
-    printTree(root, 0);
+
   }
 
   /**
@@ -100,18 +101,6 @@ public class CobolFrameworkTree extends ATree {
    * @param level
    */
   private void printTree(CobolFrameworkTreeLeaf fl, int level) {
-    System.out.print(
-        "|"
-            + "__".repeat(level)
-            + " : "
-            + fl.getName()
-            + "  ::  "
-            + fl.getDepth()
-            + " :: Num children "
-            + fl.getCount()
-            + "\n");
-    for (CobolFrameworkTreeLeaf clf : fl.getChildren()) {
-      printTree(clf, level + 1);
-    }
+
   }
 }

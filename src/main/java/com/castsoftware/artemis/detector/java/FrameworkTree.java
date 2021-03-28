@@ -12,6 +12,9 @@
 package com.castsoftware.artemis.detector.java;
 
 import com.castsoftware.artemis.detector.ATree;
+import org.neo4j.graphdb.Node;
+
+import java.util.List;
 
 public class FrameworkTree extends ATree {
 
@@ -20,6 +23,7 @@ public class FrameworkTree extends ATree {
   private FrameworkTreeLeaf root;
 
   public FrameworkTree() {
+    super();
     this.root = new FrameworkTreeLeaf("", "");
   }
 
@@ -30,7 +34,7 @@ public class FrameworkTree extends ATree {
    * @param packageName Name of the package to insert
    */
   private void recInsert(
-      FrameworkTreeLeaf leaf, String packageName, String fullName, Integer depth) {
+          FrameworkTreeLeaf leaf, String packageName, String fullName, Node n, Integer depth) {
     String[] splitPackageName = packageName.split(PACKAGE_DELIMITER, 2);
 
     // If the split contains for than one element continue
@@ -62,9 +66,10 @@ public class FrameworkTree extends ATree {
 
     matchingLeaf.setDepth(depth);
     matchingLeaf.addOneChild();
+    matchingLeaf.addNode(n);
 
     if (splitPackageName.length > 1) {
-      recInsert(matchingLeaf, splitPackageName[1], fullName, depth + 1);
+      recInsert(matchingLeaf, splitPackageName[1], fullName, n, depth + 1);
     }
   }
 
@@ -73,8 +78,8 @@ public class FrameworkTree extends ATree {
    *
    * @param packageName Full name of the package to insert
    */
-  public void insert(String packageName) {
-    this.recInsert(root, packageName, "", 1);
+  public void insert(String packageName, Node node) {
+    this.recInsert(root, packageName, "", node, 1);
   }
 
   public String getDelimiterLeaves() {

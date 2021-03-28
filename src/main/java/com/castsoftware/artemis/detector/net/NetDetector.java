@@ -51,7 +51,7 @@ public class NetDetector extends ADetector {
     ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
     while (listIterator.hasNext()) {
       Node n = listIterator.next();
-      // Get node in Java Classes
+      // Get node in C# or .NET Classes
       if (!n.hasProperty("Level") ||
               (!((String) n.getProperty("Level")).equals("C# Class") &&
               !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
@@ -59,7 +59,8 @@ public class NetDetector extends ADetector {
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
 
-      frameworkTree.insert(fullName);
+      neo4jAL.logInfo("Inserting "+fullName);
+      frameworkTree.insert(fullName, n);
     }
 
     return frameworkTree;
@@ -79,9 +80,12 @@ public class NetDetector extends ADetector {
                       !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
-      String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+      if (!n.hasProperty(IMAGING_INTERNAL_TYPE)) continue;
 
-      frameworkTree.insert(fullName);
+      String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+      String internalType = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+
+      frameworkTree.insert(fullName, n);
     }
 
     return frameworkTree;

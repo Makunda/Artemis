@@ -11,13 +11,45 @@
 
 package com.castsoftware.artemis.detector;
 
+import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.database.Neo4jTypeManager;
+import org.neo4j.graphdb.Node;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class ALeaf {
+
+  protected static final String IMAGING_OBJECT_TAGS =
+          Configuration.get("imaging.link.object_property.tags");
+  protected static final String IMAGING_OBJECT_NAME = Configuration.get("imaging.node.object.name");
+
+  protected static final String IMAGING_LEVEL_PROP = Configuration.get("imaging.node.object.level");
+  protected static final String IMAGING_MODULE_PROP = Configuration.get("imaging.node.object.module");
+  protected static final String IMAGING_SUBSET_PROP = Configuration.get("imaging.node.object.subset");
+
+
+  protected static final String IMAGING_OBJECT_FULL_NAME =
+          Configuration.get("imaging.node.object.fullName");
+  protected static final String IMAGING_APPLICATION_LABEL =
+          Configuration.get("imaging.application.label");
+  protected static final String IMAGING_INTERNAL_TYPE =
+          Configuration.get("imaging.application.InternalType");
+
+
   protected Long id;
   protected Long parentId;
+
   protected Long count;
   protected String name;
+
+  /** Imaging properties **/
+  protected Set<String> objectTypes = new HashSet<>();
+  protected Set<String> levels = new HashSet<>();
+  protected Set<String> modules = new HashSet<>();
+  protected Set<String> subset = new HashSet<>();
 
   public ALeaf(String name) {
     this.id = -1L;
@@ -28,6 +60,54 @@ public abstract class ALeaf {
 
   public void addOneChild() {
     this.count += 1;
+  }
+
+  public void addObjectType(String objectType) {
+    this.objectTypes.add(objectType);
+  }
+
+  public List<String> getObjectTypes() {
+    return new ArrayList<>(this.objectTypes);
+  }
+
+  public void setObjectTypes(Set<String> types) {
+    this.objectTypes = types;
+  }
+
+  public void addLevel(String objectType) {
+    this.levels.add(objectType);
+  }
+
+  public List<String> getLevels() {
+    return new ArrayList<>(this.levels);
+  }
+
+  public List<String> getModules() {
+    return new ArrayList<>(this.modules);
+  }
+
+  public List<String> getSubsets() {
+    return new ArrayList<>(this.subset);
+  }
+
+  /**
+   * Add a list of modules to the Leaf
+   * @param modules Modules to add
+   */
+  public void addModules(List<String> modules) {
+    this.modules.addAll(modules);
+  }
+
+  /**
+   * Add a list of subset to the Leaf
+   * @param subsets Subset to add
+   */
+  public void addSubset(List<String> subsets) {
+    this.subset.addAll(subsets);
+  }
+
+  public void setLevels(Set<String> types) {
+    this.levels = types;
   }
 
   public Long getCount() {
@@ -58,7 +138,7 @@ public abstract class ALeaf {
     if (id < 0) return false; // Id cannot be negative
 
     for (ALeaf leaf : this.getChildren()) {
-      if (leaf.getId() == id) return true;
+      if (leaf.getId().equals(id)) return true;
     }
 
     return false;
@@ -72,5 +152,34 @@ public abstract class ALeaf {
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  /**
+   * Process the node in the leaf
+   * @param n Node to add in the leaf
+   */
+  public void addNode(Node n) {
+
+    if (n.hasProperty(IMAGING_INTERNAL_TYPE))
+    {
+      String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
+      this.addObjectType(internalType);
+    }
+
+    if(n.hasProperty(IMAGING_LEVEL_PROP)) {
+      String level = (String) n.getProperty(IMAGING_LEVEL_PROP);
+      this.addLevel(level);
+    }
+
+    if(n.hasProperty(IMAGING_MODULE_PROP)) {
+      List<String> modules = Neo4jTypeManager.getAsStringList(n, IMAGING_MODULE_PROP);
+      this.addModules(modules);
+    }
+
+    if(n.hasProperty(IMAGING_SUBSET_PROP)) {
+      List<String> subset = Neo4jTypeManager.getAsStringList(n, IMAGING_MODULE_PROP);
+      this.addSubset(subset);
+    }
+
   }
 }

@@ -68,15 +68,8 @@ public class JavaDetector extends ADetector {
   @Override
   public FrameworkTree getExternalBreakdown() {
     // Filter nodes for java
-    ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
-    while (listIterator.hasNext()) {
-      Node n = listIterator.next();
-      // Get node in Java Classes
-      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
-        listIterator.remove();
-        continue;
-      }
-    }
+    // Get node in Java Classes
+    toInvestigateNodes.removeIf(n -> !n.hasProperty("Level") || !((String) n.getProperty("Level")).equals("Java Class"));
 
     externalTree = createTree(toInvestigateNodes);
     return externalTree;
@@ -588,11 +581,13 @@ public class JavaDetector extends ADetector {
     this.internalTree = new FrameworkTree();
 
     String fullName;
+
     for (Node n : nodeList) {
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+
       fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
 
-      internalTree.insert(fullName);
+      internalTree.insert(fullName, n);
     }
 
     return internalTree;
@@ -614,8 +609,10 @@ public class JavaDetector extends ADetector {
       }
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
+
       fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-      frameworkTree.insert(fullName);
+      neo4jAL.logInfo("Inserting "+fullName);
+      frameworkTree.insert(fullName, n);
     }
 
     return frameworkTree;
