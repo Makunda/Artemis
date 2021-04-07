@@ -44,6 +44,7 @@ public abstract class ALeaf {
 
   protected Long count;
   protected String name;
+  protected String fullName;
 
   /** Imaging properties **/
   protected Set<String> objectTypes = new HashSet<>();
@@ -51,10 +52,11 @@ public abstract class ALeaf {
   protected Set<String> modules = new HashSet<>();
   protected Set<String> subset = new HashSet<>();
 
-  public ALeaf(String name) {
+  public ALeaf(String fullName, String name) {
     this.id = -1L;
     this.parentId = -1L;
     this.name = name;
+    this.fullName = fullName;
     this.count = 0L;
   }
 
@@ -120,6 +122,10 @@ public abstract class ALeaf {
 
   public String getName() {
     return name;
+  }
+
+  public String getFullName() {
+    return fullName;
   }
 
   public void setName(String name) {

@@ -18,6 +18,7 @@ import java.util.List;
 public class LeafResult {
   public Long id;
   public String name;
+  public String fullName;
   public Long parentId;
   public Long count;
   public String delimiter;
@@ -29,6 +30,7 @@ public class LeafResult {
   public LeafResult(ALeaf aLeaf, String delimiter) {
     this.id = aLeaf.getId();
     this.name = aLeaf.getName();
+    this.fullName = aLeaf.getFullName();
     this.count = aLeaf.getCount();
     this.parentId = aLeaf.getParentId();
     this.delimiter = delimiter;

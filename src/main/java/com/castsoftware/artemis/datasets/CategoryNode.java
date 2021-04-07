@@ -56,7 +56,7 @@ public class CategoryNode {
     }
   }
 
-  public static String getLABEL() {
+  public static String getLabel() {
     return LABEL;
   }
 

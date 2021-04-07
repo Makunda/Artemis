@@ -19,23 +19,17 @@ import java.util.List;
 
 public class CobolFrameworkTreeLeaf extends ALeaf {
 
-  private String fullName;
   private List<CobolFrameworkTreeLeaf> children;
   private double[] detectionResults;
   private Integer depth;
   private boolean framework;
 
   public CobolFrameworkTreeLeaf(String name, String fullName) {
-    super(name);
-    this.fullName = fullName;
+    super(fullName, name);
     this.children = Collections.synchronizedList(new ArrayList<>());
     this.framework = false;
     this.detectionResults = new double[0];
     this.depth = 0;
-  }
-
-  public String getFullName() {
-    return fullName;
   }
 
   public double[] getDetectionResults() {

@@ -50,7 +50,7 @@ public class CategoryController {
     String req =
         String.format(
             "MATCH(o:%s) WHERE o.%s=$name RETURN o as cat",
-            CategoryNode.getLABEL(), CategoryNode.getNameProperty());
+            CategoryNode.getLabel(), CategoryNode.getNameProperty());
     Map<String, Object> params = Map.of("name", name);
 
     Result res = neo4jAL.executeQuery(req, params);

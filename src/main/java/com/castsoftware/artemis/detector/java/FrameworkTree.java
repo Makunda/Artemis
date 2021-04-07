@@ -31,14 +31,14 @@ public class FrameworkTree extends ATree {
    * Recursively insert the package in the tree
    *
    * @param leaf Leaf to insert the package
-   * @param packageName Name of the package to insert
+   * @param remainingPackage Name of the package to insert
    */
   private void recInsert(
-          FrameworkTreeLeaf leaf, String packageName, String fullName, Node n, Integer depth) {
-    String[] splitPackageName = packageName.split(PACKAGE_DELIMITER, 2);
+          FrameworkTreeLeaf leaf, String remainingPackage, String fullName, Node n, Integer depth) {
+
+    String[] splitPackageName = remainingPackage.split(PACKAGE_DELIMITER, 2);
 
     // If the split contains for than one element continue
-
     String name = splitPackageName[0];
 
     if (fullName.isEmpty()) {

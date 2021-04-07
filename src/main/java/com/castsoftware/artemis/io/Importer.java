@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetTime;
@@ -84,17 +85,17 @@ public class Importer {
     this.idBindingMap = new HashMap<>();
   }
 
-  public Stream<String> load(String pathToZipFileName) throws ProcedureException {
+  public Stream<String> load(Path pathToZipFileName) throws ProcedureException {
     MESSAGE_QUEUE.clear();
 
     try {
-      File zipFile = new File(pathToZipFileName);
+      File zipFile = pathToZipFileName.toFile();
 
       // End the procedure if the path specified isn't valid
       if (!zipFile.exists()) {
         MESSAGE_QUEUE.add(
             "No zip file found at path "
-                .concat(pathToZipFileName)
+                .concat(pathToZipFileName.toString())
                 .concat(". Please check the path provided"));
         return MESSAGE_QUEUE.stream();
       }

@@ -329,7 +329,7 @@ public class UtilsController {
       try {
         returnList.add("Initialisation data were discovered.");
         Importer importer = new Importer(neo4jAL);
-        importer.load(initDataZip.toString());
+        importer.load(initDataZip);
         returnList.add("Initialisation was successful !");
       } catch (Exception | ProcedureException e) {
         returnList.add(

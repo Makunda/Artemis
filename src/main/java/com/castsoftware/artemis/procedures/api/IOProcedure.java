@@ -63,4 +63,20 @@ public class IOProcedure {
       throw ex;
     }
   }
+
+  @Procedure(value = "artemis.api.import.data", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.import.data(String path) - Import the data coming from a zip file.")
+  public Stream<OutputMessage> importData(@Name(value = "Path") String path)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      return IOController.exportAllFrameworks(nal, path);
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 }

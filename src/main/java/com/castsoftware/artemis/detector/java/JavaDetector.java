@@ -69,8 +69,8 @@ public class JavaDetector extends ADetector {
   public FrameworkTree getExternalBreakdown() {
     // Filter nodes for java
     // Get node in Java Classes
-    toInvestigateNodes.removeIf(n -> !n.hasProperty("Level") || !((String) n.getProperty("Level")).equals("Java Class"));
-
+    toInvestigateNodes.removeIf(n -> !n.hasProperty("Level") || ! ((String) n.getProperty("Level")).equals("Java Class"));
+    neo4jAL.logInfo("Java breakdown on : " + toInvestigateNodes.size());
     externalTree = createTree(toInvestigateNodes);
     return externalTree;
   }

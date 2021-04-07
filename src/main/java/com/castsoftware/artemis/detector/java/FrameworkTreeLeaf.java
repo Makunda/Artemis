@@ -19,24 +19,19 @@ import java.util.List;
 
 public class FrameworkTreeLeaf extends ALeaf {
 
-  private String fullName;
   private List<FrameworkTreeLeaf> children;
   private double[] detectionResults;
   private Integer depth;
   private boolean framework;
 
   public FrameworkTreeLeaf(String name, String fullName) {
-    super(name);
-    this.fullName = fullName;
+    super(fullName, name);
     this.children = Collections.synchronizedList(new ArrayList<>());
     this.framework = false;
     this.detectionResults = new double[0];
     this.depth = 0;
   }
 
-  public String getFullName() {
-    return fullName;
-  }
 
   public double[] getDetectionResults() {
     return detectionResults;

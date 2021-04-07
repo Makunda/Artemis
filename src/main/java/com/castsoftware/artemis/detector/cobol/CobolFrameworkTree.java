@@ -51,7 +51,7 @@ public class CobolFrameworkTree extends ATree {
 
       // If a matching leaf wasn't found, create a new one
       if (matchingLeaf == null) {
-        matchingLeaf = new CobolFrameworkTreeLeaf(name, fullName);
+        matchingLeaf = new CobolFrameworkTreeLeaf(name, name);
         // Add the leaf to the tree
         leaf.addLeaf(matchingLeaf);
       }
