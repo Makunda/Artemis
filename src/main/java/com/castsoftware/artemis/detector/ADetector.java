@@ -288,6 +288,18 @@ public abstract class ADetector {
   }
 
   /**
+   * Flag a node using its related framework
+   * @param n
+   * @param frameworkNode
+   * @throws Neo4jQueryException
+   */
+  public void tagNodeWithFramework(Node n, FrameworkNode frameworkNode ) throws Neo4jQueryException {
+    applyNodeProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
+    applyDescriptionProperty(n, frameworkNode.getDescription());
+    applyCategory(n, frameworkNode.getCategory());
+  }
+
+  /**
    * Apply tag based on the configuration
    *
    * @param n Node to flag

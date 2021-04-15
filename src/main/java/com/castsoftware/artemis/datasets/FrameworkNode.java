@@ -313,8 +313,37 @@ public class FrameworkNode {
     }
     // Node was found, return corresponding Framework Node
     Node n = (Node) res.next().get("node");
-    FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, n);
-    return fn;
+    return FrameworkNode.fromNode(neo4jAL, n);
+  }
+
+  /**
+   * Find a Framework by its Type only
+   * @param neo4jAL Neo4j Access Layer
+   * @param internalType Internal Type
+   * @return The Framework node found or null
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static List<FrameworkNode> findFrameworkByType(
+          Neo4jAL neo4jAL, String internalType)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String matchReq =
+            String.format(
+                    "MATCH (n:%s) WHERE $internalType in n.%s RETURN n as node LIMIT 1;",
+                    LABEL_PROPERTY, INTERNAL_TYPE_PROPERTY);
+
+    Map<String, Object> params = Map.of("internalType", internalType);
+
+    Result res = neo4jAL.executeQuery(matchReq, params);
+    // Check if the query returned a correct result
+    List<FrameworkNode> resultList = new ArrayList<>();
+
+    while (res.hasNext()) {
+      Node n = (Node) res.next().get("node");
+      resultList.add(FrameworkNode.fromNode(neo4jAL, n));
+    }
+
+    return resultList;
   }
 
   /**

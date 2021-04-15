@@ -11,6 +11,8 @@
 
 package com.castsoftware.artemis.datasets;
 
+import com.castsoftware.artemis.detector.DetectionCategory;
+
 public enum FrameworkType {
   FRAMEWORK("Framework"),
   NOT_FRAMEWORK("NotFramework"),
@@ -36,6 +38,23 @@ public enum FrameworkType {
       }
     }
     return NOT_KNOWN;
+  }
+
+  /**
+   * Convert a framework category to a Detection category
+   * @return The corresponding Detection category or null
+   */
+  public DetectionCategory toDetectionCategory() {
+    switch (this) {
+      case FRAMEWORK:
+        return DetectionCategory.KNOWN_UTILITY;
+      case NOT_FRAMEWORK:
+        return DetectionCategory.KNOWN_NOT_UTILITY;
+      case TO_INVESTIGATE:
+        return DetectionCategory.UNKNOWN_NOT_UTILITY;
+      default:
+        return DetectionCategory.UNKNOWN;
+    }
   }
 
   @Override

@@ -42,8 +42,7 @@ public class Exporter {
   private static final String INDEX_COL = Configuration.get("io.index_col");
   private static final String INDEX_OUTGOING = Configuration.get("io.index_outgoing");
   private static final String INDEX_INCOMING = Configuration.get("io.index_incoming");
-  private static final String RELATIONSHIP_PREFIX =
-      Configuration.get("io.file.prefix.relationship");
+  private static final String RELATIONSHIP_PREFIX = Configuration.get("io.file.prefix.relationship");
   private static final String NODE_PREFIX = Configuration.get("io.file.prefix.node");
 
   private GraphDatabaseService db;

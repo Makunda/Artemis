@@ -16,6 +16,7 @@ public enum DetectionCategory {
   KNOWN_NOT_UTILITY("Known not utility"),
   UNKNOWN_UTILITY("Unknown utility"),
   UNKNOWN_NOT_UTILITY("Unknown not utility"),
+  UNKNOWN("Unknown"),
   IN_OTHERS_APPLICATIONS("In others applications"),
   MISSING_CODE("Potentially missing code");
 
