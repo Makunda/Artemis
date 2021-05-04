@@ -89,7 +89,8 @@ public class CustomFrameworkController {
         // Split tag and get category
         category = tag.replace(artemisFrameworkTag, "");
 
-        fn = new FrameworkNode(neo4jAL, name, strDate, "", "", 1L, 1.0, new Date().getTime());
+        fn = new FrameworkNode(neo4jAL, name, name, false, strDate, "Custom",
+                "Custom framework flagged by the user", 1L, 1.0, new Date().getTime());
 
         cn = CategoryController.getOrCreateByName(neo4jAL, category);
         fn.setCategory(cn);

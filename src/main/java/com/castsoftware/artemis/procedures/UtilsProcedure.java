@@ -18,13 +18,16 @@ import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.io.Cleaner;
 import com.castsoftware.artemis.results.BooleanResult;
+import com.castsoftware.artemis.results.LongResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -235,6 +238,22 @@ public class UtilsProcedure {
 
       return outputMessages.stream().map(OutputMessage::new);
     } catch (Exception | MissingFileException | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.refresh", mode = Mode.WRITE)
+  @Description("artemis.refresh() - Refresh and update the framework nodes to the new version.")
+  public Stream<LongResult> refresh()
+      throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      Long[] res = Cleaner.updateNodes(nal);
+      return Arrays.stream(res).map(LongResult::new);
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

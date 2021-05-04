@@ -13,9 +13,12 @@ package com.castsoftware.artemis.io;
 
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
+import java.lang.reflect.Array;
 import java.util.List;
 
 public class Cleaner {
@@ -44,6 +47,33 @@ public class Cleaner {
     }
 
     return totalDeleted;
+  }
+
+  /**
+   * Refresh all the framework nodes and apply new properties
+   * @param neo4jAL Neo4j Access Layer
+   * @return Array of 2 element, with the first one being the number of successful transformation
+   * and the second one the number of failure
+   * @throws Neo4jQueryException
+   */
+  public static Long[] updateNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    Long success = 0L;
+    Long failure = 0L;
+
+    String templateReq = String.format("MATCH (o:%s) RETURN o as node", FrameworkNode.getLabel());
+    Result res = neo4jAL.executeQuery(templateReq);
+    while (res.hasNext()) {
+      Node n = (Node) res.next().get("node");
+      try {
+        FrameworkNode.fromNode(neo4jAL, n);
+        success ++;
+      } catch (Neo4jBadNodeFormatException e) {
+        neo4jAL.logError(String.format("Failed to transform framework node with id %d", n.getId()), e);
+        failure++;
+      }
+    }
+
+    return new Long[]{success, failure};
   }
 
   /**

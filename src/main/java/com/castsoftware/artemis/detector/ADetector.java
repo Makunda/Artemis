@@ -384,12 +384,12 @@ public abstract class ADetector {
     extractUnknownNonUtilities();
 
     // Explode fullNames + Communities
-
     uploadResultToPythia();
 
     // Add the language detected to the application
     ApplicationController.addLanguage(neo4jAL, application, languageProperties.getName());
 
+    neo4jAL.logInfo(String.format("%d Frameworks were found during the analysis of application %s", frameworkNodes.size(), application));
     return frameworkNodes;
   }
 
@@ -540,10 +540,16 @@ public abstract class ADetector {
       detectionScore = prob[0];
     }
 
+    // Todo Adapt this section for Java / NET
+    String pattern = name;
+    Boolean isRegex = false;
+
     FrameworkNode fb =
         new FrameworkNode(
             neo4jAL,
             name,
+            pattern,
+            isRegex,
             strDate,
             "No location discovered",
             "",

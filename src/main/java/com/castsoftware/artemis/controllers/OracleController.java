@@ -56,6 +56,8 @@ public class OracleController {
         new FrameworkNode(
             neo4jAL,
             "Test Upload",
+            "Pattern",
+            false,
             "Now",
             "Test Location",
             "My description",

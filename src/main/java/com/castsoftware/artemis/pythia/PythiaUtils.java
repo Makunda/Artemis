@@ -28,6 +28,8 @@ public class PythiaUtils {
   public static FrameworkNode JSONtoFramework(Neo4jAL neo4jAL, JSONObject frameworkJson)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String name = frameworkJson.getString("name");
+    String pattern = frameworkJson.getString("pattern");
+    Boolean isRegex = frameworkJson.getBoolean("isRegex");
     String discoveryDate = frameworkJson.getString("discoveryDate");
     String location = frameworkJson.getString("location");
     String description =
@@ -52,6 +54,8 @@ public class PythiaUtils {
         new FrameworkNode(
             neo4jAL,
             name,
+            pattern,
+            isRegex,
             discoveryDate,
             location,
             description,

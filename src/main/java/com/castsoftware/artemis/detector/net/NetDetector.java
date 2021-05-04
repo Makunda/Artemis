@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.detector.net;
 
 import com.castsoftware.artemis.config.detection.DetectionProp;
+import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.detector.ADetector;
@@ -104,35 +105,7 @@ public class NetDetector extends ADetector {
    * @return The Framework node is found, null otherwise
    */
   private FrameworkNode findFrameworkNode(String fullName, String internalType) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-
-    List<FrameworkNode> matchingNodes = new ArrayList<>();
-    List<FrameworkNode> toInvestigate = FrameworkNode.findFrameworkByType(neo4jAL, internalType);
-
-    neo4jAL.logInfo("Found ");
-    Pattern p;
-    Matcher m;
-    for(FrameworkNode can : toInvestigate) {
-      // Test if match
-      p = Pattern.compile(can.getName());
-      m = p.matcher(fullName);
-
-      neo4jAL.logInfo(String.format("Match between %s and %s", can.getName(), fullName));
-      if(m.matches()) {
-        matchingNodes.add(can);
-      }
-    }
-
-    // Get the longest node matched
-    FrameworkNode rfn = null;
-    for(FrameworkNode mfn : matchingNodes) {
-      if(rfn == null) {
-        rfn = mfn;
-      } else if (rfn.getName().length() < mfn.getName().length()) {
-        rfn = mfn;
-      }
-    }
-
-    return rfn;
+    return FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName, internalType);
   }
 
   /**
@@ -144,6 +117,7 @@ public class NetDetector extends ADetector {
   @Override
   public List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException {
 
+    List<String> detectedFrameworkPattern = new ArrayList<>();
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
 
     // parse list of nodes
@@ -155,7 +129,7 @@ public class NetDetector extends ADetector {
       if (!n.hasProperty(IMAGING_INTERNAL_TYPE)) continue;
 
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-      String internalType = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
+      String internalType = (String) n.getProperty(IMAGING_INTERNAL_TYPE);
 
       try {
         // Add to framework list
@@ -163,11 +137,15 @@ public class NetDetector extends ADetector {
 
         if(fn == null) continue;
 
+        neo4jAL.logInfo(String.format("Matching framework : %s for node with name %s", fn.getPattern(), fullName));
         // Apply properties on node
         tagNodeWithFramework(n, fn);
 
         // Add framework to the list
-        frameworkNodeList.add(fn);
+        if(!detectedFrameworkPattern.contains(fn.getPattern())) {
+          frameworkNodeList.add(fn);
+          detectedFrameworkPattern.add(fn.getPattern());
+        }
 
         // Remove from investigation List
         listIterator.remove();

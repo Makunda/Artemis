@@ -63,6 +63,39 @@ public class FrameworkController {
   }
 
   /**
+   * Parse the list of framework compliant with the internal type and check if one of them match the name.
+   * @param neo4jAL Neo4j Access Layer
+   * @param objectName Name of the object
+   * @param internalType Internal Type of the object
+   * @return The matching framework node or null if no matches were found.
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static FrameworkNode findMatchingFrameworkByType(
+          Neo4jAL neo4jAL, String objectName, String internalType)
+          throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    List<FrameworkNode> frameworkNodesList = FrameworkNode.findFrameworkByType(neo4jAL, internalType);
+
+    FrameworkNode bestMatch = null;
+    for (FrameworkNode fn : frameworkNodesList) {
+      // Check if the pattern is matching
+      neo4jAL.logInfo(String.format("Comparing (Name) %s to fn %s", objectName, fn.getPattern()));
+      if(fn.isPatternMatching(objectName)) {
+        if(bestMatch != null) {
+          if(bestMatch.getPattern().length() < fn.getPattern().length()) {
+            bestMatch = fn;
+          }
+        } else {
+          bestMatch = fn;
+        }
+      }
+    }
+
+    return bestMatch;
+  }
+
+
+  /**
    * Delete a framework in the database using its name and its internal type
    *
    * @param neo4jAL Neo4j Access Layer
@@ -100,6 +133,8 @@ public class FrameworkController {
       String oldName,
       List<String> oldInternalType,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
@@ -114,6 +149,8 @@ public class FrameworkController {
         new FrameworkNode(
             neo4jAL,
             name,
+            pattern,
+            isRegex,
             discoveryDate,
             location,
             description,
@@ -148,6 +185,8 @@ public class FrameworkController {
   public static FrameworkNode mergeFramework(
       Neo4jAL neo4jAL,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
@@ -187,6 +226,7 @@ public class FrameworkController {
       setCategories.addAll(oldInternal);
 
       fn.updateInternalTypes(new ArrayList<>(setCategories));
+      fn.updatePattern(pattern, isRegex);
 
       // Description update
       if (!description.isBlank()) {
@@ -210,6 +250,8 @@ public class FrameworkController {
           new FrameworkNode(
               neo4jAL,
               name,
+              pattern,
+              isRegex,
               discoveryDate,
               location,
               description,
@@ -714,6 +756,8 @@ public class FrameworkController {
       Neo4jAL neo4jAl,
       Long id,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
@@ -733,7 +777,8 @@ public class FrameworkController {
 
       FrameworkNode newFramework =
           addFramework(
-              neo4jAl, name, discoveryDate, location, description, type, category, internalTypes);
+              neo4jAl, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
+
       for (Relationship rel : oldFramework.getRelationships()) rel.delete();
       oldFramework.delete();
 
@@ -760,6 +805,8 @@ public class FrameworkController {
   public static FrameworkNode addFramework(
       Neo4jAL neo4jAL,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
@@ -770,12 +817,12 @@ public class FrameworkController {
 
     FrameworkNode fn =
         new FrameworkNode(
-            neo4jAL, name, discoveryDate, location, description, 0l, .0, new Date().getTime());
+            neo4jAL, name, pattern, isRegex, discoveryDate, location, description, 0l, .0, new Date().getTime());
     fn.setInternalTypes(internalTypes);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
 
-    // Set cateogry
+    // Set category
     CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
     fn.setCategory(cn);
 

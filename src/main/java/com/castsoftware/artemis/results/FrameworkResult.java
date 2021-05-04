@@ -19,6 +19,8 @@ import java.util.List;
 public class FrameworkResult {
   public Long id = -1L;
   public String name;
+  public String pattern;
+  public Boolean isRegex;
   public String description;
   public String category;
   public String type;
@@ -31,6 +33,8 @@ public class FrameworkResult {
   public FrameworkResult(FrameworkNode fn) {
     if (fn.getNode() != null) id = fn.getNode().getId();
     this.name = fn.getName();
+    this.pattern = fn.getPattern();
+    this.isRegex = fn.getIsRegex();
     this.category = fn.getCategory();
     this.description = fn.getDescription();
     this.type = fn.getFrameworkType().toString();

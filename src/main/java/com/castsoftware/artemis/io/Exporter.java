@@ -105,7 +105,9 @@ public class Exporter {
       if (saveRelationshipParams) saveRelationships();
 
       createZip(targetName);
-      MESSAGE_QUEUE.add(new OutputMessage("Saving done"));
+
+      String fullPath = path.resolve(Path.of(targetName)).toString();
+      MESSAGE_QUEUE.add(new OutputMessage(fullPath));
 
       return MESSAGE_QUEUE.stream();
     } catch (FileIOException e) {

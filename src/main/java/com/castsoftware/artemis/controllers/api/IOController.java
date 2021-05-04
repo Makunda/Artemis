@@ -31,22 +31,26 @@ import java.util.stream.Stream;
 
 public class IOController {
 
-  private static Stream<OutputMessage> importNodes(
+  /**
+   * Import Frameworks nodes to the database
+   * @param neo4jAL Neo4j Access Layer
+   * @param path Path of the file to import
+   * @return
+   * @throws ProcedureException
+   */
+  public static Stream<OutputMessage> importNodes(
           Neo4jAL neo4jAL, String path)
-          throws ProcedureException, Neo4jQueryException {
-    Path exportPath = null;
+          throws ProcedureException {
+
     if (path.isBlank() || !Files.exists(Path.of(path))) {
       neo4jAL.logInfo(
               String.format(
-                      "The path '%s' doesn't seem to be valid. Will use default path : %s ",
-                      path, Workspace.getExportFolder(neo4jAL).toString()));
-      exportPath = Workspace.getExportFolder(neo4jAL);
-    } else {
-      exportPath = Path.of(path);
+                      "The path '%s' doesn't point to a valid file. Import was skipped.",
+                      path));
+      return Stream.empty();
     }
-
     Importer importer = new Importer(neo4jAL);
-    return importer.load(exportPath).map(OutputMessage::new);
+    return importer.load(Path.of(path)).map(OutputMessage::new);
   }
 
 

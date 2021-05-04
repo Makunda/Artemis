@@ -101,7 +101,7 @@ public class JavaDetector extends ADetector {
         else {
           String fullName2 = String.join(".", Arrays.copyOfRange(split, 0, 2));
           FrameworkNode fn =
-              FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName2, internalType);
+              FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName2, internalType);
 
           // Get on Pythia
           if(fn == null) {
@@ -120,7 +120,7 @@ public class JavaDetector extends ADetector {
         else {
           String fullName3 = String.join(".", Arrays.copyOfRange(split, 0, 3));
           FrameworkNode fn =
-              FrameworkController.findFrameworkByNameAndType(neo4jAL, fullName3, internalType);
+              FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName3, internalType);
 
           // Get on Pythia
           if(fn == null) {
@@ -233,10 +233,15 @@ public class JavaDetector extends ADetector {
     // Convert the functional modules found to FrameworkNodes
     List<FrameworkNode> frameworkNodes = new ArrayList<>();
     for (FunctionalModule fm : functionalModules) {
+      String pattern = fm.getIdentifier()+"\\.*";
+      Boolean isRegex = true;
+
       FrameworkNode fn =
           new FrameworkNode(
               neo4jAL,
               fm.getIdentifier(),
+              pattern,
+              isRegex,
               new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
               "Internal Match " + application,
               "Internal framework " + companyName,
@@ -279,10 +284,15 @@ public class JavaDetector extends ADetector {
           String.format(
               "Perfect match found on maven for package %s. Candidate : %s.",
               ftl.getFullName(), candidate.toString()));
+      String pattern  = ftl.getFullName() + "\\.*";
+      Boolean isRegex = true;
+
       FrameworkNode fb =
           new FrameworkNode(
               neo4jAL,
               ftl.getFullName(),
+              pattern,
+              isRegex,
               new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
               "Maven " + candidate.getFullName(),
               candidate.getFullName(),
@@ -398,6 +408,12 @@ public class JavaDetector extends ADetector {
     return fb;
   }
 
+  /**
+   * Assign Results to a framework node
+   * @param name Name of the Framework
+   * @param results Type of results
+   * @return
+   */
   public FrameworkNode assignResult(String name, NLPResults results) {
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     Date date = Calendar.getInstance().getTime();
@@ -422,10 +438,15 @@ public class JavaDetector extends ADetector {
       detectionScore = prob[0];
     }
 
+    String pattern = name;
+    Boolean isRegex = false;
+
     FrameworkNode fb =
         new FrameworkNode(
             neo4jAL,
             name,
+            pattern,
+            isRegex,
             strDate,
             "No location discovered",
             "",
@@ -611,7 +632,6 @@ public class JavaDetector extends ADetector {
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
 
       fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
-      neo4jAL.logInfo("Inserting "+fullName);
       frameworkTree.insert(fullName, n);
     }
 

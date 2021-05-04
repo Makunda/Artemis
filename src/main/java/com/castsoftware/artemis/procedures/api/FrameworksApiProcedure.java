@@ -43,6 +43,8 @@ public class FrameworksApiProcedure {
       "artemis.api.add.framework(String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes) - Add a framework")
   public Stream<FrameworkResult> addFramework(
       @Name(value = "Name") String name,
+      @Name(value = "Pattern") String pattern,
+      @Name(value = "IsRegex") Boolean isRegex,
       @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
       @Name(value = "Location", defaultValue = "") String location,
       @Name(value = "Description", defaultValue = "") String description,
@@ -55,7 +57,7 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode addedFramework =
           FrameworkController.addFramework(
-              nal, name, discoveryDate, location, description, type, category, internalTypes);
+              nal, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
 
       return Stream.of(new FrameworkResult(addedFramework));
     } catch (Exception
@@ -74,6 +76,8 @@ public class FrameworksApiProcedure {
   public Stream<BooleanResult> updateFrameworkById(
       @Name(value = "Id") Long id,
       @Name(value = "Name") String name,
+      @Name(value = "Pattern") String pattern,
+      @Name(value = "IsRegex") Boolean isRegex,
       @Name(value = "DiscoveryDate", defaultValue = "") String discoveryDate,
       @Name(value = "Location", defaultValue = "") String location,
       @Name(value = "Description", defaultValue = "") String description,
@@ -86,7 +90,7 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       Boolean updated =
           FrameworkController.updateById(
-              nal, id, name, discoveryDate, location, description, type, category, internalTypes);
+              nal, id, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
 
       return Stream.of(new BooleanResult(updated));
     } catch (Exception
@@ -145,6 +149,8 @@ public class FrameworksApiProcedure {
       @Name(value = "OldName") String oldName,
       @Name(value = "OldInternalType") List<String> oldInternalType,
       @Name(value = "Name") String name,
+      @Name(value = "Pattern") String pattern,
+      @Name(value = "IsRegex") Boolean isRegex,
       @Name(value = "DiscoveryDate") String discoveryDate,
       @Name(value = "Location") String location,
       @Name(value = "Description") String description,
@@ -163,6 +169,8 @@ public class FrameworksApiProcedure {
               oldName,
               oldInternalType,
               name,
+              pattern,
+              isRegex,
               discoveryDate,
               location,
               description,
@@ -187,6 +195,8 @@ public class FrameworksApiProcedure {
       "artemis.api.merge.framework( String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
   public Stream<FrameworkResult> mergeFramework(
       @Name(value = "Name") String name,
+      @Name(value = "Pattern") String pattern,
+      @Name(value = "IsRegex") Boolean isRegex,
       @Name(value = "DiscoveryDate") String discoveryDate,
       @Name(value = "Location") String location,
       @Name(value = "Description") String description,
@@ -203,6 +213,8 @@ public class FrameworksApiProcedure {
           FrameworkController.mergeFramework(
               nal,
               name,
+              pattern,
+              isRegex,
               discoveryDate,
               location,
               description,
@@ -227,6 +239,8 @@ public class FrameworksApiProcedure {
           "artemis.api.merge.framework.pythia( String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
   public Stream<FrameworkResult> mergeFrameworkPythia(
           @Name(value = "Name") String name,
+          @Name(value = "Pattern") String pattern,
+          @Name(value = "IsRegex") Boolean isRegex,
           @Name(value = "DiscoveryDate") String discoveryDate,
           @Name(value = "Location") String location,
           @Name(value = "Description") String description,
@@ -243,6 +257,8 @@ public class FrameworksApiProcedure {
               FrameworkController.mergeFramework(
                       nal,
                       name,
+                      pattern,
+                      isRegex,
                       discoveryDate,
                       location,
                       description,

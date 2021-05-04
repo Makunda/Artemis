@@ -72,8 +72,8 @@ public class IOProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      return IOController.exportAllFrameworks(nal, path);
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      return IOController.importNodes(nal, path);
+    } catch (Exception | Neo4jConnectionError  e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

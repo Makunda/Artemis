@@ -30,6 +30,10 @@ public class FrameworkNode {
   // Static Artemis Properties
   private static final String LABEL_PROPERTY = Configuration.get("artemis.frameworkNode.label");
   private static final String NAME_PROPERTY = Configuration.get("artemis.frameworkNode.name");
+
+  private static final String PATTERN_PROPERTY = Configuration.get("artemis.frameworkNode.pattern");
+  private static final String IS_REGEX_PROPERTY = Configuration.get("artemis.frameworkNode.isRegex");
+
   private static final String DISCOVERY_DATE_PROPERTY =
       Configuration.get("artemis.frameworkNode.discoveryDate");
   private static final String LOCATION_PROPERTY =
@@ -68,6 +72,8 @@ public class FrameworkNode {
 
   // Properties
   private String name;
+  private String pattern;
+  private Boolean isRegex;
   private String discoveryDate;
   private String location = "";
   private String description = "";
@@ -83,12 +89,16 @@ public class FrameworkNode {
   public FrameworkNode(
       Neo4jAL neo4jAL,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
       Long numberOfDetection) {
     this.neo4jAL = neo4jAL;
     this.name = name;
+    this.pattern = pattern;
+    this.isRegex = isRegex;
     this.discoveryDate = discoveryDate;
     this.location = location;
     this.description = description;
@@ -100,6 +110,8 @@ public class FrameworkNode {
   public FrameworkNode(
       Neo4jAL neo4jAL,
       String name,
+      String pattern,
+      Boolean isRegex,
       String discoveryDate,
       String location,
       String description,
@@ -108,6 +120,8 @@ public class FrameworkNode {
       Long creationDate) {
     this.neo4jAL = neo4jAL;
     this.name = name;
+    this.pattern = pattern;
+    this.isRegex = isRegex;
     this.discoveryDate = discoveryDate;
     this.location = location;
     this.description = description;
@@ -119,6 +133,14 @@ public class FrameworkNode {
 
   public static String getLabel() {
     return LABEL_PROPERTY;
+  }
+
+  public static String getPatternProperty() {
+    return PATTERN_PROPERTY;
+  }
+
+  public static String getIsRegexProperty() {
+    return IS_REGEX_PROPERTY;
   }
 
   public static String getNameProperty() {
@@ -191,9 +213,26 @@ public class FrameworkNode {
 
     try {
       String name = (String) n.getProperty(NAME_PROPERTY);
-      String discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
+
 
       List<String> internalType = Neo4jTypeManager.getAsStringList(n, INTERNAL_TYPE_PROPERTY);
+
+      // Get or Set Pattern
+      String pattern = name;
+      if (!n.hasProperty(PATTERN_PROPERTY)) {
+        n.setProperty(PATTERN_PROPERTY, name);
+      } else {
+        pattern = (String) n.getProperty(PATTERN_PROPERTY);
+      }
+
+      // Get or Set Pattern isRegex
+      Boolean isRegex = false;
+      if (!n.hasProperty(IS_REGEX_PROPERTY)) {
+        n.setProperty(IS_REGEX_PROPERTY, isRegex);
+      } else {
+        isRegex = (Boolean) n.getProperty(IS_REGEX_PROPERTY);
+      }
+
 
       // Get or Set
       String location = "";
@@ -253,10 +292,25 @@ public class FrameworkNode {
         }
       }
 
+      String discoveryDate = new Date().toString();
+      if (!n.hasProperty(DISCOVERY_DATE_PROPERTY)) {
+        n.setProperty(DISCOVERY_DATE_PROPERTY, discoveryDate);
+      } else {
+        try {
+          discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
+        } catch (ClassCastException | NotFoundException ignored) {
+          Long discoveryDateTimestamp = (Long) n.getProperty(DISCOVERY_DATE_PROPERTY);
+          discoveryDate = new Date(discoveryDateTimestamp).toString();
+          n.setProperty(DISCOVERY_DATE_PROPERTY, discoveryDate);
+        }
+      }
+
       FrameworkNode fn =
           new FrameworkNode(
               neo4jAL,
               name,
+              pattern,
+              isRegex,
               discoveryDate,
               location,
               description,
@@ -329,7 +383,7 @@ public class FrameworkNode {
           throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
             String.format(
-                    "MATCH (n:%s) WHERE $internalType in n.%s RETURN n as node LIMIT 1;",
+                    "MATCH (n:%s) WHERE $internalType in n.%s RETURN n as node;",
                     LABEL_PROPERTY, INTERNAL_TYPE_PROPERTY);
 
     Map<String, Object> params = Map.of("internalType", internalType);
@@ -406,6 +460,8 @@ public class FrameworkNode {
 
     // Add properties
     n.setProperty(NAME_PROPERTY, getName());
+    n.setProperty(PATTERN_PROPERTY, getPattern());
+    n.setProperty(IS_REGEX_PROPERTY, getIsRegex());
     n.setProperty(DISCOVERY_DATE_PROPERTY, getDiscoveryDate());
     n.setProperty(LOCATION_PROPERTY, getDiscoveryDate());
     n.setProperty(LOCATION_PROPERTY, getLocation());
@@ -428,6 +484,22 @@ public class FrameworkNode {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getPattern() {
+    return pattern;
+  }
+
+  public void setPattern(String pattern) {
+    this.pattern = pattern;
+  }
+
+  public Boolean getIsRegex() {
+    return isRegex;
+  }
+
+  public void setIsRegex(Boolean regex) {
+    isRegex = regex;
   }
 
   public String getDiscoveryDate() {
@@ -553,6 +625,20 @@ public class FrameworkNode {
     return INTERNAL_TYPE_PROPERTY;
   }
 
+  /**
+   * Update the detection Pattern of the framework
+   * @param pattern Pattern ( plain string or regex )
+   * @param isRegex If the pattern must be processed as a Regex
+   */
+  public void updatePattern(String pattern, Boolean isRegex) {
+    this.pattern = pattern;
+    this.isRegex = isRegex;
+
+    if (node == null) return;
+    node.setProperty(getPatternProperty(), pattern);
+    node.setProperty(getIsRegexProperty(), isRegex);
+  }
+
   public void updateDescription(String description) {
     this.description = description;
 
@@ -659,6 +745,8 @@ public class FrameworkNode {
   public JSONObject toJSON() {
     JSONObject o = new JSONObject();
     o.put("name", this.name);
+    o.put("pattern", this.pattern);
+    o.put("isRegex", this.isRegex);
     o.put("discoveryDate", this.discoveryDate);
     o.put("location", this.location);
     o.put("description", this.description);
@@ -669,6 +757,19 @@ public class FrameworkNode {
     o.put("type", this.frameworkType.toString());
     o.put("userCreated", this.userCreated);
     return o;
+  }
+
+  /**
+   * Is the pattern matching the object name
+   * @param objectName Object name to match
+   * @return True if the pattern matched the objectName, false otherwise
+   */
+  public Boolean isPatternMatching(String objectName) {
+    if(this.isRegex) {
+      return objectName.matches(this.pattern);
+    } else {
+      return objectName.equals(this.pattern);
+    }
   }
 
 
@@ -706,6 +807,10 @@ public class FrameworkNode {
     }
   }
 
+  /**
+   * Set the Category of the framework by attaching it to a category node
+   * @param cn Category node to be attached
+   */
   public void setCategory(CategoryNode cn) {
     if (this.node == null || cn.getNode() == null) return;
     Iterator<Relationship> itCat =
@@ -719,6 +824,11 @@ public class FrameworkNode {
     cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
   }
 
+  /**
+   * Set the category of the framework from a string. A category node will be created with the following category name
+   * if it doesn't already exist.
+   * @param category Category to create
+   */
   public void setCategory(String category) {
     if (this.node == null || category.isBlank()) return;
     Iterator<Relationship> itCat =
