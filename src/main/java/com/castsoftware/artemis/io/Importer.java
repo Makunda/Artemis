@@ -320,6 +320,10 @@ public class Importer {
     List<String> uniqueProperties = new ArrayList<>();
     if(mapUniqueProperty.containsKey(label.name())) {
       uniqueProperties = mapUniqueProperty.get(label.name());
+      neo4jAL.logInfo(
+          String.format(
+              "Node with label %s will be filtered on %s",
+              label.name(), String.join(", ", uniqueProperties)));
     }
 
     try {
@@ -366,6 +370,7 @@ public class Importer {
       for (int i = 0; i < minSize; i++) {
         if (i == indexCol || values.get(i).isEmpty()) continue; // Index col or empty value
         Object extractedVal = getNeo4jType(values.get(i));
+
         n.setProperty(headers.get(i), extractedVal);
       }
 
@@ -438,6 +443,9 @@ public class Importer {
    */
   private Object getNeo4jType(String value) {
 
+    // Remove Sanitization
+    value =  value.strip().replaceAll("^\"+|\"+$", "");
+
     // Long
     try {
       return Long.parseLong(value);
@@ -450,7 +458,7 @@ public class Importer {
     } catch (NumberFormatException ignored) {
     }
 
-    // Integer
+    // Integer : Return Long value
     try {
       return ((Integer) Integer.parseInt(value)).longValue();
     } catch (NumberFormatException ignored) {
@@ -477,6 +485,7 @@ public class Importer {
     DateTimeFormatter formatter =
         DateTimeFormatter.ofPattern(
             "[yyyy-MM-dd]"
+                + "[yyyy-MM-dd hh:mm:ss]"
                 + "[yyyyMMdd]"
                 + "[yyyy-MM]"
                 + "[yyyyMM]"
@@ -510,11 +519,17 @@ public class Importer {
     } catch (DateTimeParseException ignored) {
     }
 
+    // Array list
+    try {
+      if (value.matches("^\\[([\\w\\s]*,?)+\\]")) {
+        // Remove brackets
+        return value.replaceAll("[|]", "").strip().split(",");
+      }
+    } catch (Exception ignored) {
+    }
+
     // Char
     if (value.length() == 1) return value.charAt(0);
-
-    // Remove Sanitization
-    value = value.replaceAll("(^\\s\")|(\\s\"\\s?$)", "");
 
     // String
     return value;
