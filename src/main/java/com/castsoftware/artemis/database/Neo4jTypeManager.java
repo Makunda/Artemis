@@ -19,6 +19,24 @@ import java.util.List;
 public class Neo4jTypeManager {
 
   /**
+   * Get the value of a parameter as Boolean. If another type of value is detected, it will re-write the
+   * parameter of the node with `False`.
+   *
+   * @param node Node containing the value to be extracted
+   * @param property Name of the property
+   * @return Value of the return
+   */
+  public static Boolean getAsBoolean(Node node, String property) {
+    if (!node.hasProperty(property)) {
+      node.setProperty(property, false);
+      return false;
+    }
+
+    String val = String.valueOf(node.getProperty(property));
+    return Boolean.parseBoolean(val);
+  }
+
+  /**
    * Get the value of a parameter as Double. If another value is detected, it will re-write the
    * parameter of the node.
    *

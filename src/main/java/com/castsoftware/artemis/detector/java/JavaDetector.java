@@ -652,7 +652,7 @@ public class JavaDetector extends ADetector {
     if (categories.isEmpty()) {
       String forgedRequest =
           String.format(
-              "MATCH (obj:%s:`%s`) WHERE  obj.Type CONTAINS 'java' AND NOT obj.Type CONTAINS 'javascript' AND obj.External=false RETURN obj as node",
+              "MATCH (obj:%s:`%s`) WHERE  toLower(obj.Type) CONTAINS 'java' AND NOT  toLower(obj.Type) CONTAINS 'javascript' RETURN obj as node",
               application);
       res = neo4jAL.executeQuery(forgedRequest);
 
@@ -664,7 +664,7 @@ public class JavaDetector extends ADetector {
     } else {
       String forgedRequest =
           String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=false  RETURN obj as node",
+              "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes  RETURN obj as node",
               application);
       Map<String, Object> params = Map.of("internalTypes", categories);
       res = neo4jAL.executeQuery(forgedRequest, params);

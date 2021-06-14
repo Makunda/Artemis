@@ -147,6 +147,8 @@ public class Importer {
       while (entries.hasMoreElements()) {
         ZipEntry ze = (ZipEntry) entries.nextElement();
         String filename = ze.getName();
+        neo4jAL.logInfo(String.format("File discovered in ZIP is being processed %s", filename));
+
         if (ze.getSize() < 0) continue; // Empty entry
 
         try {
@@ -180,6 +182,7 @@ public class Importer {
         }
       }
 
+      // Treat Relationships buffer
       for (Map.Entry<BufferedReader, String> pair : relBuffers.entrySet()) {
         try {
           String relAsString = getLabelFromFilename(pair.getValue());

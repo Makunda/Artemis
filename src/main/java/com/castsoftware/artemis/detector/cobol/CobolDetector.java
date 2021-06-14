@@ -157,9 +157,11 @@ public class CobolDetector extends ADetector {
               && getOnlineMode()
               && languageProperties.getOnlineSearch()) {
 
+            neo4jAL.logInfo(String.format("Requesting on google : %s", objectName));
             GoogleResult gr = googleParser.request(objectName);
             String requestResult = gr.getContent();
             NLPResults nlpResult = nlpEngine.getNLPResult(requestResult);
+            neo4jAL.logInfo(String.format("Results for %s : %s.", objectName, nlpResult.toString()));
 
             fb = saveFrameworkResult(objectName, nlpResult, internalType);
             fb.updateDetectionData(requestResult);
@@ -226,8 +228,14 @@ public class CobolDetector extends ADetector {
       if (corePrefix.isBlank()) return;
 
       // If the object match the Ngram
+      neo4jAL.logInfo("Extracting potential missing code.");
       ListIterator<Node> itNode = toInvestigateNodes.listIterator();
+      int count = 0;
       while (itNode.hasNext()) {
+
+        if(count % 100 == 0) neo4jAL.logInfo(String.format("Investigation on going. Treating node %d/%d.", count, toInvestigateNodes.size()));
+
+        count ++;
         Node n = itNode.next();
         if (!n.hasProperty("Name")) continue;
 
@@ -243,7 +251,6 @@ public class CobolDetector extends ADetector {
 
     } catch (Neo4jQueryException e) {
       neo4jAL.logError("Failed to retrieve the core of the application.", e);
-      return;
     }
   }
 
@@ -325,7 +332,8 @@ public class CobolDetector extends ADetector {
     int nGram = 3;
     while (result.hasNext()) {
       String name = (String) result.next().get("name");
-
+      
+      // TODO : Continue here and verify the length before any operation 
       String gram = name.substring(0, nGram);
       if (!mapName.containsKey(gram)) mapName.put(gram, 0);
       mapName.computeIfPresent(gram, (key, val) -> val + 1);

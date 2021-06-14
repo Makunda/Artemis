@@ -379,17 +379,23 @@ public abstract class ADetector {
 
     // Detection flow
     List<FrameworkNode> frameworkNodes = extractUtilities();
+
+    neo4jAL.logInfo("Fetching the nodes to treat.");
     extractUnknownApp();
-    extractOtherApps(); // Search in internal classes
+
+    // extractOtherApps(); // Search in internal classes
+    neo4jAL.logInfo("Extracting Unknown non utilities.");
     extractUnknownNonUtilities();
 
     // Explode fullNames + Communities
+    neo4jAL.logInfo("Uploading the result to Pythia.");
     uploadResultToPythia();
 
     // Add the language detected to the application
+    neo4jAL.logInfo("Add the language to the Application controller.");
     ApplicationController.addLanguage(neo4jAL, application, languageProperties.getName());
 
-    neo4jAL.logInfo(String.format("%d Frameworks were found during the analysis of application %s", frameworkNodes.size(), application));
+    neo4jAL.logInfo(String.format("%d entries (valid detection and not valid ones) were found during the analysis of application %s", frameworkNodes.size(), application));
     return frameworkNodes;
   }
 

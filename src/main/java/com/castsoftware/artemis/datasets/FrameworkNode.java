@@ -212,7 +212,7 @@ public class FrameworkNode {
           "The node isn't labeled has a framework.", ERROR_PREFIX + "FRON1");
 
     try {
-      String name = (String) n.getProperty(NAME_PROPERTY);
+      String name = String.valueOf(n.getProperty(NAME_PROPERTY));
 
 
       List<String> internalType = Neo4jTypeManager.getAsStringList(n, INTERNAL_TYPE_PROPERTY);
@@ -222,24 +222,19 @@ public class FrameworkNode {
       if (!n.hasProperty(PATTERN_PROPERTY)) {
         n.setProperty(PATTERN_PROPERTY, name);
       } else {
-        pattern = (String) n.getProperty(PATTERN_PROPERTY);
+        pattern = String.valueOf(n.getProperty(PATTERN_PROPERTY));
       }
 
       // Get or Set Pattern isRegex
       Boolean isRegex = false;
-      if (!n.hasProperty(IS_REGEX_PROPERTY)) {
-        n.setProperty(IS_REGEX_PROPERTY, isRegex);
-      } else {
-        isRegex = (Boolean) n.getProperty(IS_REGEX_PROPERTY);
-      }
-
+      isRegex = Neo4jTypeManager.getAsBoolean(n, IS_REGEX_PROPERTY);
 
       // Get or Set
       String location = "";
       if (!n.hasProperty(LOCATION_PROPERTY)) {
         n.setProperty(LOCATION_PROPERTY, "");
       } else {
-        location = (String) n.getProperty(LOCATION_PROPERTY);
+        location = String.valueOf(n.getProperty(LOCATION_PROPERTY));
       }
 
       String description = "No description";
@@ -259,20 +254,20 @@ public class FrameworkNode {
       // Categories
       String category = CategoryController.getDefaultName(neo4jAL);
       if (n.hasProperty(CATEGORY_PROPERTY)) {
-        String temp = (String) n.getProperty(CATEGORY_PROPERTY);
+        String temp = String.valueOf(n.getProperty(CATEGORY_PROPERTY));
         if (!temp.isBlank()) category = temp;
       }
 
       String detectionData = "";
       if(n.hasProperty(DETECTION_DATA_PROPERTY)) {
-        detectionData = (String) n.getProperty(DETECTION_DATA_PROPERTY);
+          detectionData = String.valueOf(n.getProperty(DETECTION_DATA_PROPERTY));
       }
 
       // User created
       Boolean userCreated = false;
       if (n.hasProperty(USER_CREATED_PROPERTY)) {
         try {
-          userCreated = (Boolean) n.getProperty(USER_CREATED_PROPERTY);
+          userCreated = Neo4jTypeManager.getAsBoolean(n, USER_CREATED_PROPERTY);
         } catch (ClassCastException | NotFoundException ignored) {
           // Ignored
         }
@@ -285,7 +280,7 @@ public class FrameworkNode {
         n.setProperty(CREATION_DATE_PROPERTY, timestamp);
       } else {
         try {
-          timestamp = (Long) n.getProperty(CREATION_DATE_PROPERTY, timestamp);
+          timestamp =  Neo4jTypeManager.getAsLong(n, CREATION_DATE_PROPERTY);
         } catch (ClassCastException | NotFoundException ignored) {
           timestamp = new Date().getTime();
           n.setProperty(CREATION_DATE_PROPERTY, timestamp);
@@ -299,7 +294,8 @@ public class FrameworkNode {
         try {
           discoveryDate = (String) n.getProperty(DISCOVERY_DATE_PROPERTY);
         } catch (ClassCastException | NotFoundException ignored) {
-          Long discoveryDateTimestamp = (Long) n.getProperty(DISCOVERY_DATE_PROPERTY);
+
+          Long discoveryDateTimestamp = Neo4jTypeManager.getAsLong(n, DISCOVERY_DATE_PROPERTY);
           discoveryDate = new Date(discoveryDateTimestamp).toString();
           n.setProperty(DISCOVERY_DATE_PROPERTY, discoveryDate);
         }
