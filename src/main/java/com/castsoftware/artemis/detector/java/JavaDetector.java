@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.detector.java;
 
-import com.castsoftware.artemis.config.detection.DetectionProp;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.database.Neo4jAL;
@@ -36,12 +35,10 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
-import java.awt.*;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.List;
 
 public class JavaDetector extends ADetector {
 
@@ -66,12 +63,15 @@ public class JavaDetector extends ADetector {
   }
 
   @Override
-  public FrameworkTree getExternalBreakdown() {
+  public FrameworkTree getExternalBreakdown() throws Neo4jQueryException {
     // Filter nodes for java
     // Get node in Java Classes
-    toInvestigateNodes.removeIf(n -> !n.hasProperty("Level") || ! ((String) n.getProperty("Level")).equals("Java Class"));
-    neo4jAL.logInfo("Java breakdown on : " + toInvestigateNodes.size());
-    externalTree = createTree(toInvestigateNodes);
+
+    List<Node> nodeList = getNodesByExternality(true);
+
+    nodeList.removeIf(n -> !n.hasProperty("Level") || ! ((String) n.getProperty("Level")).equals("Java Class"));
+    neo4jAL.logInfo("Java breakdown on : " + nodeList.size());
+    externalTree = getExternalBreakDown(nodeList);
     return externalTree;
   }
 
@@ -144,7 +144,7 @@ public class JavaDetector extends ADetector {
     List<FrameworkNode> listFramework = new ArrayList<>(frameworkSet);
 
     neo4jAL.logInfo("Extract External utilities");
-    FrameworkTree externals = createTree(toInvestigateNodes);
+    FrameworkTree externals = getExternalBreakDown(toInvestigateNodes);
     listFramework.addAll(exploreCandidates(externals));
 
     // Internal match for java
@@ -497,7 +497,7 @@ public class JavaDetector extends ADetector {
     List<Node> createdNodes = new ArrayList<>();
 
     // Build new tree with remaining nodes
-    FrameworkTree frameworkTree = createTree(toInvestigateNodes);
+    FrameworkTree frameworkTree = getExternalBreakDown(toInvestigateNodes);
 
     List<FrameworkTreeLeaf> toVisit =
         Collections.synchronizedList(frameworkTree.getRoot().getChildren());
@@ -594,11 +594,11 @@ public class JavaDetector extends ADetector {
   /**
    * Get the internal breakdown of the package
    *
-   * @return
-   * @throws Neo4jQueryException
+   * @return The Framework tree containing only internal objects
+   * @throws Neo4jQueryException If the Neo4j Cypher request fails
    */
   public FrameworkTree getInternalBreakDown() throws Neo4jQueryException {
-    List<Node> nodeList = getInternalNodes();
+    List<Node> nodeList = getNodesByExternality(false);
     this.internalTree = new FrameworkTree();
 
     String fullName;
@@ -614,7 +614,13 @@ public class JavaDetector extends ADetector {
     return internalTree;
   }
 
-  public FrameworkTree createTree(List<Node> nodeList) {
+  /**
+   * Get the break down of all the external Java Objects, and sort them in a tree
+   *
+   * @param nodeList List of node to treat and to insert in the tree
+   * @return The Framework tree containing only the external objects
+   */
+  public FrameworkTree getExternalBreakDown(List<Node> nodeList) {
     FrameworkTree frameworkTree = new FrameworkTree();
 
     // Top Bottom approach
@@ -623,8 +629,8 @@ public class JavaDetector extends ADetector {
     while (listIterator.hasNext()) {
       Node n = listIterator.next();
 
-      // Get node in Java Classes
-      if (!n.hasProperty("Level") || ((String) n.getProperty("Level")).equals("Java Class")) {
+      // Get node in Java Class Level
+      if (!n.hasProperty("Level") || !((String) n.getProperty("Level")).equals("Java Class")) {
         listIterator.remove();
         continue;
       }
@@ -639,50 +645,60 @@ public class JavaDetector extends ADetector {
   }
 
   /**
-   * Get the list of Internal nodes for the JAVA languages
+   * Get the list of node for the Java language by externality
    *
-   * @return
-   * @throws Neo4jQueryException
+   * @param externality Externality of the nodes
+   * @return The list of nodes
+   * @throws Neo4jQueryException If the Neo4j query failed
    */
-  public List<Node> getInternalNodes() throws Neo4jQueryException {
-    List<String> categories = languageProperties.getObjectsInternalType();
-    List<Node> nodeList = new ArrayList<>();
-    Result res;
+  public List<Node> getNodesByExternality(Boolean externality) throws Neo4jQueryException {
+    try {
+      List<String> categories = languageProperties.getObjectsInternalType();
+      List<Node> nodeList = new ArrayList<>();
+      Result res;
 
-    if (categories.isEmpty()) {
-      String forgedRequest =
-          String.format(
-              "MATCH (obj:%s:`%s`) WHERE  toLower(obj.Type) CONTAINS 'java' AND NOT  toLower(obj.Type) CONTAINS 'javascript' RETURN obj as node",
-              application);
-      res = neo4jAL.executeQuery(forgedRequest);
+      if (categories.isEmpty()) {
+        String forgedRequest =
+                String.format(
+                        "MATCH (obj:Object:`%s`) WHERE obj.Level='Java Class' AND obj.External=$externality RETURN obj as node",
+                        application);
+        Map<String, Object> params = Map.of("externality", externality);
+        res = neo4jAL.executeQuery(forgedRequest, params);
 
-      while (res.hasNext()) {
-        Map<String, Object> resMap = res.next();
-        Node node = (Node) resMap.get("node");
-        nodeList.add(node);
+        while (res.hasNext()) {
+          Map<String, Object> resMap = res.next();
+          Node node = (Node) resMap.get("node");
+          nodeList.add(node);
+        }
+      } else {
+        String forgedRequest =
+                String.format(
+                        "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes  AND obj.External=$externality  RETURN obj as node",
+                        application);
+        Map<String, Object> params = Map.of("internalTypes", categories, "externality", externality);
+        res = neo4jAL.executeQuery(forgedRequest, params);
+
+        while (res.hasNext()) {
+          Map<String, Object> resMap = res.next();
+          Node node = (Node) resMap.get("node");
+          nodeList.add(node);
+        }
       }
-    } else {
-      String forgedRequest =
-          String.format(
-              "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes  RETURN obj as node",
-              application);
-      Map<String, Object> params = Map.of("internalTypes", categories);
-      res = neo4jAL.executeQuery(forgedRequest, params);
 
-      while (res.hasNext()) {
-        Map<String, Object> resMap = res.next();
-        Node node = (Node) resMap.get("node");
-        nodeList.add(node);
-      }
+      neo4jAL.logInfo(String.format("%d Java nodes were found with external property on '%s'", nodeList.size(), externality));
+
+      return nodeList;
+    } catch (Neo4jQueryException err) {
+      neo4jAL.logError(String.format("Failed to retrieve the list of the external nodes in the application %s", this.application), err);
+      throw err;
     }
-
-    return nodeList;
   }
+
 
   /**
    * Get the number of match on the fullname for a given regex expression
    *
-   * @param regex
+   * @param regex Regex to be matched
    * @return
    * @throws Neo4jQueryException
    */

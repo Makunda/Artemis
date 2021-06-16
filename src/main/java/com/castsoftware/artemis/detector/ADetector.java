@@ -227,7 +227,7 @@ public abstract class ADetector {
     return aDetector;
   }
 
-  public abstract ATree getExternalBreakdown();
+  public abstract ATree getExternalBreakdown() throws Neo4jQueryException;
   public abstract ATree getInternalBreakdown() throws Neo4jQueryException;
 
   /**

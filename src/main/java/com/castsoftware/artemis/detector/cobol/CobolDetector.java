@@ -137,7 +137,7 @@ public class CobolDetector extends ADetector {
         try {
           // Check if the framework is already known
           FrameworkNode fb =
-              FrameworkNode.findFrameworkByNameAndType(neo4jAL, objectName, internalType);
+              FrameworkNode.findFrameworkByName(neo4jAL, objectName);
           if (fb != null) {
             neo4jAL.logInfo(
                 String.format(

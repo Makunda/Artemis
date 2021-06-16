@@ -351,7 +351,7 @@ public class FrameworkNode {
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
         String.format(
-            "MATCH (n:%s) WHERE n.%s=$frameworkName AND $internalType in n.%s RETURN n as node LIMIT 1;",
+            "MATCH (n:%s) WHERE n.%s=$frameworkName  RETURN n as node LIMIT 1;",
             LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
 
     Map<String, Object> params = Map.of("frameworkName", objectName, "internalType", internalType);
@@ -365,6 +365,7 @@ public class FrameworkNode {
     Node n = (Node) res.next().get("node");
     return FrameworkNode.fromNode(neo4jAL, n);
   }
+
 
   /**
    * Find a Framework by its Type only

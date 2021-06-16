@@ -38,7 +38,7 @@ public class BreakdownController {
    * @throws Neo4jQueryException
    */
   public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language, Boolean externality)
-      throws IOException, Neo4jQueryException, MissingFileException {
+      throws IOException, Neo4jQueryException {
     ATree tree = getBreakDownAsTree(neo4jAL, application, language, externality);
     if(tree == null) return Collections.emptyList();
 
@@ -59,7 +59,7 @@ public class BreakdownController {
    * @throws Neo4jQueryException
    */
   public static ATree getBreakDownAsTree(Neo4jAL neo4jAL, String application, String language, Boolean externality)
-      throws IOException, Neo4jQueryException, MissingFileException {
+      throws IOException, Neo4jQueryException {
 
     if (!SupportedLanguage.has(language)) return null;
     SupportedLanguage sl = SupportedLanguage.getLanguage(language);

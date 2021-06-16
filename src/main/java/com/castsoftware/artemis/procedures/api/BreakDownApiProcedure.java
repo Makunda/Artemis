@@ -48,7 +48,7 @@ public class BreakDownApiProcedure {
       if (lr == null) return Stream.empty();
 
       return lr.stream();
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | MissingFileException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
