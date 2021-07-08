@@ -118,7 +118,7 @@ public class CobolDetector extends ADetector {
 
     int numTreated = 0;
 
-    neo4jAL.logInfo(String.format("Launching artemis detection for Cobol."));
+    neo4jAL.logInfo("Launching artemis detection for Cobol.");
     neo4jAL.logInfo(
         String.format("Investigation launched against %d objects.", toInvestigateNodes.size()));
 

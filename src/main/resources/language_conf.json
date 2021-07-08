@@ -15,7 +15,8 @@
       "CAST_COBOL_SavedProgram",
       "CAST_COBOL_SavedSection",
       "CAST_COBOL_SortDescription",
-      "CAST_COBOL_UtilityProgram"
+      "CAST_COBOL_UtilityProgram",
+      "CAST_COBOL_Copybook"
     ],
     "online_search": true,
     "interaction_detector": false,
