@@ -211,13 +211,22 @@ public class UtilsController {
 
   /**
    * Get the value of the Online mode of Artemis
-   *
-   * @return
+   * @return True if got an online mode, False otherwise or if the configuration has been set properly
    */
   public static Boolean getOnlineMode(Neo4jAL neo4jAL) {
-    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode"));
+    String content = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode");
+    if(content == null) return false;
+
+    return Boolean.parseBoolean(content);
   }
 
+  /**
+   * Set the mode of Pythia ( activate or not )
+   * @param neo4jAL Neo4j Access layer
+   * @param active Status of activity to set
+   * @return
+   * @throws MissingFileException
+   */
   public static Boolean setPythiaMode(Neo4jAL neo4jAL, Boolean active) throws MissingFileException {
     Configuration.setEverywhere(neo4jAL, "artemis.pythia_mode", active.toString());
     return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"));

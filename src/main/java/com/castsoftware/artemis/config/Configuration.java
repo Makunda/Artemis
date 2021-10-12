@@ -67,11 +67,17 @@ public class Configuration {
   public static String get(String key) {
     PROPERTIES = loadConfiguration();
 
-    assert PROPERTIES != null : "Failed to load Artemis JAR Properties";
+    // Assert Properties isn't null
+    if(PROPERTIES == null) return null;
+
     if(!PROPERTIES.containsKey(key)) return null;
     return PROPERTIES.get(key).toString();
   }
 
+  /**
+   * Load the configuration from the properties file
+   * @return {Properties}
+   */
   private static Properties loadConfiguration() {
     try (InputStream input =
         Configuration.class.getClassLoader().getResourceAsStream("artemis.properties")) {

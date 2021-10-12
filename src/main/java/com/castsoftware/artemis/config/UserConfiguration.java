@@ -38,7 +38,9 @@ public class UserConfiguration {
       PROPERTIES = loadConfiguration(neo4jAL);
     }
 
-    assert PROPERTIES != null: "Failed to load the user configuration";
+    // Assert that properties aren't null
+    if(PROPERTIES == null) return null;
+
     if(!PROPERTIES.containsKey(key)) return null;
     return (String) PROPERTIES.get(key);
   }
