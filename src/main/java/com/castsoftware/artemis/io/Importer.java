@@ -15,14 +15,13 @@
 package com.castsoftware.artemis.io;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.FileCorruptedException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.*;
-import org.neo4j.logging.Log;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -59,13 +58,9 @@ public class Importer {
   private static final String FRAMEWORK_ID = Configuration.get("artemis.frameworkNode.name");
   private static final String FRAMEWORK_LABEL = Configuration.get("artemis.frameworkNode.label");
 
-  // Unique property filter
-  Map<String, List<String>> mapUniqueProperty = Map.of(
-          FrameworkNode.getLabel(), List.of(FrameworkNode.getPatternProperty()), // Unique on Pattern Property
-          CategoryNode.getLabel(), List.of(CategoryNode.getNameProperty())
-  );
-
-
+  // Binding map between csv ID and Neo4j created nodes. Only the Node id is stored here, to limit
+  // the usage of heap memory.
+  private final Map<Long, Long> idBindingMap;
 
   // Members
   private Long countLabelCreated;
@@ -73,10 +68,12 @@ public class Importer {
   private Long ignoredFile;
   private Long nodeCreated;
   private Long relationshipCreated;
-
-  // Binding map between csv ID and Neo4j created nodes. Only the Node id is stored here, to limit
-  // the usage of heap memory.
-  private Map<Long, Long> idBindingMap;
+  // Unique property filter
+  Map<String, List<String>> mapUniqueProperty =
+      Map.of(
+          FrameworkNode.getLabel(),
+              List.of(FrameworkNode.getPatternProperty()), // Unique on Pattern Property
+          CategoryNode.getLabel(), List.of(CategoryNode.getNameProperty()));
   private final Neo4jAL neo4jAL;
 
   public Importer(Neo4jAL neo4jAL) {
@@ -177,7 +174,8 @@ public class Importer {
           treatNodeBuffer(labelAsString, pair.getKey());
           countLabelCreated++;
         } catch (FileCorruptedException e) {
-          this.neo4jAL.logError("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
+          this.neo4jAL.logError(
+              "The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
           ignoredFile++;
         }
       }
@@ -189,7 +187,8 @@ public class Importer {
           treatRelBuffer(relAsString, pair.getKey());
           countRelationTypeCreated++;
         } catch (FileCorruptedException e) {
-          neo4jAL.logError("The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
+          neo4jAL.logError(
+              "The file".concat(pair.getValue()).concat(" seems to be corrupted. Skipped."));
           ignoredFile++;
         } catch (Neo4jQueryException e) {
           neo4jAL.logError("Operation failed, check the stack trace for more information.");
@@ -314,14 +313,14 @@ public class Importer {
       throws Neo4jQueryException {
 
     // Skip empty rows
-    if(values.size() == 0) return;
+    if (values.size() == 0) return;
 
     int indexCol = headers.indexOf(INDEX_COL);
     Long id = Long.parseLong(values.get(indexCol));
 
     // Apply a filter on unique properties
     List<String> uniqueProperties = new ArrayList<>();
-    if(mapUniqueProperty.containsKey(label.name())) {
+    if (mapUniqueProperty.containsKey(label.name())) {
       uniqueProperties = mapUniqueProperty.get(label.name());
       neo4jAL.logInfo(
           String.format(
@@ -333,30 +332,35 @@ public class Importer {
       // Check if the node already exist
       int minSize = Math.min(values.size(), headers.size());
 
-
       // If the node has a unique property identifier verify that it doesn't already exists
       if (!uniqueProperties.isEmpty()) {
 
-        var wrapperParameters = new Object(){ Map<String, Object> parameters = new HashMap<>(); };
+        var wrapperParameters =
+            new Object() {
+              final Map<String, Object> parameters = new HashMap<>();
+            };
         final Integer[] paramPosition = {1};
 
-        String filter = uniqueProperties.stream()
-                .map(x -> {
-                  if(!headers.contains(x)) return "";
-                  String val = values.get(headers.indexOf(x));
+        String filter =
+            uniqueProperties.stream()
+                .map(
+                    x -> {
+                      if (!headers.contains(x)) return "";
+                      String val = values.get(headers.indexOf(x));
 
-                  String toReq = String.format("o.%s=$val%d", x, paramPosition[0]);
+                      String toReq = String.format("o.%s=$val%d", x, paramPosition[0]);
 
-                  wrapperParameters.parameters.put(String.format("val%d", paramPosition[0]), val);
-                  paramPosition[0]++;
+                      wrapperParameters.parameters.put(
+                          String.format("val%d", paramPosition[0]), val);
+                      paramPosition[0]++;
 
-                  return toReq; })
-                .filter(item-> !item.isEmpty()).collect(Collectors.joining(" AND "));
+                      return toReq;
+                    })
+                .filter(item -> !item.isEmpty())
+                .collect(Collectors.joining(" AND "));
 
-
-        if(!filter.isBlank()) {
-          String req =
-                  String.format("MATCH (o:%s) WHERE %s return o", label.name(), filter);
+        if (!filter.isBlank()) {
+          String req = String.format("MATCH (o:%s) WHERE %s return o", label.name(), filter);
           neo4jAL.logInfo("Merging query : " + req);
           Result res = this.neo4jAL.executeQuery(req, wrapperParameters.parameters);
 
@@ -365,7 +369,6 @@ public class Importer {
             return;
           }
         }
-
       }
 
       // No node with similar name was detected, insert a new one
@@ -447,7 +450,7 @@ public class Importer {
   private Object getNeo4jType(String value) {
 
     // Remove Sanitization
-    value =  value.strip().replaceAll("^\"+|\"+$", "");
+    value = value.strip().replaceAll("^\"+|\"+$", "");
 
     // Long
     try {

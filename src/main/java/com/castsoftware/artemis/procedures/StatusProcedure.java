@@ -11,13 +11,12 @@
 
 package com.castsoftware.artemis.procedures;
 
-import com.castsoftware.artemis.controllers.OracleController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
 import org.neo4j.graphdb.GraphDatabaseService;

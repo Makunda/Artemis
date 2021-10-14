@@ -19,7 +19,7 @@ public enum FrameworkType {
   TO_INVESTIGATE("ToInvestigate"),
   NOT_KNOWN("NotKnown");
 
-  private String value;
+  private final String value;
 
   FrameworkType(String value) {
     this.value = value;
@@ -42,6 +42,7 @@ public enum FrameworkType {
 
   /**
    * Convert a framework category to a Detection category
+   *
    * @return The corresponding Detection category or null
    */
   public DetectionCategory toDetectionCategory() {

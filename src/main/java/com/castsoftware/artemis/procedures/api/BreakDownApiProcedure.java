@@ -12,11 +12,10 @@
 package com.castsoftware.artemis.procedures.api;
 
 import com.castsoftware.artemis.controllers.api.BreakdownController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.LeafResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +43,8 @@ public class BreakDownApiProcedure {
       throws ProcedureException {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<LeafResult> lr = BreakdownController.getBreakDown(nal, application, language, externality);
+      List<LeafResult> lr =
+          BreakdownController.getBreakDown(nal, application, language, externality);
       if (lr == null) return Stream.empty();
 
       return lr.stream();

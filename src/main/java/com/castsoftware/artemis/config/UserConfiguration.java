@@ -11,8 +11,8 @@
 
 package com.castsoftware.artemis.config;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 
 import java.io.*;
@@ -39,9 +39,9 @@ public class UserConfiguration {
     }
 
     // Assert that properties aren't null
-    if(PROPERTIES == null) return null;
+    if (PROPERTIES == null) return null;
 
-    if(!PROPERTIES.containsKey(key)) return null;
+    if (!PROPERTIES.containsKey(key)) return null;
     return (String) PROPERTIES.get(key);
   }
 
@@ -97,7 +97,7 @@ public class UserConfiguration {
       PROPERTIES = loadConfiguration(neo4jAL);
     }
 
-    assert PROPERTIES != null: "Failed to load the configuration";
+    assert PROPERTIES != null : "Failed to load the configuration";
     PROPERTIES.setProperty(key, value);
     saveAndReload(neo4jAL);
     PROPERTIES = loadConfiguration(neo4jAL);

@@ -16,11 +16,11 @@ import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,7 +38,8 @@ public class Workspace {
    * @return
    * @throws MissingFileException
    */
-  public static List<String> setWorkspacePath(Neo4jAL neo4jAL, String directoryPath) throws MissingFileException {
+  public static List<String> setWorkspacePath(Neo4jAL neo4jAL, String directoryPath)
+      throws MissingFileException {
     Path newDirectory = Path.of(directoryPath);
 
     if (!Files.exists(newDirectory)) {
@@ -47,7 +48,6 @@ public class Workspace {
               "'%s' is not a valid path. Make sure the target folder exists and retry.",
               directoryPath));
     }
-
 
     try {
       NodeConfiguration nc = NodeConfiguration.getInstance(neo4jAL);
@@ -61,14 +61,11 @@ public class Workspace {
     // Validate the workspace
     List<String> outputMessages = Workspace.validateWorkspace(neo4jAL);
 
-    // Generate Workspace
-
-
     // Reload User configuration
     UserConfiguration.reload(neo4jAL);
 
     outputMessages.add(
-        String.format("Artemis workspace folder was successfully changed to '%s'.",  newDirectory));
+        String.format("Artemis workspace folder was successfully changed to '%s'.", newDirectory));
     return outputMessages;
   }
 
@@ -85,15 +82,15 @@ public class Workspace {
         workspacePath.resolve(Configuration.get("artemis.reports_generator.folder"));
     Path enrichmentFolder =
         workspacePath.resolve(Configuration.get("artemis.nlp_enrichment.folder"));
-    Path exportFolder =
-        workspacePath.resolve(Configuration.get("artemis.exports.folder"));
+    Path exportFolder = workspacePath.resolve(Configuration.get("artemis.exports.folder"));
     Path dataFolder = workspacePath.resolve(Configuration.get("artemis.install_data.folder"));
     Path installData =
         dataFolder.resolve(Configuration.get("artemis.install_data.artemis_framework_file"));
     Path headerFilePath =
         workspacePath.resolve(Configuration.get("artemis.parser.header_file.name"));
     Path confFilePath = workspacePath.resolve(Configuration.get("artemis.config.user.conf_file"));
-    Path detectionConfFilePath = workspacePath.resolve(Configuration.get("artemis.detection.user.conf_file"));
+    Path detectionConfFilePath =
+        workspacePath.resolve(Configuration.get("artemis.detection.user.conf_file"));
 
     LanguageConfiguration lc = LanguageConfiguration.getInstance();
     Map<String, LanguageProp> languagePropMap = lc.getLanguageMap();
@@ -190,13 +187,12 @@ public class Workspace {
    * @return Path of the workspace
    */
   public static Path getWorkspacePath(Neo4jAL neo4jAL) {
-      try {
-        return NodeConfiguration.getWorkspaceNodeConf(neo4jAL);
-      } catch (Neo4jQueryException | Neo4jBadRequestException e) {
-        neo4jAL.logError("Failed to retrieve the workspace path set in the configuration node");
-        return Path.of(Configuration.get("artemis.workspace.folder"));
-      }
-
+    try {
+      return NodeConfiguration.getWorkspaceNodeConf(neo4jAL);
+    } catch (Neo4jQueryException | Neo4jBadRequestException e) {
+      neo4jAL.logError("Failed to retrieve the workspace path set in the configuration node");
+      return Path.of(Configuration.get("artemis.workspace.folder"));
+    }
   }
 
   /**
@@ -225,6 +221,7 @@ public class Workspace {
 
   /**
    * Get the full path of the export folder
+   *
    * @return
    */
   public static Path getExportFolder(Neo4jAL neo4jAL) {
@@ -235,6 +232,7 @@ public class Workspace {
 
   /**
    * Get the configuration of the detection
+   *
    * @return
    */
   public static Path getUserDetectionConfigPath(Neo4jAL neo4jAL) {

@@ -12,8 +12,8 @@
 package com.castsoftware.artemis.reports;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -37,9 +37,9 @@ public class ReportGenerator {
   private final List<FrameworkNode> frameworkList;
   private final List<FrameworkNode> nonFrameworkList;
   private final List<FrameworkNode> toInvestigateFrameworkList;
-  private String applicationContext;
-  private HSSFWorkbook workbook;
-  private HSSFSheet mainSheet;
+  private final String applicationContext;
+  private final HSSFWorkbook workbook;
+  private final HSSFSheet mainSheet;
   private Integer rowNumber = 0;
 
   public ReportGenerator(String applicationContext) {

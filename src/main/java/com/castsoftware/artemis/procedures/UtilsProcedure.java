@@ -13,12 +13,12 @@ package com.castsoftware.artemis.procedures;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.controllers.UtilsController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.io.Cleaner;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.LongResult;
 import com.castsoftware.artemis.results.OutputMessage;
@@ -103,35 +103,6 @@ public class UtilsProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       Boolean mode = UtilsController.getOnlineMode(nal);
-      return Stream.of(new BooleanResult(mode));
-    } catch (Exception | Neo4jConnectionError e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.set.pythiaMode", mode = Mode.WRITE)
-  @Description("artemis.set.pythiaMode(Boolean value) - Set the value of pythia mode ")
-  public Stream<BooleanResult> setPythiaMode(
-          @Name(value = "Value", defaultValue = "true") Boolean value) throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      Boolean mode = UtilsController.setPythiaMode(nal, value);
-      return Stream.of(new BooleanResult(mode));
-    } catch (Exception | MissingFileException | Neo4jConnectionError e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.get.pythiaMode", mode = Mode.WRITE)
-  @Description("artemis.get.pythiaMode() - Get the value of pythia mode.")
-  public Stream<BooleanResult> getPythiaMode() throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      Boolean mode = UtilsController.getPythiaMode(nal);
       return Stream.of(new BooleanResult(mode));
     } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
@@ -246,8 +217,7 @@ public class UtilsProcedure {
 
   @Procedure(value = "artemis.refresh", mode = Mode.WRITE)
   @Description("artemis.refresh() - Refresh and update the framework nodes to the new version.")
-  public Stream<LongResult> refresh()
-      throws ProcedureException {
+  public Stream<LongResult> refresh() throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);

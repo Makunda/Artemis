@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.results;
 
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
 
 import java.util.List;
 import java.util.Objects;

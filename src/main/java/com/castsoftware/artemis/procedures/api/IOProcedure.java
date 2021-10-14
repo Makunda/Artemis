@@ -12,10 +12,10 @@
 package com.castsoftware.artemis.procedures.api;
 
 import com.castsoftware.artemis.controllers.api.IOController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -65,15 +65,14 @@ public class IOProcedure {
   }
 
   @Procedure(value = "artemis.api.import.data", mode = Mode.WRITE)
-  @Description(
-          "artemis.api.import.data(String path) - Import the data coming from a zip file.")
+  @Description("artemis.api.import.data(String path) - Import the data coming from a zip file.")
   public Stream<OutputMessage> importData(@Name(value = "Path") String path)
-          throws ProcedureException {
+      throws ProcedureException {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       return IOController.importNodes(nal, path);
-    } catch (Exception | Neo4jConnectionError  e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

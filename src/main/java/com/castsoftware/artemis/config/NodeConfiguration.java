@@ -11,10 +11,9 @@
 
 package com.castsoftware.artemis.config;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.utils.Workspace;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
@@ -28,7 +27,7 @@ public class NodeConfiguration {
   private static final String LAST_UPDATE_PROP = "LastUpdate";
   private static final String WORKSPACE_PROP = "Workspace";
   private static NodeConfiguration INSTANCE;
-  private Node node;
+  private final Node node;
   private Long lastUpdate;
   private String workspace;
 
@@ -191,6 +190,14 @@ public class NodeConfiguration {
     return timestamp;
   }
 
+  public static String updateWorkspace(Neo4jAL neo4jAL, String newWorkspace)
+      throws Neo4jQueryException, Neo4jBadRequestException {
+    NodeConfiguration nc = getInstance(neo4jAL);
+    nc.node.setProperty(WORKSPACE_PROP, newWorkspace);
+    nc.workspace = newWorkspace;
+    return newWorkspace;
+  }
+
   /**
    * Update the value of the workspace
    *
@@ -198,18 +205,10 @@ public class NodeConfiguration {
    * @return
    */
   public String updateWorkspace(String newWorkspace) {
-    if(this.node == null) return null;
+    if (this.node == null) return null;
 
     this.node.setProperty(WORKSPACE_PROP, newWorkspace);
     this.workspace = newWorkspace;
     return workspace;
-  }
-
-
-  public static String updateWorkspace(Neo4jAL neo4jAL, String newWorkspace) throws Neo4jQueryException, Neo4jBadRequestException {
-    NodeConfiguration nc = getInstance(neo4jAL);
-    nc.node.setProperty(WORKSPACE_PROP, newWorkspace);
-    nc.workspace = newWorkspace;
-    return newWorkspace;
   }
 }

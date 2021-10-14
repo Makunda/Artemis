@@ -11,13 +11,13 @@
 
 package com.castsoftware.artemis.controllers.api;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.io.Exporter;
 import com.castsoftware.artemis.io.Importer;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.OutputMessage;
 import com.castsoftware.artemis.utils.Workspace;
 import org.neo4j.graphdb.Node;
@@ -33,29 +33,52 @@ public class IOController {
 
   /**
    * Import Frameworks nodes to the database
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param path Path of the file to import
    * @return
    * @throws ProcedureException
    */
-  public static Stream<OutputMessage> importNodes(
-          Neo4jAL neo4jAL, String path)
-          throws ProcedureException {
+  public static Stream<OutputMessage> importNodes(Neo4jAL neo4jAL, String path)
+      throws ProcedureException {
 
     if (path.isBlank() || !Files.exists(Path.of(path))) {
       neo4jAL.logInfo(
-              String.format(
-                      "The path '%s' doesn't point to a valid file. Import was skipped.",
-                      path));
+          String.format("The path '%s' doesn't point to a valid file. Import was skipped.", path));
       return Stream.empty();
     }
     Importer importer = new Importer(neo4jAL);
     return importer.load(Path.of(path)).map(OutputMessage::new);
   }
 
+  /**
+   * Export the list of Frameworks
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @return
+   * @throws ProcedureException
+   */
+  public static Stream<OutputMessage> exportFrameworks(Neo4jAL neo4jAL, String path)
+      throws ProcedureException, Neo4jQueryException {
+    List<String> listLabel = Arrays.asList(FrameworkNode.getLabel());
+    List<Node> listNode = new ArrayList<>();
+
+    String req =
+        String.format(
+            "MATCH (o:%s) WHERE o.%s=$frameworkType RETURN o as framework",
+            FrameworkNode.getLabel(), FrameworkNode.getTypeProperty());
+    Map<String, Object> params = Map.of("frameworkType", "Framework");
+    Result res = neo4jAL.executeQuery(req, params);
+    while (res.hasNext()) {
+      listNode.add((Node) res.next().get("framework"));
+    }
+
+    return exportNodes(neo4jAL, path, listLabel, listNode, false);
+  }
 
   /**
    * Export all the nodes to a ZIP file
+   *
    * @param neo4jAL Neo4hj Access Layer
    * @param path Path to the zip file that will be created
    * @param labels List of the labels
@@ -66,7 +89,11 @@ public class IOController {
    * @throws Neo4jQueryException
    */
   private static Stream<OutputMessage> exportNodes(
-      Neo4jAL neo4jAL, String path, List<String> labels, List<Node> listNode, Boolean saveRelationships)
+      Neo4jAL neo4jAL,
+      String path,
+      List<String> labels,
+      List<Node> listNode,
+      Boolean saveRelationships)
       throws ProcedureException, Neo4jQueryException {
     Path exportPath = null;
     if (path.isBlank() || !Files.exists(Path.of(path))) {
@@ -88,32 +115,8 @@ public class IOController {
   }
 
   /**
-   * Export the list of Frameworks
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @return
-   * @throws ProcedureException
-   */
-  public static Stream<OutputMessage> exportFrameworks(Neo4jAL neo4jAL, String path)
-          throws ProcedureException, Neo4jQueryException {
-    List<String> listLabel = Arrays.asList(FrameworkNode.getLabel());
-    List<Node> listNode = new ArrayList<>();
-
-    String req =
-            String.format(
-                    "MATCH (o:%s) WHERE o.%s=$frameworkType RETURN o as framework",
-                    FrameworkNode.getLabel(), FrameworkNode.getTypeProperty());
-    Map<String, Object> params = Map.of("frameworkType", "Framework");
-    Result res = neo4jAL.executeQuery(req, params);
-    while (res.hasNext()) {
-      listNode.add((Node) res.next().get("framework"));
-    }
-
-    return exportNodes(neo4jAL, path, listLabel, listNode, false);
-  }
-
-  /**
    * Export the list of the frameworks with their category
+   *
    * @param neo4jAL Neo4j access Layer
    * @param path Path to the zip file that will be created
    * @return The log of the export

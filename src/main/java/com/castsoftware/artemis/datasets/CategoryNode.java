@@ -11,9 +11,9 @@
 
 package com.castsoftware.artemis.datasets;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -29,8 +29,8 @@ public class CategoryNode {
   private static final String ICON_URL_PROPERTY = "IconURL";
 
   private Node node;
-  private String name;
-  private String iconUrl;
+  private final String name;
+  private final String iconUrl;
 
   public CategoryNode(String name, String iconUrl) {
     this.name = name;

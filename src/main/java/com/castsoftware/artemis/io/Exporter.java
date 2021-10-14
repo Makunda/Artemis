@@ -15,11 +15,11 @@
 package com.castsoftware.artemis.io;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.FileIOException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.*;
 import org.neo4j.logging.Log;
@@ -42,22 +42,23 @@ public class Exporter {
   private static final String INDEX_COL = Configuration.get("io.index_col");
   private static final String INDEX_OUTGOING = Configuration.get("io.index_outgoing");
   private static final String INDEX_INCOMING = Configuration.get("io.index_incoming");
-  private static final String RELATIONSHIP_PREFIX = Configuration.get("io.file.prefix.relationship");
+  private static final String RELATIONSHIP_PREFIX =
+      Configuration.get("io.file.prefix.relationship");
   private static final String NODE_PREFIX = Configuration.get("io.file.prefix.node");
 
-  private GraphDatabaseService db;
-  private Log log;
-  private Transaction transaction;
+  private final GraphDatabaseService db;
+  private final Log log;
+  private final Transaction transaction;
 
   // Parameters
   private Boolean saveRelationshipParams = false;
   private Path pathParams = null;
 
   // Class members
-  private Set<Long> nodeLabelMap; // List of node Id visited
-  private Set<Label> closedLabelSet; // Already visited Node labels
+  private final Set<Long> nodeLabelMap; // List of node Id visited
+  private final Set<Label> closedLabelSet; // Already visited Node labels
   private Map<String, List<Node>> labelNodeMap; // To visit Node labels
-  private Set<String> createdFilenameList; // Filename created during this session
+  private final Set<String> createdFilenameList; // Filename created during this session
 
   public Exporter(Neo4jAL neo4jAL) {
     this.db = neo4jAL.getDb();

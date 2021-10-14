@@ -12,16 +12,16 @@
 package com.castsoftware.artemis.procedures.api;
 
 import com.castsoftware.artemis.controllers.api.ConfigurationController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
-import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.*;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Procedure;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,76 +33,10 @@ public class ConfigurationApiProcedure {
 
   @Context public Log log;
 
-  // Configuration Pythia
-  @Procedure(value = "artemis.api.configuration.get.pythia.uri", mode = Mode.WRITE)
-  @Description("artemis.api.configuration.get.pythia.uri() - Get the URI of Pythia")
-  public Stream<OutputMessage> getPythiaURL() throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      String uri = ConfigurationController.getURIPythia(nal);
-      return Stream.of(new OutputMessage(uri));
-    } catch (Exception | Neo4jConnectionError e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.api.configuration.set.pythia.uri", mode = Mode.WRITE)
-  @Description("artemis.api.configuration.set.pythia.uri(String URI) - Set the URI of Pythia")
-  public Stream<OutputMessage> setPythiaURL(@Name(value = "URI") String URI)
-      throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      String uri = ConfigurationController.setURIPythia(nal, URI);
-      return Stream.of(new OutputMessage(uri));
-    } catch (Exception | Neo4jConnectionError | MissingFileException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.api.configuration.get.pythia.token", mode = Mode.WRITE)
-  @Description(
-      "artemis.api.configuration.get.pythia.token() - Get the presence of the Pythia token")
-  public Stream<BooleanResult> getPythiaToken() throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      Boolean present = ConfigurationController.getTokenPythia(nal);
-      return Stream.of(new BooleanResult(present));
-    } catch (Exception | Neo4jConnectionError | MissingFileException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.api.configuration.set.pythia.token", mode = Mode.WRITE)
-  @Description(
-      "artemis.api.configuration.set.pythia.token() - Get the presence of the Pythia token")
-  public Stream<BooleanResult> setPythiaToken(@Name(value = "Token") String token)
-      throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      Boolean changed = ConfigurationController.setTokenPythia(nal, token);
-      return Stream.of(new BooleanResult(changed));
-    } catch (Exception | Neo4jConnectionError | MissingFileException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
   @Procedure(value = "artemis.api.configuration.get.detection.property", mode = Mode.WRITE)
   @Description(
-          "artemis.api.configuration.get.detection.property - Get the name of detection property applied on the nodes during the detection")
-  public Stream<OutputMessage> getNodeDetectionProperty()
-          throws ProcedureException {
+      "artemis.api.configuration.get.detection.property - Get the name of detection property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeDetectionProperty() throws ProcedureException {
     try {
       String detectionProperty = ConfigurationController.getNodeDetectionProperty();
       return Stream.of(new OutputMessage(detectionProperty));
@@ -115,31 +49,28 @@ public class ConfigurationApiProcedure {
 
   @Procedure(value = "artemis.api.configuration.get.category.property", mode = Mode.WRITE)
   @Description(
-          "artemis.api.configuration.get.category.property - Get the name of category property applied on the nodes during the detection")
-  public Stream<OutputMessage> getNodeCategoryProperty()
-          throws ProcedureException {
+      "artemis.api.configuration.get.category.property - Get the name of category property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeCategoryProperty() throws ProcedureException {
 
     try {
       String detectionProperty = ConfigurationController.getNodeCategoryProperty();
       return Stream.of(new OutputMessage(detectionProperty));
-    } catch (Exception  | MissingFileException e) {
+    } catch (Exception | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
     }
   }
 
-
   @Procedure(value = "artemis.api.configuration.get.detection.property.values", mode = Mode.WRITE)
   @Description(
-          "artemis.api.configuration.get.detection.property.values - Get the different values of the detection property")
-  public Stream<OutputMessage> getListDetectionValues()
-          throws ProcedureException {
+      "artemis.api.configuration.get.detection.property.values - Get the different values of the detection property")
+  public Stream<OutputMessage> getListDetectionValues() throws ProcedureException {
 
     try {
       List<String> values = ConfigurationController.getListDetectionValues();
       return values.stream().map(OutputMessage::new);
-    } catch (Exception  | MissingFileException e) {
+    } catch (Exception | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

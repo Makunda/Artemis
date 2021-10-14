@@ -11,9 +11,9 @@
 
 package com.castsoftware.artemis.datasets;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -30,11 +30,11 @@ public class RegexNode {
   private static final String CATEGORY_PROPERTY = "Category";
 
   private Node node;
-  private String name;
-  private List<String> regexes;
-  private List<String> internalTypes;
+  private final String name;
+  private final List<String> regexes;
+  private final List<String> internalTypes;
   private String framework;
-  private String category;
+  private final String category;
 
   public RegexNode(
       String name,

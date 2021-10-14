@@ -12,10 +12,10 @@
 package com.castsoftware.artemis.controllers.api;
 
 import com.castsoftware.artemis.config.UserConfiguration;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.RegexNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 

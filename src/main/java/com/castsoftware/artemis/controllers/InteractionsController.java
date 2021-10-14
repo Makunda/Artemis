@@ -15,15 +15,15 @@ import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.api.BreakdownController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.sof.famililes.FamiliesFinder;
+import com.castsoftware.artemis.modules.sof.famililes.FamilyGroup;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.InteractionResult;
 import com.castsoftware.artemis.results.LeafResult;
 import com.castsoftware.artemis.results.OutputMessage;
-import com.castsoftware.artemis.sof.famililes.FamiliesFinder;
-import com.castsoftware.artemis.sof.famililes.FamilyGroup;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
@@ -128,7 +128,8 @@ public class InteractionsController {
     if (!lc.checkLanguageExistence(language)) return new ArrayList<>(); // Return  empty list
 
     // Get the breakdown of the application
-    List<LeafResult> flattenTree = BreakdownController.getBreakDown(neo4jAL, application, language, false);
+    List<LeafResult> flattenTree =
+        BreakdownController.getBreakDown(neo4jAL, application, language, false);
 
     // Parse the tree and assign applications matching the leaves
 

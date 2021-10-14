@@ -13,12 +13,11 @@ package com.castsoftware.artemis.datasets;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.controllers.api.CategoryController;
-import com.castsoftware.artemis.database.Neo4jAL;
-import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.pythia.PythiaCom;
-import org.json.JSONObject;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
+import com.castsoftware.artemis.neo4j.Neo4jTypeManager;
+import kong.unirest.json.JSONObject;
 import org.neo4j.graphdb.*;
 
 import java.sql.Timestamp;
@@ -32,7 +31,8 @@ public class FrameworkNode {
   private static final String NAME_PROPERTY = Configuration.get("artemis.frameworkNode.name");
 
   private static final String PATTERN_PROPERTY = Configuration.get("artemis.frameworkNode.pattern");
-  private static final String IS_REGEX_PROPERTY = Configuration.get("artemis.frameworkNode.isRegex");
+  private static final String IS_REGEX_PROPERTY =
+      Configuration.get("artemis.frameworkNode.isRegex");
 
   private static final String DISCOVERY_DATE_PROPERTY =
       Configuration.get("artemis.frameworkNode.discoveryDate");
@@ -51,7 +51,7 @@ public class FrameworkNode {
   private static final String CATEGORY_PROPERTY =
       Configuration.get("artemis.frameworkNode.category");
   private static final String DETECTION_DATA_PROPERTY =
-          Configuration.get("artemis.frameworkNode.detection_data");
+      Configuration.get("artemis.frameworkNode.detection_data");
   private static final String INTERNAL_TYPE_PROPERTY =
       Configuration.get("artemis.frameworkNode.internal_type");
   private static final String USER_CREATED_PROPERTY =
@@ -59,7 +59,7 @@ public class FrameworkNode {
   private static final String CREATION_DATE_PROPERTY =
       Configuration.get("artemis.frameworkNode.creation_date");
   private static final String MODIFIED_PROPERTY =
-          Configuration.get("artemis.frameworkNode.modified_property");
+      Configuration.get("artemis.frameworkNode.modified_property");
 
   private static final String CATEGORY_RELATIONSHIP =
       Configuration.get("artemis.category.to.frameworkNode");
@@ -78,7 +78,7 @@ public class FrameworkNode {
   private String location = "";
   private String description = "";
   private String category;
-  private String detectionData= "";
+  private String detectionData = "";
   private List<String> internalTypes = new ArrayList<>();
   private Long numberOfDetection = 0L;
   private Double percentageOfDetection = 0.0;
@@ -163,7 +163,9 @@ public class FrameworkNode {
     return CATEGORY_PROPERTY;
   }
 
-  public static String getDetectionDataProperty() { return DETECTION_DATA_PROPERTY; }
+  public static String getDetectionDataProperty() {
+    return DETECTION_DATA_PROPERTY;
+  }
 
   public static String getUserCreatedProperty() {
     return USER_CREATED_PROPERTY;
@@ -178,7 +180,7 @@ public class FrameworkNode {
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static FrameworkNode findFrameworkByName(Neo4jAL neo4jAL, String frameworkName)
+  public static Optional<FrameworkNode> findFrameworkByName(Neo4jAL neo4jAL, String frameworkName)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
     String matchReq =
         String.format(
@@ -189,12 +191,74 @@ public class FrameworkNode {
     Result res = neo4jAL.executeQuery(matchReq, params);
     // Check if the query returned a correct result
     if (!res.hasNext()) {
-      return null;
+      return Optional.empty();
     }
     // Node was found, return corresponding Framework Node
     Node n = (Node) res.next().get("node");
 
-    return FrameworkNode.fromNode(neo4jAL, n);
+    FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, n);
+    return Optional.of(fn);
+  }
+
+  /**
+   * Find a Framework by its Type only
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param internalType Internal Type
+   * @return The Framework node found or null
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static List<FrameworkNode> findFrameworkByType(Neo4jAL neo4jAL, String internalType)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String matchReq =
+        String.format(
+            "MATCH (n:%s) WHERE $internalType in n.%s RETURN n as node;",
+            LABEL_PROPERTY, INTERNAL_TYPE_PROPERTY);
+
+    Map<String, Object> params = Map.of("internalType", internalType);
+
+    Result res = neo4jAL.executeQuery(matchReq, params);
+    // Check if the query returned a correct result
+    List<FrameworkNode> resultList = new ArrayList<>();
+
+    while (res.hasNext()) {
+      Node n = (Node) res.next().get("node");
+      resultList.add(FrameworkNode.fromNode(neo4jAL, n));
+    }
+
+    return resultList;
+  }
+
+  /**
+   * Find a framework in the database using its name and internal type
+   *
+   * @param neo4jAL Neo4j access layer
+   * @param objectName Name of the framework
+   * @param internalType Internal type of the object
+   * @return The Framework node
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   */
+  public static Optional<FrameworkNode> findFrameworkByNameAndType(
+      Neo4jAL neo4jAL, String objectName, String internalType)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    String matchReq =
+        String.format(
+            "MATCH (n:%s) WHERE n.%s=$frameworkName  RETURN n as node LIMIT 1;",
+            LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
+
+    Map<String, Object> params = Map.of("frameworkName", objectName, "internalType", internalType);
+
+    Result res = neo4jAL.executeQuery(matchReq, params);
+    // Check if the query returned a correct result
+    if (!res.hasNext()) {
+      return Optional.empty();
+    }
+    // Node was found, return corresponding Framework Node
+    Node n = (Node) res.next().get("node");
+    FrameworkNode fn = FrameworkNode.fromNode(neo4jAL, n);
+    return Optional.of(fn);
   }
 
   /**
@@ -213,7 +277,6 @@ public class FrameworkNode {
 
     try {
       String name = String.valueOf(n.getProperty(NAME_PROPERTY));
-
 
       List<String> internalType = Neo4jTypeManager.getAsStringList(n, INTERNAL_TYPE_PROPERTY);
 
@@ -259,8 +322,8 @@ public class FrameworkNode {
       }
 
       String detectionData = "";
-      if(n.hasProperty(DETECTION_DATA_PROPERTY)) {
-          detectionData = String.valueOf(n.getProperty(DETECTION_DATA_PROPERTY));
+      if (n.hasProperty(DETECTION_DATA_PROPERTY)) {
+        detectionData = String.valueOf(n.getProperty(DETECTION_DATA_PROPERTY));
       }
 
       // User created
@@ -280,7 +343,7 @@ public class FrameworkNode {
         n.setProperty(CREATION_DATE_PROPERTY, timestamp);
       } else {
         try {
-          timestamp =  Neo4jTypeManager.getAsLong(n, CREATION_DATE_PROPERTY);
+          timestamp = Neo4jTypeManager.getAsLong(n, CREATION_DATE_PROPERTY);
         } catch (ClassCastException | NotFoundException ignored) {
           timestamp = new Date().getTime();
           n.setProperty(CREATION_DATE_PROPERTY, timestamp);
@@ -334,67 +397,6 @@ public class FrameworkNode {
       neo4jAL.logError(msg, e);
       throw new Neo4jBadNodeFormatException(msg, e, ERROR_PREFIX + "FRON2");
     }
-  }
-
-  /**
-   * Find a framework in the database using its name and internal type
-   *
-   * @param neo4jAL Neo4j access layer
-   * @param objectName Name of the framework
-   * @param internalType Internal type of the object
-   * @return The Framework node
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadNodeFormatException
-   */
-  public static FrameworkNode findFrameworkByNameAndType(
-      Neo4jAL neo4jAL, String objectName, String internalType)
-      throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    String matchReq =
-        String.format(
-            "MATCH (n:%s) WHERE n.%s=$frameworkName  RETURN n as node LIMIT 1;",
-            LABEL_PROPERTY, NAME_PROPERTY, INTERNAL_TYPE_PROPERTY);
-
-    Map<String, Object> params = Map.of("frameworkName", objectName, "internalType", internalType);
-
-    Result res = neo4jAL.executeQuery(matchReq, params);
-    // Check if the query returned a correct result
-    if (!res.hasNext()) {
-      return null;
-    }
-    // Node was found, return corresponding Framework Node
-    Node n = (Node) res.next().get("node");
-    return FrameworkNode.fromNode(neo4jAL, n);
-  }
-
-
-  /**
-   * Find a Framework by its Type only
-   * @param neo4jAL Neo4j Access Layer
-   * @param internalType Internal Type
-   * @return The Framework node found or null
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadNodeFormatException
-   */
-  public static List<FrameworkNode> findFrameworkByType(
-          Neo4jAL neo4jAL, String internalType)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    String matchReq =
-            String.format(
-                    "MATCH (n:%s) WHERE $internalType in n.%s RETURN n as node;",
-                    LABEL_PROPERTY, INTERNAL_TYPE_PROPERTY);
-
-    Map<String, Object> params = Map.of("internalType", internalType);
-
-    Result res = neo4jAL.executeQuery(matchReq, params);
-    // Check if the query returned a correct result
-    List<FrameworkNode> resultList = new ArrayList<>();
-
-    while (res.hasNext()) {
-      Node n = (Node) res.next().get("node");
-      resultList.add(FrameworkNode.fromNode(neo4jAL, n));
-    }
-
-    return resultList;
   }
 
   /**
@@ -613,27 +615,38 @@ public class FrameworkNode {
     node.setProperty(getInternalTypeProperty(), listTypes.toArray(new String[0]));
   }
 
-  public void flagAsModified() {
-    if (node == null) return;
-    node.setProperty(MODIFIED_PROPERTY, true );
+  /**
+   * Set the category of the framework from a string. A category node will be created with the
+   * following category name if it doesn't already exist.
+   *
+   * @param category Category to create
+   */
+  public void setCategory(String category) {
+    if (this.node == null || category.isBlank()) return;
+    Iterator<Relationship> itCat =
+        this.node
+            .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
+            .iterator();
+    while (itCat.hasNext()) {
+      itCat.next().delete();
+
+      try {
+        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
+        cn.getNode()
+            .createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
+      } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
+        neo4jAL.logError("Failed to attach a new category to the node", e);
+      }
+    }
   }
 
   public static String getInternalTypeProperty() {
     return INTERNAL_TYPE_PROPERTY;
   }
 
-  /**
-   * Update the detection Pattern of the framework
-   * @param pattern Pattern ( plain string or regex )
-   * @param isRegex If the pattern must be processed as a Regex
-   */
-  public void updatePattern(String pattern, Boolean isRegex) {
-    this.pattern = pattern;
-    this.isRegex = isRegex;
-
+  public void flagAsModified() {
     if (node == null) return;
-    node.setProperty(getPatternProperty(), pattern);
-    node.setProperty(getIsRegexProperty(), isRegex);
+    node.setProperty(MODIFIED_PROPERTY, true);
   }
 
   public void updateDescription(String description) {
@@ -757,18 +770,19 @@ public class FrameworkNode {
   }
 
   /**
-   * Is the pattern matching the object name
-   * @param objectName Object name to match
-   * @return True if the pattern matched the objectName, false otherwise
+   * Update the detection Pattern of the framework
+   *
+   * @param pattern Pattern ( plain string or regex )
+   * @param isRegex If the pattern must be processed as a Regex
    */
-  public Boolean isPatternMatching(String objectName) {
-    if(this.isRegex) {
-      return objectName.matches(this.pattern);
-    } else {
-      return objectName.equals(this.pattern);
-    }
-  }
+  public void updatePattern(String pattern, Boolean isRegex) {
+    this.pattern = pattern;
+    this.isRegex = isRegex;
 
+    if (node == null) return;
+    node.setProperty(getPatternProperty(), pattern);
+    node.setProperty(getIsRegexProperty(), isRegex);
+  }
 
   /**
    * Get the category of the node, if no category node is connected, it will create a custom one
@@ -805,7 +819,22 @@ public class FrameworkNode {
   }
 
   /**
+   * Is the pattern matching the object name
+   *
+   * @param objectName Object name to match
+   * @return True if the pattern matched the objectName, false otherwise
+   */
+  public Boolean isPatternMatching(String objectName) {
+    if (this.isRegex) {
+      return objectName.matches(this.pattern);
+    } else {
+      return objectName.equals(this.pattern);
+    }
+  }
+
+  /**
    * Set the Category of the framework by attaching it to a category node
+   *
    * @param cn Category node to be attached
    */
   public void setCategory(CategoryNode cn) {
@@ -819,38 +848,5 @@ public class FrameworkNode {
     }
 
     cn.getNode().createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
-  }
-
-  /**
-   * Set the category of the framework from a string. A category node will be created with the following category name
-   * if it doesn't already exist.
-   * @param category Category to create
-   */
-  public void setCategory(String category) {
-    if (this.node == null || category.isBlank()) return;
-    Iterator<Relationship> itCat =
-        this.node
-            .getRelationships(Direction.INCOMING, RelationshipType.withName(CATEGORY_RELATIONSHIP))
-            .iterator();
-    while (itCat.hasNext()) {
-      itCat.next().delete();
-
-      try {
-        CategoryNode cn = CategoryController.getOrCreateByName(neo4jAL, category);
-        cn.getNode()
-            .createRelationshipTo(this.node, RelationshipType.withName(CATEGORY_RELATIONSHIP));
-      } catch (Neo4jQueryException | Neo4jBadNodeFormatException e) {
-        neo4jAL.logError("Failed to attach a new category to the node", e);
-      }
-    }
-  }
-
-  /**
-   * Send this framework node to the Pythia repository
-   */
-  public void sendToPythia() {
-    if (PythiaCom.isSet(neo4jAL)) {
-      PythiaCom.getInstance(neo4jAL).asyncSendFramework(this);
-    }
   }
 }

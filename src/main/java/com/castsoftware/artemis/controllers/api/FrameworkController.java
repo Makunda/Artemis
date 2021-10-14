@@ -14,14 +14,14 @@ package com.castsoftware.artemis.controllers.api;
 import com.castsoftware.artemis.config.NodeConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.database.Neo4jAL;
-import com.castsoftware.artemis.database.Neo4jTypeManager;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
+import com.castsoftware.artemis.neo4j.Neo4jTypeManager;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
@@ -39,7 +39,7 @@ public class FrameworkController {
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static FrameworkNode findFrameworkByName(Neo4jAL neo4jAL, String name)
+  public static Optional<FrameworkNode> findFrameworkByName(Neo4jAL neo4jAL, String name)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
     return FrameworkNode.findFrameworkByName(neo4jAL, name);
@@ -55,7 +55,7 @@ public class FrameworkController {
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
-  public static FrameworkNode findFrameworkByNameAndType(
+  public static Optional<FrameworkNode> findFrameworkByNameAndType(
       Neo4jAL neo4jAL, String name, String internalType)
       throws Neo4jQueryException, Neo4jBadNodeFormatException {
 
@@ -63,7 +63,9 @@ public class FrameworkController {
   }
 
   /**
-   * Parse the list of framework compliant with the internal type and check if one of them match the name.
+   * Parse the list of framework compliant with the internal type and check if one of them match the
+   * name.
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param objectName Name of the object
    * @param internalType Internal Type of the object
@@ -72,17 +74,18 @@ public class FrameworkController {
    * @throws Neo4jBadNodeFormatException
    */
   public static FrameworkNode findMatchingFrameworkByType(
-          Neo4jAL neo4jAL, String objectName, String internalType)
-          throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    List<FrameworkNode> frameworkNodesList = FrameworkNode.findFrameworkByType(neo4jAL, internalType);
+      Neo4jAL neo4jAL, String objectName, String internalType)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    List<FrameworkNode> frameworkNodesList =
+        FrameworkNode.findFrameworkByType(neo4jAL, internalType);
 
     FrameworkNode bestMatch = null;
     for (FrameworkNode fn : frameworkNodesList) {
       // Check if the pattern is matching
       neo4jAL.logInfo(String.format("Comparing (Name) %s to fn %s", objectName, fn.getPattern()));
-      if(fn.isPatternMatching(objectName)) {
-        if(bestMatch != null) {
-          if(bestMatch.getPattern().length() < fn.getPattern().length()) {
+      if (fn.isPatternMatching(objectName)) {
+        if (bestMatch != null) {
+          if (bestMatch.getPattern().length() < fn.getPattern().length()) {
             bestMatch = fn;
           }
         } else {
@@ -94,14 +97,12 @@ public class FrameworkController {
     return bestMatch;
   }
 
-
   /**
    * Delete a framework in the database using its name and its internal type
    *
    * @param neo4jAL Neo4j Access Layer
    * @param name Name of the Framework to find
    * @param internalTypes List of the internal type of the framework
-   * @return
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
@@ -178,7 +179,7 @@ public class FrameworkController {
    * @param internalTypes Internal types of the framework
    * @param numberOfDetection Number of detection
    * @param percentageOfDetection Detection rate
-   * @return
+   * @return The merge Framework node
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    */
@@ -243,7 +244,6 @@ public class FrameworkController {
         fn.updateDetectionScore(percentageOfDetection);
       }
 
-      fn.sendToPythia();
 
     } else {
       fn =
@@ -266,7 +266,6 @@ public class FrameworkController {
       fn.setCategory(cn);
 
       fn.createNode();
-      fn.sendToPythia();
     }
 
     return fn;
@@ -777,7 +776,16 @@ public class FrameworkController {
 
       FrameworkNode newFramework =
           addFramework(
-              neo4jAl, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
+              neo4jAl,
+              name,
+              pattern,
+              isRegex,
+              discoveryDate,
+              location,
+              description,
+              type,
+              category,
+              internalTypes);
 
       for (Relationship rel : oldFramework.getRelationships()) rel.delete();
       oldFramework.delete();
@@ -817,7 +825,16 @@ public class FrameworkController {
 
     FrameworkNode fn =
         new FrameworkNode(
-            neo4jAL, name, pattern, isRegex, discoveryDate, location, description, 0l, .0, new Date().getTime());
+            neo4jAL,
+            name,
+            pattern,
+            isRegex,
+            discoveryDate,
+            location,
+            description,
+            0l,
+            .0,
+            new Date().getTime());
     fn.setInternalTypes(internalTypes);
     fn.setFrameworkType(FrameworkType.getType(type));
     fn.createNode();
@@ -828,9 +845,7 @@ public class FrameworkController {
 
     neo4jAL.logInfo(
         String.format("Framework with name %s has been inserted through API call", name));
-    neo4jAL.logInfo(
-            String.format("Sending to Pythia", name));
-    fn.sendToPythia();
+    neo4jAL.logInfo(String.format("Sending to Pythia", name));
     return fn;
   }
 

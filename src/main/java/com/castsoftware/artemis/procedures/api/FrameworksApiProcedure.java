@@ -12,13 +12,13 @@
 package com.castsoftware.artemis.procedures.api;
 
 import com.castsoftware.artemis.controllers.api.FrameworkController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.LongResult;
@@ -29,6 +29,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class FrameworksApiProcedure {
@@ -57,7 +58,16 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       FrameworkNode addedFramework =
           FrameworkController.addFramework(
-              nal, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
+              nal,
+              name,
+              pattern,
+              isRegex,
+              discoveryDate,
+              location,
+              description,
+              type,
+              category,
+              internalTypes);
 
       return Stream.of(new FrameworkResult(addedFramework));
     } catch (Exception
@@ -90,7 +100,17 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       Boolean updated =
           FrameworkController.updateById(
-              nal, id, name, pattern, isRegex, discoveryDate, location, description, type, category, internalTypes);
+              nal,
+              id,
+              name,
+              pattern,
+              isRegex,
+              discoveryDate,
+              location,
+              description,
+              type,
+              category,
+              internalTypes);
 
       return Stream.of(new BooleanResult(updated));
     } catch (Exception
@@ -234,51 +254,6 @@ public class FrameworksApiProcedure {
     }
   }
 
-  @Procedure(value = "artemis.api.merge.framework.pythia", mode = Mode.WRITE)
-  @Description(
-          "artemis.api.merge.framework.pythia( String Name, String DiscoveryDate, String Location, String Description, String Type, String Category, List<String> InternalTypes, Long NumberOfDetection, Double PercentageOfDetection ) - Update a framework using its name")
-  public Stream<FrameworkResult> mergeFrameworkPythia(
-          @Name(value = "Name") String name,
-          @Name(value = "Pattern") String pattern,
-          @Name(value = "IsRegex") Boolean isRegex,
-          @Name(value = "DiscoveryDate") String discoveryDate,
-          @Name(value = "Location") String location,
-          @Name(value = "Description") String description,
-          @Name(value = "Type") String type,
-          @Name(value = "Category") String category,
-          @Name(value = "InternalTypes") List<String> internalTypes,
-          @Name(value = "NumberOfDetection", defaultValue = "0") Long numberOfDetection,
-          @Name(value = "PercentageOfDetection", defaultValue = "0") Double percentageOfDetection)
-          throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      FrameworkNode addedFramework =
-              FrameworkController.mergeFramework(
-                      nal,
-                      name,
-                      pattern,
-                      isRegex,
-                      discoveryDate,
-                      location,
-                      description,
-                      type,
-                      category,
-                      numberOfDetection,
-                      percentageOfDetection,
-                      internalTypes);
-      addedFramework.flagAsModified();
-      return Stream.of(new FrameworkResult(addedFramework));
-    } catch (Exception
-            | Neo4jConnectionError
-            | Neo4jQueryException
-            | Neo4jBadNodeFormatException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
   @Procedure(value = "artemis.api.find.framework", mode = Mode.WRITE)
   @Description(
       "artemis.api.find.framework(String Name, Optional String InternalType) - Find a framework using its name")
@@ -289,16 +264,15 @@ public class FrameworksApiProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      FrameworkNode fn;
+      Optional<FrameworkNode> fn;
       if (internalType.isEmpty()) {
         fn = FrameworkController.findFrameworkByName(nal, name);
       } else {
         fn = FrameworkController.findFrameworkByNameAndType(nal, name, internalType);
       }
 
-      if (fn == null) return Stream.of();
-
-      return Stream.of(new FrameworkResult(fn));
+      if (fn.isEmpty()) return Stream.empty();
+      return Stream.of(new FrameworkResult(fn.get()));
 
     } catch (Exception
         | Neo4jConnectionError
@@ -321,7 +295,6 @@ public class FrameworksApiProcedure {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       List<FrameworkNode> nodeList =
           FrameworkController.findFrameworkNameContains(nal, name, limit);
-      ;
 
       return nodeList.stream().map(FrameworkResult::new);
 
@@ -340,7 +313,6 @@ public class FrameworksApiProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       List<FrameworkNode> nodeList = FrameworkController.getDuplicates(nal);
-      ;
 
       return nodeList.stream().map(FrameworkResult::new);
 

@@ -11,13 +11,12 @@
 
 package com.castsoftware.artemis.controllers.api;
 
-import com.castsoftware.artemis.config.detection.DetectionProp;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.ATree;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.detector.DetectorFactory;
+import com.castsoftware.artemis.detector.utils.ATree;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.LeafResult;
 
 import java.io.IOException;
@@ -37,10 +36,11 @@ public class BreakdownController {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public static List<LeafResult> getBreakDown(Neo4jAL neo4jAL, String application, String language, Boolean externality)
+  public static List<LeafResult> getBreakDown(
+      Neo4jAL neo4jAL, String application, String language, Boolean externality)
       throws IOException, Neo4jQueryException {
     ATree tree = getBreakDownAsTree(neo4jAL, application, language, externality);
-    if(tree == null) return Collections.emptyList();
+    if (tree == null) return Collections.emptyList();
 
     return tree.flatten().stream()
         .map(x -> new LeafResult(x, tree.getDelimiterLeaves()))
@@ -58,22 +58,21 @@ public class BreakdownController {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public static ATree getBreakDownAsTree(Neo4jAL neo4jAL, String application, String language, Boolean externality)
+  public static ATree getBreakDownAsTree(
+      Neo4jAL neo4jAL, String application, String language, Boolean externality)
       throws IOException, Neo4jQueryException {
 
     if (!SupportedLanguage.has(language)) return null;
     SupportedLanguage sl = SupportedLanguage.getLanguage(language);
 
-    ADetector aDetector = ADetector.getDetector(neo4jAL, application, sl);
+    ADetector aDetector = DetectorFactory.getDetector(neo4jAL, application, sl);
     ATree tree = null;
 
-    if(externality) {
+    if (externality) {
       tree = aDetector.getExternalBreakdown();
     } else {
       tree = aDetector.getInternalBreakdown();
     }
-
-    if (tree == null) return null;
 
     return tree;
   }

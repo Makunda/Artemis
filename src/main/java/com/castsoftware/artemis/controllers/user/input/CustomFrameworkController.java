@@ -14,13 +14,13 @@ package com.castsoftware.artemis.controllers.user.input;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.controllers.api.CategoryController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.CategoryNode;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
@@ -30,7 +30,7 @@ import java.util.*;
 
 public class CustomFrameworkController {
 
-  private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+  private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private static Boolean alreadyWarned = false;
 
   /**
@@ -89,8 +89,18 @@ public class CustomFrameworkController {
         // Split tag and get category
         category = tag.replace(artemisFrameworkTag, "");
 
-        fn = new FrameworkNode(neo4jAL, name, name, false, strDate, "Custom",
-                "Custom framework flagged by the user", 1L, 1.0, new Date().getTime());
+        fn =
+            new FrameworkNode(
+                neo4jAL,
+                name,
+                name,
+                false,
+                strDate,
+                "Custom",
+                "Custom framework flagged by the user",
+                1L,
+                1.0,
+                new Date().getTime());
 
         cn = CategoryController.getOrCreateByName(neo4jAL, category);
         fn.setCategory(cn);

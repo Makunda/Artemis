@@ -14,11 +14,11 @@ package com.castsoftware.artemis.controllers;
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
 import com.castsoftware.artemis.controllers.api.FrameworkController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.io.Importer;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -211,34 +211,15 @@ public class UtilsController {
 
   /**
    * Get the value of the Online mode of Artemis
-   * @return True if got an online mode, False otherwise or if the configuration has been set properly
+   *
+   * @return True if got an online mode, False otherwise or if the configuration has been set
+   *     properly
    */
   public static Boolean getOnlineMode(Neo4jAL neo4jAL) {
     String content = Configuration.getBestOfAllWorlds(neo4jAL, "artemis.onlineMode");
-    if(content == null) return false;
+    if (content == null) return false;
 
     return Boolean.parseBoolean(content);
-  }
-
-  /**
-   * Set the mode of Pythia ( activate or not )
-   * @param neo4jAL Neo4j Access layer
-   * @param active Status of activity to set
-   * @return
-   * @throws MissingFileException
-   */
-  public static Boolean setPythiaMode(Neo4jAL neo4jAL, Boolean active) throws MissingFileException {
-    Configuration.setEverywhere(neo4jAL, "artemis.pythia_mode", active.toString());
-    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"));
-  }
-
-  /**
-   * Get the value of the Pythia mode
-   *
-   * @return
-   */
-  public static Boolean getPythiaMode(Neo4jAL neo4jAL) {
-    return Boolean.parseBoolean(Configuration.getBestOfAllWorlds(neo4jAL, "artemis.pythia_mode"));
   }
 
   /**

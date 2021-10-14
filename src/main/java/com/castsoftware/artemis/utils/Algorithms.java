@@ -11,8 +11,16 @@
 
 package com.castsoftware.artemis.utils;
 
+/** Class defining useful algorithms */
 public class Algorithms {
 
+  /**
+   * Calculate the Levenshtein distance between two string
+   *
+   * @param lhs Source string
+   * @param rhs Target String
+   * @return The distance computed
+   */
   public static int levenshteinDistance(CharSequence lhs, CharSequence rhs) {
     int len0 = lhs.length() + 1;
     int len1 = rhs.length() + 1;

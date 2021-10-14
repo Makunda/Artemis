@@ -20,7 +20,7 @@ public enum DetectionCategory {
   IN_OTHERS_APPLICATIONS("In others applications"),
   MISSING_CODE("Potentially missing code");
 
-  private String value;
+  private final String value;
 
   DetectionCategory(String value) {
     this.value = value;

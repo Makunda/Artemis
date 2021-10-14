@@ -13,9 +13,9 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Result;
 
 import java.util.*;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class ApplicationController {
 
-  private static String SCANNED_LANGUAGES_PROPERTY = "ScannedLanguages";
+  private static final String SCANNED_LANGUAGES_PROPERTY = "ScannedLanguages";
 
   /**
    * Add a language detected to an application (if the language isn't already present)

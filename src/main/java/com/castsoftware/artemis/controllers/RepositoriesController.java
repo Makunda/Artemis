@@ -11,10 +11,10 @@
 
 package com.castsoftware.artemis.controllers;
 
-import com.castsoftware.artemis.repositories.Crawler;
-import com.castsoftware.artemis.repositories.SPackage;
-import com.castsoftware.artemis.repositories.github.Github;
-import com.castsoftware.artemis.repositories.maven.Maven;
+import com.castsoftware.artemis.modules.repositories.Crawler;
+import com.castsoftware.artemis.modules.repositories.SPackage;
+import com.castsoftware.artemis.modules.repositories.github.Github;
+import com.castsoftware.artemis.modules.repositories.maven.Maven;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.Map;
 
 public class RepositoriesController {
 
-  private static Map<String, Crawler> repositoryCrawlers;
+  private static final Map<String, Crawler> repositoryCrawlers;
 
   static {
     repositoryCrawlers = new HashMap<>();

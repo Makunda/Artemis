@@ -13,7 +13,7 @@ package com.castsoftware.artemis.config.detection;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.json.JSONObject;
@@ -23,15 +23,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class LanguageConfiguration {
 
   private static final String CONFIG_FILE_NAME = "language_conf.json";
 
-  private static LanguageConfiguration instance = new LanguageConfiguration();
+  private static final LanguageConfiguration instance = new LanguageConfiguration();
 
-  private Map<String, LanguageProp> languageMap = new HashMap();
+  private final Map<String, LanguageProp> languageMap = new HashMap();
 
   private LanguageConfiguration() {
     try (InputStream inputStream =
@@ -47,7 +48,8 @@ public class LanguageConfiguration {
       String inputStr;
       Gson gson = new Gson();
       StringBuilder responseStrBuilder = new StringBuilder();
-      BufferedReader streamReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+      BufferedReader streamReader =
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
       Type languagePropType = new TypeToken<List<String>>() {}.getType();
 
       // Convert input stream to Json

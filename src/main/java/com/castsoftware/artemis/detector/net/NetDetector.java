@@ -11,25 +11,22 @@
 
 package com.castsoftware.artemis.detector.net;
 
-import com.castsoftware.artemis.config.detection.DetectionProp;
+import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.controllers.api.FrameworkController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.ATree;
-import com.castsoftware.artemis.detector.java.FrameworkTree;
+import com.castsoftware.artemis.detector.java.utils.FrameworkTree;
+import com.castsoftware.artemis.detector.utils.ATree;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.nlp.SupportedLanguage;
+import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class NetDetector extends ADetector {
 
@@ -44,9 +41,9 @@ public class NetDetector extends ADetector {
    * @throws IOException
    * @throws Neo4jQueryException
    */
-  public NetDetector(Neo4jAL neo4jAL, String application)
+  public NetDetector(Neo4jAL neo4jAL, String application, DetectionParameters detectionParameters)
       throws IOException, Neo4jQueryException {
-    super(neo4jAL, application, SupportedLanguage.NET);
+    super(neo4jAL, application, SupportedLanguage.NET, detectionParameters);
   }
 
   @Override
@@ -58,14 +55,14 @@ public class NetDetector extends ADetector {
     while (listIterator.hasNext()) {
       Node n = listIterator.next();
       // Get node in C# or .NET Classes
-      if (!n.hasProperty("Level") ||
-              (!((String) n.getProperty("Level")).equals("C# Class") &&
-              !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
+      if (!n.hasProperty("Level")
+          || (!n.getProperty("Level").equals("C# Class")
+              && !n.getProperty("Level").equals(".NET Class"))) continue;
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       String fullName = (String) n.getProperty(IMAGING_OBJECT_FULL_NAME);
 
-      neo4jAL.logInfo("Inserting "+fullName);
+      neo4jAL.logInfo("Inserting " + fullName);
       frameworkTree.insert(fullName, n);
     }
 
@@ -81,9 +78,9 @@ public class NetDetector extends ADetector {
     while (listIterator.hasNext()) {
       Node n = listIterator.next();
       // Get node in .NET Class Classes
-      if (!n.hasProperty("Level") ||
-              (!((String) n.getProperty("Level")).equals("C# Class") &&
-                      !((String) n.getProperty("Level")).equals(".NET Class"))) continue;
+      if (!n.hasProperty("Level")
+          || (!n.getProperty("Level").equals("C# Class")
+              && !n.getProperty("Level").equals(".NET Class"))) continue;
 
       if (!n.hasProperty(IMAGING_OBJECT_FULL_NAME)) continue;
       if (!n.hasProperty(IMAGING_INTERNAL_TYPE)) continue;
@@ -97,19 +94,9 @@ public class NetDetector extends ADetector {
     return frameworkTree;
   }
 
-
-  /**
-   * Find the framework node that match the best the object
-   * @param fullName FullName of the object to match
-   * @param internalType Internal Type of the object
-   * @return The Framework node is found, null otherwise
-   */
-  private FrameworkNode findFrameworkNode(String fullName, String internalType) throws Neo4jQueryException, Neo4jBadNodeFormatException {
-    return FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName, internalType);
-  }
-
   /**
    * Extract part of the application considered as utility.
+   *
    * @return
    * @throws IOException
    * @throws Neo4jQueryException
@@ -135,14 +122,16 @@ public class NetDetector extends ADetector {
         // Add to framework list
         FrameworkNode fn = findFrameworkNode(fullName, internalType);
 
-        if(fn == null) continue;
+        if (fn == null) continue;
 
-        neo4jAL.logInfo(String.format("Matching framework : %s for node with name %s", fn.getPattern(), fullName));
+        neo4jAL.logInfo(
+            String.format(
+                "Matching framework : %s for node with name %s", fn.getPattern(), fullName));
         // Apply properties on node
         tagNodeWithFramework(n, fn);
 
         // Add framework to the list
-        if(!detectedFrameworkPattern.contains(fn.getPattern())) {
+        if (!detectedFrameworkPattern.contains(fn.getPattern())) {
           frameworkNodeList.add(fn);
           detectedFrameworkPattern.add(fn.getPattern());
         }
@@ -151,25 +140,35 @@ public class NetDetector extends ADetector {
         listIterator.remove();
 
       } catch (Exception | Neo4jBadNodeFormatException e) {
-         neo4jAL.logError(String.format("An exception was thrown trying to find a framework for node with name : %s [%s]", fullName, internalType), e);
+        neo4jAL.logError(
+            String.format(
+                "An exception was thrown trying to find a framework for node with name : %s [%s]",
+                fullName, internalType),
+            e);
       }
     }
 
     return frameworkNodeList;
   }
 
-  @Override
-  public void extractUnknownApp() {
-
+  /**
+   * Find the framework node that match the best the object
+   *
+   * @param fullName FullName of the object to match
+   * @param internalType Internal Type of the object
+   * @return The Framework node is found, null otherwise
+   */
+  private FrameworkNode findFrameworkNode(String fullName, String internalType)
+      throws Neo4jQueryException, Neo4jBadNodeFormatException {
+    return FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName, internalType);
   }
 
   @Override
-  public void extractOtherApps() {
-
-  }
+  public void extractUnknownApp() {}
 
   @Override
-  public void extractUnknownNonUtilities() {
+  public void extractOtherApps() {}
 
-  }
+  @Override
+  public void extractUnknownNonUtilities() {}
 }

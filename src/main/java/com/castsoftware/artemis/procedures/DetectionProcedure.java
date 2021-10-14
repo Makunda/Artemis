@@ -12,13 +12,11 @@
 package com.castsoftware.artemis.procedures;
 
 import com.castsoftware.artemis.controllers.DetectionController;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.ProcedureException;
-import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.FrameworkResult;
 import com.castsoftware.artemis.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,36 +52,7 @@ public class DetectionProcedure {
           DetectionController.launchDetection(nal, applicationContext, language, jsonParameters);
 
       return detectedFrameworks.stream();
-    } catch (Exception
-        | Neo4jConnectionError
-        | Neo4jQueryException
-        | Neo4jBadRequestException
-        | MissingFileException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
-    }
-  }
-
-  @Procedure(value = "artemis.launch.bulkDetection", mode = Mode.WRITE)
-  @Description(
-      "artemis.launch.bulkDetection(String Language) - Launch Detection for a specific language")
-  public Stream<FrameworkResult> bulkDetection(
-      @Name(value = "Language") String language,
-      @Name(value = "FlagNodes", defaultValue = "true") Boolean flagNodes)
-      throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<FrameworkResult> detectedFrameworks =
-          DetectionController.launchBulkDetection(nal, language, flagNodes);
-
-      return detectedFrameworks.stream();
-    } catch (Exception
-        | Neo4jConnectionError
-        | Neo4jQueryException
-        | Neo4jBadRequestException
-        | MissingFileException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;
@@ -106,7 +75,7 @@ public class DetectionProcedure {
               "Model was trained in '%d' milliseconds.", Duration.between(start, stop).toMillis());
 
       return Stream.of(new OutputMessage(message));
-    } catch (Exception | Neo4jConnectionError | NLPIncorrectConfigurationException e) {
+    } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

@@ -11,8 +11,8 @@
 
 package com.castsoftware.artemis.config;
 
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,27 +34,11 @@ public class Configuration {
     // Add the Node configuration
     String content = UserConfiguration.get(neo4jAL, property);
 
-    if ( content == null) {
+    if (content == null) {
       content = Configuration.get(property);
     }
 
     return content;
-  }
-
-  /**
-   * Change the value of a property in the configuration
-   * @param neo4jAL Neo4j Access Layer
-   * @param property Name of the property to change
-   * @param value Value
-   * @throws MissingFileException
-   */
-  public static void setEverywhere(Neo4jAL neo4jAL, String property, String value) throws MissingFileException {
-    try {
-      UserConfiguration.set(neo4jAL, property, value);
-    } catch (Exception ignored) {
-      neo4jAL.logInfo("Failed to set the property in User Configuration.");
-    }
-    Configuration.set(property, value);
   }
 
   /**
@@ -68,14 +52,15 @@ public class Configuration {
     PROPERTIES = loadConfiguration();
 
     // Assert Properties isn't null
-    if(PROPERTIES == null) return null;
+    if (PROPERTIES == null) return null;
 
-    if(!PROPERTIES.containsKey(key)) return null;
+    if (!PROPERTIES.containsKey(key)) return null;
     return PROPERTIES.get(key).toString();
   }
 
   /**
    * Load the configuration from the properties file
+   *
    * @return {Properties}
    */
   private static Properties loadConfiguration() {
@@ -98,6 +83,24 @@ public class Configuration {
       System.err.println(ex.getMessage());
     }
     return null;
+  }
+
+  /**
+   * Change the value of a property in the configuration
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param property Name of the property to change
+   * @param value Value
+   * @throws MissingFileException
+   */
+  public static void setEverywhere(Neo4jAL neo4jAL, String property, String value)
+      throws MissingFileException {
+    try {
+      UserConfiguration.set(neo4jAL, property, value);
+    } catch (Exception ignored) {
+      neo4jAL.logInfo("Failed to set the property in User Configuration.");
+    }
+    Configuration.set(property, value);
   }
 
   /**

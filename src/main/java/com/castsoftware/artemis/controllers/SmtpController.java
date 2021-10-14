@@ -13,8 +13,8 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.UserConfiguration;
-import com.castsoftware.artemis.database.Neo4jAL;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
