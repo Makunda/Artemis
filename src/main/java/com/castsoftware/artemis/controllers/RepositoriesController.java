@@ -15,7 +15,6 @@ import com.castsoftware.artemis.modules.repositories.Crawler;
 import com.castsoftware.artemis.modules.repositories.SPackage;
 import com.castsoftware.artemis.modules.repositories.github.Github;
 import com.castsoftware.artemis.modules.repositories.maven.Maven;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,16 +50,8 @@ public class RepositoriesController {
       }
 
       crawler = repositoryCrawlers.get(repo);
-      try {
-        List<? extends SPackage> packageDetected = crawler.getResults(packageName, 2);
-        returnPackage.addAll(packageDetected);
-      } catch (UnirestException e) {
-        String msg =
-            String.format(
-                "The request to repository with name '%s' failed for the reason : %s",
-                repo, e.getMessage());
-        System.err.println(msg);
-      }
+      List<? extends SPackage> packageDetected = crawler.getResults(packageName, 2);
+      returnPackage.addAll(packageDetected);
     }
 
     return returnPackage;

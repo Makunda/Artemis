@@ -93,6 +93,8 @@ public abstract class ADetector {
     if (!Files.exists(modelFile)) {
       neo4jAL.logInfo(String.format("[5-2/9] Training the NLP¨Engine for %s...", language.toString()));
       this.nlpEngine.train();
+    } else {
+      neo4jAL.logInfo(String.format("[5-2/9] NLP¨Engine already trained for %s...", language.toString()));
     }
   }
 
@@ -134,6 +136,7 @@ public abstract class ADetector {
       throws IOException, Neo4jQueryException {
 
     // Initialize the controllers
+    this.language = language;
     this.neo4jAL = neo4jAL;
     this.application = application;
     this.detectionParameters = parameters;
@@ -365,7 +368,13 @@ public abstract class ADetector {
             languageProperties.getName()));
     neo4jAL.logInfo(
         String.format(
-            "| Online Mode (Google search, repository, etc..) set on  : %s ", getOnlineMode()));
+            "| Pythia Mode (Search on Pythia etc..) set on  : %s ", getPythiaMode()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Online Mode (Google search, Duckduck go etc..) set on  : %s ", getOnlineMode()));
+    neo4jAL.logInfo(
+        String.format(
+            "| Repository Mode (Maven, npm, etc..) set on  : %s ", getRepositoryMode()));
     neo4jAL.logInfo(
         String.format(
             "| Persistent Mode set on                                 : %s ", getPersistentMode()));
@@ -402,8 +411,28 @@ public abstract class ADetector {
   /** Extract unknown non utilities */
   public abstract void extractUnknownNonUtilities();
 
+  /**
+   * Get Online mode
+   * @return
+   */
   public boolean getOnlineMode() {
     return detectionParameters.getOnlineMode();
+  }
+
+  /**
+   * Get pythia Mode
+   * @return
+   */
+  public boolean getPythiaMode() {
+    return detectionParameters.getPythiaMode();
+  }
+
+  /**
+   * Get the Repository mode
+   * @return
+   */
+  public boolean getRepositoryMode() {
+    return detectionParameters.getRepositoryMode();
   }
 
   public boolean getPersistentMode() {
@@ -474,6 +503,8 @@ public abstract class ADetector {
    * @param pf Framework to  save
    */
   protected void savePythiaFramework(PythiaFramework pf) {
+    neo4jAL.logInfo(String.format("Sending Framework '%s' to Pythia.", pf.name));
+
     if(activatedPythia) {
       String language = this.language.toString();
       try {

@@ -12,7 +12,7 @@
 package com.castsoftware.artemis.modules.repositories.github;
 
 import com.castsoftware.artemis.modules.repositories.SPackage;
-import org.json.JSONObject;
+import kong.unirest.json.JSONObject;
 
 public class GithubPackage implements SPackage {
 

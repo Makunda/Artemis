@@ -12,9 +12,9 @@
 package com.castsoftware.artemis.modules.repositories.maven;
 
 import com.castsoftware.artemis.modules.repositories.Crawler;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import kong.unirest.json.JSONArray;
+import kong.unirest.json.JSONObject;
+
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,10 +31,9 @@ public class Maven extends Crawler {
    * @param search Name of the packet to search
    * @param limit Max return items
    * @return The list of the Maven package detected
-   * @throws UnirestException
    */
   @Override
-  public List<MavenPackage> getResults(String search, Integer limit) throws UnirestException {
+  public List<MavenPackage> getResults(String search, Integer limit) {
     List<MavenPackage> packages = getMavenPackages(search);
 
     if (packages.isEmpty()) return packages;
@@ -48,9 +47,8 @@ public class Maven extends Crawler {
    *
    * @param search Name of the package to search
    * @return The list of best matching packets
-   * @throws UnirestException
    */
-  public List<MavenPackage> getMavenPackages(String search) throws UnirestException {
+  public List<MavenPackage> getMavenPackages(String search) {
     StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
     JSONObject jsonResult = this.getRequest(urlBuilder.toString()).getObject();
     return buildPackageList((JSONArray) jsonResult.getJSONObject("response").get("docs"));

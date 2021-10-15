@@ -11,9 +11,9 @@
 
 package com.castsoftware.artemis.modules.repositories;
 
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+
+import kong.unirest.JsonNode;
+import kong.unirest.Unirest;
 
 import java.util.List;
 
@@ -25,17 +25,15 @@ public abstract class Crawler {
    * @param limit Max return items
    * @return List of package
    */
-  public abstract List<? extends SPackage> getResults(String search, Integer limit)
-      throws UnirestException;
+  public abstract List<? extends SPackage> getResults(String search, Integer limit);
 
   /**
    * Get the body of the request
    *
    * @param request Url to query
    * @return The body of the request as a JSONode
-   * @throws UnirestException If the query failed to execute
    */
-  protected JsonNode getRequest(String request) throws UnirestException {
+  protected JsonNode getRequest(String request){
     return Unirest.get(request).header("Content-Type", "application/json").asJson().getBody();
   }
 }

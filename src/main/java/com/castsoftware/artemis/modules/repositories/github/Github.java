@@ -13,9 +13,9 @@ package com.castsoftware.artemis.modules.repositories.github;
 
 import com.castsoftware.artemis.modules.repositories.Crawler;
 import com.castsoftware.artemis.modules.repositories.SPackage;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import kong.unirest.json.JSONArray;
+import kong.unirest.json.JSONObject;
+
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,7 +29,7 @@ public class Github extends Crawler {
   private List<SPackage> resultPackages;
 
   @Override
-  public List<GithubPackage> getResults(String search, Integer limit) throws UnirestException {
+  public List<GithubPackage> getResults(String search, Integer limit) {
     List<GithubPackage> packages = getGithubPackages(search);
 
     if (packages == null || packages.isEmpty()) return null;
@@ -43,7 +43,7 @@ public class Github extends Crawler {
    *
    * @return
    */
-  public List<GithubPackage> getGithubPackages(String search) throws UnirestException {
+  public List<GithubPackage> getGithubPackages(String search) {
     StringBuilder urlBuilder = new StringBuilder().append(URL).append(search).append(OPTIONS);
     JSONObject jsonResult = getRequest(urlBuilder.toString()).getObject();
     return buildPackageList((JSONArray) jsonResult.get("items"));

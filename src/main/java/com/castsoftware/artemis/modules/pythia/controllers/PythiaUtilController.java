@@ -43,6 +43,6 @@ public class PythiaUtilController {
       return response.getData();
     }
     // Response is not a success
-    throw new PythiaException("Failed to get the status", response.getErrors());
+    throw new PythiaException("Failed to get the status", response.getErrors().toArray(String[]::new));
   }
 }

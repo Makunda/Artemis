@@ -54,8 +54,14 @@ public class DetectionController {
       Neo4jAL neo4jAL, String application, String language, String detectionPropAsJson)
       throws Neo4jQueryException, Exception, Neo4jBadRequestException {
 
-    Optional<DetectionParameters> detectionProp =
-        DetectionParameters.deserializeOrDefault(detectionPropAsJson);
+    Optional<DetectionParameters> detectionProp;
+
+    try {
+      detectionProp = DetectionParameters.deserializeOrDefault(detectionPropAsJson);
+    } catch (IOException error) {
+      neo4jAL.logError("Failed to deserialized the parameters that have been passed.", error);
+      throw new Exception("Invalid parameters provided");
+    }
 
     // Detection parameters no found
     if (detectionProp.isEmpty()) {

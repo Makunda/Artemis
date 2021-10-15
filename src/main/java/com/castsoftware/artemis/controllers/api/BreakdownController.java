@@ -11,6 +11,7 @@
 
 package com.castsoftware.artemis.controllers.api;
 
+import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.detector.ADetector;
 import com.castsoftware.artemis.detector.DetectorFactory;
 import com.castsoftware.artemis.detector.utils.ATree;
@@ -54,7 +55,7 @@ public class BreakdownController {
    * @param application Name of the application
    * @param language Language to be used
    * @param externality Externality of the breakdown
-   * @return
+   * @return The tree listing the classes
    * @throws IOException
    * @throws Neo4jQueryException
    */
@@ -65,9 +66,10 @@ public class BreakdownController {
     if (!SupportedLanguage.has(language)) return null;
     SupportedLanguage sl = SupportedLanguage.getLanguage(language);
 
-    ADetector aDetector = DetectorFactory.getDetector(neo4jAL, application, sl);
-    ATree tree = null;
+    DetectionParameters dp = DetectionParameters.getDefault();
+    ADetector aDetector = DetectorFactory.getDetector(neo4jAL, application, sl, dp);
 
+    ATree tree = null;
     if (externality) {
       tree = aDetector.getExternalBreakdown();
     } else {

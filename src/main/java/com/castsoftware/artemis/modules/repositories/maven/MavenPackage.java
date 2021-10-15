@@ -12,10 +12,13 @@
 package com.castsoftware.artemis.modules.repositories.maven;
 
 import com.castsoftware.artemis.modules.repositories.SPackage;
-import org.json.JSONObject;
+import kong.unirest.json.JSONObject;
 
 import java.util.Arrays;
 
+/**
+ * Package structure for the Maven Repository
+ */
 public class MavenPackage implements SPackage {
 
   private static final String TYPE = "MAVEN PACKAGE";

@@ -12,16 +12,21 @@
 package com.castsoftware.artemis.modules.pythia.models.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.json.JSONObject;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PythiaApiResponse<T> {
 
   private final Integer status;
   private T data;
   private String message = "";
-  private String[] errors = new String[0];
+  private List<String> errors = new ArrayList<>();
   private Boolean success = false;
 
   /**
@@ -54,7 +59,12 @@ public class PythiaApiResponse<T> {
 
     // Check for errors
     if (body.has("errors")) {
-      this.errors = gson.fromJson(body.getString("errors"), String[].class);
+      try {
+        Type typeList = new TypeToken<List<String[]>>() {}.getType();
+        this.errors = gson.fromJson(body.getString("errors"), typeList);
+      } catch (Exception err) {
+        this.errors.add("Failed to retrieve the error List. Bad formatting.");
+      }
     }
   }
 
@@ -81,7 +91,7 @@ public class PythiaApiResponse<T> {
    *
    * @return List of the errors
    */
-  public String[] getErrors() {
+  public List<String> getErrors() {
     return errors;
   }
 

@@ -39,7 +39,7 @@ public class DetectionProcedure {
 
   @Procedure(value = "artemis.launch.detection", mode = Mode.WRITE)
   @Description(
-      "artemis.launch.detection(String ApplicationContext, String Language) - Launch Detection for a specific language")
+      "artemis.launch.detection(String ApplicationContext, String Language, String parameters) - Launch Detection for a specific language")
   public Stream<FrameworkResult> launchDetection(
       @Name(value = "ApplicationContext") String applicationContext,
       @Name(value = "Language", defaultValue = "") String language,

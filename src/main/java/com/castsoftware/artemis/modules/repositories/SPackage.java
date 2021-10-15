@@ -11,8 +11,12 @@
 
 package com.castsoftware.artemis.modules.repositories;
 
-import org.json.JSONObject;
 
+import kong.unirest.json.JSONObject;
+
+/**
+ * Package interface for the repository crawlers
+ */
 public interface SPackage {
 
   String getFullName();

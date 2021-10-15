@@ -13,6 +13,7 @@ package com.castsoftware.artemis.config.detection;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -48,11 +49,11 @@ public class DetectionParameters {
    * @param parameters Parameters as a string to deserialize
    * @return A DetectionParameters initialized with the parameter, or null if the process failed
    */
-  public static Optional<DetectionParameters> deserializeOrDefault(String parameters) {
+  public static Optional<DetectionParameters> deserializeOrDefault(String parameters) throws JsonProcessingException {
     // Provided an empty configuration
     if (parameters.isBlank()) return Optional.empty();
 
-    try {
+
       // Deserialize
       ObjectMapper objectMapper = new ObjectMapper();
       DetectionParameters dp = objectMapper.readValue(parameters, DetectionParameters.class);
@@ -61,26 +62,42 @@ public class DetectionParameters {
       dp.pythiaMode = (!dp.pythiaToken.isBlank() && !dp.pythiaURL.isBlank());
 
       return Optional.of(dp);
-    } catch (IOException e) {
-      System.err.printf(
-          "Failed to deserialize the configuration provided. Error : %s ", e.getMessage());
-
-      return Optional.empty();
-    }
   }
 
-  @JsonProperty("to_exclude")
+  /***
+   * Get a basic default configuration of the detection parameters
+   * @return The Parameter class
+   */
+  public static DetectionParameters getDefault() {
+    DetectionParameters dp = new DetectionParameters();
+    // Pythia
+    dp.pythiaURL = "";
+    dp.pythiaToken = "";
+    dp.pythiaMode = false;
+
+    // Online
+    dp.onlineMode = false;
+    dp.repositoryMode = false;
+
+    // Exclusion
+    dp.patternFullNameToExclude = new ArrayList<>();
+    dp.patternObjectType = new ArrayList<>();
+
+    return dp;
+  }
+
+  @JsonProperty("ToExclude")
   private void unpackToExclude(Map<String, Object> arrangement) {
     try {
-      patternFullNameToExclude = (List<String>) arrangement.get("regex_object_fullName");
+      patternFullNameToExclude = (List<String>) arrangement.get("RegexRuleFullName");
     } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of to_exclude.regex_object_fullName");
+      System.err.println("Failed to get the value of ToExclude.RegexRuleFullName");
     }
 
     try {
-      patternObjectType = (List<String>) arrangement.get("regex_object_type");
+      patternObjectType = (List<String>) arrangement.get("RegexRuleType");
     } catch (ClassCastException e) {
-      System.err.println("Failed to get the value of to_exclude.regex_object_type");
+      System.err.println("Failed to get the value of ToExclude.RegexRuleType");
     }
   }
 

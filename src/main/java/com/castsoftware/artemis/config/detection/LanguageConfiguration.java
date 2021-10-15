@@ -16,7 +16,7 @@ import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.json.JSONObject;
+import kong.unirest.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
