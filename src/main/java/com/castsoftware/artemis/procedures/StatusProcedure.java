@@ -18,6 +18,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.modules.pythia.Pythia;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.BooleanResult;
 import com.castsoftware.artemis.results.FrameworkResult;
@@ -49,7 +50,7 @@ public class StatusProcedure {
       String status;
       try {
         status = pythia.getStatus();
-      } catch (PythiaException e) {
+      } catch (PythiaException | PythiaResponse e) {
         status = "UNREACHABLE";
         nal.logError("Checking the status produced an exception.", e);
       }

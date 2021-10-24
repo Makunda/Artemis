@@ -11,25 +11,114 @@
 
 package com.castsoftware.artemis.modules.pythia.models.api;
 
+import com.google.gson.*;
+import kong.unirest.json.JSONObject;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /** Pythia Interface for framework creation */
-public class PythiaFramework {
+public class PythiaFramework extends PythiaObject implements JsonDeserializer<PythiaFramework> {
   public String name;
+  public String imagingName;
+
   public String description;
   public String location;
 
-  public PythiaPattern[] patterns;
+  public List<String> tags;
+
+  public Boolean isRoot;
+
   public String detectionData;
 
   public PythiaFramework(
       String name,
+      String imagingName,
       String description,
       String location,
-      PythiaPattern[] patterns,
       String detectionData) {
     this.name = name;
+    this.imagingName = imagingName;
     this.description = description;
     this.location = location;
-    this.patterns = patterns;
     this.detectionData = detectionData;
+    this.isRoot = false;
+    this.tags = new ArrayList<>();
+  }
+
+  public void setIsRoot(Boolean value) {
+    this.isRoot = value;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public String getLocation() {
+    return location;
+  }
+
+  public String getImagingName() {
+    return imagingName;
+  }
+
+  public List<String> getTags() {
+    return tags;
+  }
+
+  public Boolean getRoot() {
+    return isRoot;
+  }
+
+
+  public String getDetectionData() {
+    return detectionData;
+  }
+
+  /**
+   * Return the framework as a JSON
+   * @return JSON formatted framework
+   */
+  @Override
+  public JSONObject toJson() {
+    JSONObject object = new JSONObject();
+    object.put("name", name);
+    object.put("imagingName", imagingName);
+    object.put("description", description);
+    object.put("location", location);
+    object.put("detectionData", detectionData);
+    return object;
+  }
+
+  @Override
+  public PythiaFramework deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+
+    JsonObject root = jsonElement.getAsJsonObject();
+
+    // Get elements in the JSON
+    String name = root.get("name").getAsString();
+    String imagingName = root.get("imagingName").getAsString();
+    String description = root.get("description").getAsString();
+    String location = root.get("location").getAsString();
+    String detectionData = root.get("detectionData").getAsString();
+    Boolean isRoot = root.get("isRoot").getAsBoolean();
+
+
+
+    // Create the framework an assign the variables
+    PythiaFramework pf = new PythiaFramework(name,
+            imagingName,
+            description,
+            location,
+            detectionData);
+    pf.setIsRoot(isRoot);
+
+    return pf;
   }
 }

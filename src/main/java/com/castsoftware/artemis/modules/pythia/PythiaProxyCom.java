@@ -11,6 +11,8 @@
 
 package com.castsoftware.artemis.modules.pythia;
 
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaObject;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaApiResponse;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
 import kong.unirest.HttpResponse;
@@ -34,45 +36,43 @@ public class PythiaProxyCom {
   }
 
   /**
-   * GET Request proxified
-   *
-   * @param <T>
-   * @param relativeURL Relative url to query
-   * @param type Type of the object returned
-   */
-  public <T> PythiaApiResponse<T> get(String relativeURL, Class<T> type) {
-    String url = parameters.getUrl() + relativeURL;
-
-    HttpResponse<JsonNode> response = Unirest.get(url).headers(this.getHeaders()).asJson();
-
-    return new PythiaApiResponse(response, type);
-  }
-
-  /**
    * Define the headers based on the configuration
    *
    * @return Headers for Pythia
    */
   private Map<String, String> getHeaders() {
     Map<String, String> headers = new HashMap<>();
-    headers.put("accept", "application/json");
+    headers.put("Content-Type", "application/json");
+    headers.put("Accept", "application/json");
     headers.put("Authorization", "Bearer " + parameters.getToken());
     return headers;
   }
 
   /**
+   * GET Request proxified
+   *
+   * @param <T> Type of the class to deserialize
+   * @param relativeURL Relative url to query
+   * @param type Type of the object returned
+   */
+  public <T> PythiaApiResponse<T> get(String relativeURL, Class<T> type) throws PythiaResponse {
+    String url = parameters.getUrl() + relativeURL;
+    HttpResponse<JsonNode> response = Unirest.get(url).headers(this.getHeaders()).asJson();
+    return new PythiaApiResponse<T>(response, type);
+  }
+
+  /**
    * POST Request proxified
    *
-   * @param <T>
+   * @param <T> Type
    * @param relativeURL Relative url to query
    * @param data Data to pass to the API
    */
-  public <T> PythiaApiResponse<T> post(String relativeURL, Object data, Class<T> type) {
+  public <T> PythiaApiResponse<T> post(String relativeURL, PythiaObject data, Class<T> type) throws PythiaResponse {
     String url = parameters.getUrl() + relativeURL;
 
     HttpResponse<JsonNode> response =
-        Unirest.post(url).headers(this.getHeaders()).body(data).asJson();
-
-    return new PythiaApiResponse(response, type);
+        Unirest.post(url).headers(this.getHeaders()).body(data.toJson()).asJson();
+    return new PythiaApiResponse<T>(response, type);
   }
 }

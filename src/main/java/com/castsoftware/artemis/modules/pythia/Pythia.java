@@ -12,10 +12,16 @@
 package com.castsoftware.artemis.modules.pythia;
 
 import com.castsoftware.artemis.modules.pythia.controllers.PythiaFrameworkController;
+import com.castsoftware.artemis.modules.pythia.controllers.PythiaLanguageController;
 import com.castsoftware.artemis.modules.pythia.controllers.PythiaUtilController;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
+
+import java.util.List;
 
 public class Pythia {
 
@@ -23,29 +29,54 @@ public class Pythia {
   private final PythiaParameters parameters;
   private final PythiaUtilController utilController;
   private final PythiaFrameworkController frameworkController;
+  private final PythiaLanguageController languageController;
 
   /**
    * Get the status of the Pythia connection
    * @return The API Status
    * @throws PythiaException If the request failed
    */
-  public String getStatus() throws PythiaException {
+  public String getStatus() throws PythiaException, PythiaResponse {
     return utilController.getAuthStatus();
   }
 
   /**
    * Create a Framework on Pythia
-   * @param toCreate Framework to create
+   * @param framework Framework to create
+   * @param patterns Framework to create
    * @return The created framework
    * @throws PythiaException If the request failed
    */
-  public PythiaFramework createFramework(PythiaFramework toCreate) throws PythiaException {
-    return frameworkController.createFramework(toCreate);
+  public PythiaFramework createFramework(PythiaFramework framework, List<PythiaPattern> patterns) throws PythiaException, PythiaResponse {
+    return frameworkController.createFramework(framework, patterns);
   }
 
   /**
-   * Constructor of the Pythia Modulde
+   * Find a framework based on its pattern and Language
+   * @param pattern Pattern to search
+   * @param language Language to query
+   * @return The Framework
+   * @throws PythiaException if nothing has been found
+   * @throws PythiaResponse If the query produced an error
+   */
+  public PythiaFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
+    return frameworkController.findFrameworkByPattern(pattern, language);
+  }
+
+  /**
+   * Find a supported language in the Pythia Database
    *
+   * @param language Language to search
+   * @return A pythia Language object
+   * @throws PythiaException if nothing has been found
+   * @throws PythiaResponse If the query produced an error
+   */
+  public PythiaLanguage findLanguage(String language) throws PythiaResponse, PythiaException {
+    return languageController.searchLanguage(language);
+  }
+
+  /**
+   * Constructor of the Pythia Module
    * @param url Url to Pythia
    * @param token Token of Pythia
    */
@@ -54,5 +85,6 @@ public class Pythia {
 
     this.utilController = new PythiaUtilController(this.parameters);
     this.frameworkController = new PythiaFrameworkController(this.parameters);
+    this.languageController = new PythiaLanguageController(this.parameters);
   }
 }

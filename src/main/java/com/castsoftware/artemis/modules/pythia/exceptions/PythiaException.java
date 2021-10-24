@@ -33,4 +33,9 @@ public class PythiaException extends Throwable {
   public PythiaException(String message, String[] errors) {
     super(String.format("%s %s. Errors: %s.", APPEND_AUTO, message, String.join(", ", errors)));
   }
+
+
+  public PythiaException(String message, String error) {
+    super(String.format("%s %s. Errors: %s.", APPEND_AUTO, message, error));
+  }
 }

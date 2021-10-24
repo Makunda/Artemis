@@ -20,7 +20,6 @@ import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.utils.ATree;
-import com.castsoftware.artemis.detector.utils.DetectorTypeMapper;
 import com.castsoftware.artemis.detector.utils.DetectorUtil;
 import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
@@ -34,7 +33,10 @@ import com.castsoftware.artemis.modules.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.modules.nlp.saver.NLPSaver;
 import com.castsoftware.artemis.modules.pythia.Pythia;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.reports.ReportGenerator;
 import org.neo4j.graphdb.Node;
@@ -76,48 +78,12 @@ public abstract class ADetector {
 
   /** Pythia communication * */
   protected boolean activatedPythia = false;
+
   protected Pythia pythiaController;
+  protected PythiaLanguage pythiaLanguage;
 
   protected GoogleParser googleParser;
   protected LanguageProp languageProperties;
-
-  /**
-   * Intialize the NLP Engine
-   * @throws IOException
-   */
-  public void initNLP() throws IOException {
-    this.nlpSaver = new NLPSaver(neo4jAL, application, language.toString());
-    this.nlpEngine = new NLPEngine(neo4jAL, language);
-
-    Path modelFile = this.nlpEngine.checkIfModelExists();
-    if (!Files.exists(modelFile)) {
-      neo4jAL.logInfo(String.format("[5-2/9] Training the NLP¨Engine for %s...", language.toString()));
-      this.nlpEngine.train();
-    } else {
-      neo4jAL.logInfo(String.format("[5-2/9] NLP¨Engine already trained for %s...", language.toString()));
-    }
-  }
-
-  /**
-   * Initialize the Pythia connection
-   */
-  public void initPythia() {
-    // If Pythia is not activated, log and return
-    if(!this.detectionParameters.getPythiaMode()) {
-      neo4jAL.logInfo("Pythia is deactivated. Skipping.");
-      return;
-    }
-
-    // Test Pythia communication
-    try {
-      neo4jAL.logInfo("Pythia is activated. Initializing.");
-      String status = this.pythiaController.getStatus();
-      neo4jAL.logInfo(String.format("Successful communication with Pythia. Status : %s", status));
-      this.activatedPythia = true;
-    } catch (PythiaException e) {
-      neo4jAL.logInfo("Failed to reach Pythia. Turning off Pythia mode");
-    }
-  }
 
   /**
    * Detector constructor
@@ -150,8 +116,7 @@ public abstract class ADetector {
     neo4jAL.logInfo("[2/9] Retrieving the list of candidates nodes...");
     // To investigate nodes
     this.toInvestigateNodes = new ArrayList<>();
-    // Shuffle nodes to avoid being busted by the google bot detector
-    Collections.shuffle(this.toInvestigateNodes);
+
 
     // Check pythia
     neo4jAL.logInfo("[3/9] Check pythia...");
@@ -176,6 +141,82 @@ public abstract class ADetector {
 
     getNodes();
     neo4jAL.logInfo("[9/9] The instantiation is successful !");
+  }
+
+  /** Initialize the Pythia connection */
+  public void initPythia() {
+    try {
+      // If Pythia is not activated, log and return
+      if (!this.detectionParameters.getPythiaMode()) {
+        neo4jAL.logInfo("Pythia is deactivated. Skipping.");
+        return;
+      }
+
+      // Test Pythia communication
+      try {
+        neo4jAL.logInfo("Pythia :: Pythia is activated. Initializing.");
+        String status = this.pythiaController.getStatus();
+        neo4jAL.logInfo(String.format("Successful communication with Pythia. Status : %s", status));
+      } catch (PythiaException | PythiaResponse e) {
+        neo4jAL.logError("Pythia :: Failed to reach Pythia. Turning off Pythia mode.", e);
+        this.activatedPythia = false;
+        return;
+      }
+
+      // Get Pythia Language
+      String language = this.language.toString();
+
+      // Get the for the detection language if activated
+      try {
+        neo4jAL.logInfo("Pythia :: Looking for a language.");
+
+        // Find the language
+        pythiaLanguage = pythiaController.findLanguage(language);
+
+        // Make sure the result is not empty
+        if (pythiaLanguage == null) {
+          throw new Exception("Pythia language is null");
+        }
+
+        // Notify in the report
+        neo4jAL.logInfo(
+            String.format(
+                "Pythia :: Pythia found a corresponding language for the detector. Language : %s",
+                pythiaLanguage.toJson().toString()));
+      } catch (Exception | PythiaResponse | PythiaException pythiaResponse) {
+        neo4jAL.logError(
+            String.format("Pythia :: Failed to find '%s' language on pythia .", language),
+            pythiaResponse);
+        this.activatedPythia = false;
+        return;
+      }
+
+      // If everything is a success return true
+      this.activatedPythia = true;
+    } catch (Exception e) {
+      this.neo4jAL.logError("Pythia :: An error occurred during the initialisation of pythia.", e);
+      this.activatedPythia = false;
+    }
+  }
+
+  /**
+   * Initialize the NLP Engine
+   *
+   * @throws IOException
+   */
+  public void initNLP() throws IOException {
+    this.nlpSaver = new NLPSaver(neo4jAL, application, language.toString());
+    this.nlpEngine = new NLPEngine(neo4jAL, language);
+
+    Path modelFile = this.nlpEngine.checkIfModelExists();
+    if (!Files.exists(modelFile)) {
+      neo4jAL.logInfo(
+          String.format("[5-2/9] Training the NLP¨Engine for %s...", language.toString()));
+      this.nlpEngine.train();
+    } else {
+      neo4jAL.logInfo(
+          String.format("[5-2/9] NLP¨Engine already trained for %s...", language.toString()));
+    }
   }
 
   /**
@@ -251,8 +292,23 @@ public abstract class ADetector {
    */
   public void tagNodeWithFramework(Node n, FrameworkNode frameworkNode) throws Neo4jQueryException {
     DetectorUtil.applyNodeProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
-    DetectorUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
     DetectorUtil.applyCategory(n, frameworkNode.getCategory());
+    DetectorUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
+    DetectorUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
+  }
+
+  /**
+   * Apply a Pythia framework on a group of nodes
+   *
+   * @param n Node to tagDetection for pattern
+   * @param frameworkNode Framework node
+   * @throws Neo4jQueryException
+   */
+  public void tagNodeWithPythia(Node n, PythiaFramework frameworkNode) throws Neo4jQueryException {
+    DetectorUtil.applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
+    DetectorUtil.applyCategory(n, frameworkNode.getImagingName());
+    DetectorUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
+    DetectorUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
   }
 
   /**
@@ -367,14 +423,12 @@ public abstract class ADetector {
             "| Language of the detection is                           : %s ",
             languageProperties.getName()));
     neo4jAL.logInfo(
-        String.format(
-            "| Pythia Mode (Search on Pythia etc..) set on  : %s ", getPythiaMode()));
+        String.format("| Pythia Mode (Search on Pythia etc..) set on  : %s ", getPythiaMode()));
     neo4jAL.logInfo(
         String.format(
             "| Online Mode (Google search, Duckduck go etc..) set on  : %s ", getOnlineMode()));
     neo4jAL.logInfo(
-        String.format(
-            "| Repository Mode (Maven, npm, etc..) set on  : %s ", getRepositoryMode()));
+        String.format("| Repository Mode (Maven, npm, etc..) set on  : %s ", getRepositoryMode()));
     neo4jAL.logInfo(
         String.format(
             "| Persistent Mode set on                                 : %s ", getPersistentMode()));
@@ -406,21 +460,11 @@ public abstract class ADetector {
   public abstract void extractUnknownApp();
 
   /** Extract unknown non utilities */
-  public abstract void extractOtherApps();
-
-  /** Extract unknown non utilities */
   public abstract void extractUnknownNonUtilities();
 
   /**
-   * Get Online mode
-   * @return
-   */
-  public boolean getOnlineMode() {
-    return detectionParameters.getOnlineMode();
-  }
-
-  /**
    * Get pythia Mode
+   *
    * @return
    */
   public boolean getPythiaMode() {
@@ -428,7 +472,17 @@ public abstract class ADetector {
   }
 
   /**
+   * Get Online mode
+   *
+   * @return
+   */
+  public boolean getOnlineMode() {
+    return detectionParameters.getOnlineMode();
+  }
+
+  /**
    * Get the Repository mode
+   *
    * @return
    */
   public boolean getRepositoryMode() {
@@ -442,6 +496,9 @@ public abstract class ADetector {
   public boolean getLearningMode() {
     return Boolean.parseBoolean(Configuration.get("artemis.learning_mode"));
   }
+
+  /** Extract unknown non utilities */
+  public abstract void extractOtherApps();
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -478,14 +535,13 @@ public abstract class ADetector {
     }
 
     // Todo Adapt this section for Java / NET
-    String pattern = name;
     Boolean isRegex = false;
 
     FrameworkNode fb =
         new FrameworkNode(
             neo4jAL,
             name,
-            pattern,
+            name,
             isRegex,
             strDate,
             "No location discovered",
@@ -498,25 +554,55 @@ public abstract class ADetector {
     return fb;
   }
 
+  // Pythia function
   /**
    * Save a Framework on Pythia
-   * @param pf Framework to  save
+   *
+   * @param pf Framework to save
    */
-  protected void savePythiaFramework(PythiaFramework pf) {
+  protected void saveFrameworkOnPythia(PythiaFramework pf, List<PythiaPattern> patterns) {
     neo4jAL.logInfo(String.format("Sending Framework '%s' to Pythia.", pf.name));
 
-    if(activatedPythia) {
-      String language = this.language.toString();
+    // If Pythia activated
+    if (activatedPythia) {
       try {
-        this.pythiaController.createFramework(pf);
-      } catch (PythiaException e) {
+        this.pythiaController.createFramework(pf, patterns);
+      } catch (PythiaException | PythiaResponse e) {
         neo4jAL.logError(String.format("Failed to upload framework %s to pythia.", pf.name), e);
       }
     }
   }
 
   /**
+   * Find a Framework on pythia with a similar pattern
+   *
+   * @param pattern Pattern to search
+   * @return Optional returning the pattern
+   */
+  protected final Optional<PythiaFramework> findFrameworkOnPythia(String pattern) {
+    // If Pythia activated
+    if (activatedPythia) {
+      try {
+        PythiaFramework pf =
+            this.pythiaController.findFrameworkByPattern(pattern, this.pythiaLanguage.name);
+
+        if (pf == null) return Optional.empty();
+        return Optional.of(pf); // Return the framework
+      } catch (PythiaException | PythiaResponse e) {
+        neo4jAL.logError(
+            String.format("Failed to find a framework using pattern '%s' on pythia. Error: %s", pattern, e));
+      }
+    } else {
+      // Not activated or error
+      neo4jAL.logError("Failed to find a framework pythia communication is not active.");
+    }
+
+    return Optional.empty();
+  }
+
+  /**
    * Save a framework to the database and Pythia if activated
+   *
    * @param frameworkNode Node to save
    */
   protected void persistFramework(FrameworkNode frameworkNode) {
@@ -524,19 +610,8 @@ public abstract class ADetector {
     if (getPersistentMode()) {
       try {
         frameworkNode.createNode();
-      }  catch (Neo4jQueryException ignored) {
-         // Ignored
-      }
-    }
-
-    // Persist on Pythia
-    if(activatedPythia) {
-      String language = this.language.toString();
-      PythiaFramework framework = DetectorTypeMapper.artemisFrameworkToPythia(frameworkNode, language);
-      try {
-        this.pythiaController.createFramework(framework);
-      } catch (PythiaException e) {
-        neo4jAL.logError(String.format("Failed to upload framework %s to pythia.", frameworkNode.getName()), e);
+      } catch (Neo4jQueryException ignored) {
+        // Ignored
       }
     }
   }

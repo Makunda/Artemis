@@ -11,15 +11,42 @@
 
 package com.castsoftware.artemis.modules.pythia.models.api;
 
+import com.google.gson.*;
+import kong.unirest.json.JSONObject;
+
+import java.lang.reflect.Type;
+
 /** Pythia interface for the framework detection pattern */
-public class PythiaPattern {
-  public String language;
+public class PythiaPattern extends PythiaObject implements JsonDeserializer<PythiaPattern> {
+  public PythiaLanguage language;
   public String pattern;
   public Boolean isRegex;
 
-  public PythiaPattern(String language, String pattern, Boolean isRegex) {
+  public PythiaPattern(PythiaLanguage language, String pattern, Boolean isRegex) {
     this.language = language;
     this.pattern = pattern;
     this.isRegex = isRegex;
+  }
+
+  @Override
+  public JSONObject toJson() {
+    JSONObject object = new JSONObject();
+    object.put("language", language.toJson());
+    object.put("pattern", pattern);
+    object.put("isRegex", isRegex);
+    return object;
+  }
+
+  @Override
+  public PythiaPattern deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+    Gson gson = new Gson();
+
+    JsonObject root = jsonElement.getAsJsonObject();
+    PythiaLanguage language = gson.fromJson(root.get("language"), PythiaLanguage.class);
+
+    String pattern = root.get("pattern").getAsString();
+    Boolean isRegex = root.get("isRegex").getAsBoolean();
+
+    return new PythiaPattern(language, pattern, isRegex);
   }
 }

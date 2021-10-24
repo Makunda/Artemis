@@ -45,6 +45,25 @@ public class DetectorUtil {
   }
 
   /**
+   * Apply a Name of the Framework on the node
+   * @param neo4jAL Neo4j Access Layer
+   * @param n Node to tag
+   * @param name Name of the Framework
+   * @throws Neo4jQueryException
+   */
+  public static void applyFrameworkName(Neo4jAL neo4jAL, Node n, String name) throws Neo4jQueryException {
+    String propertyName = "Framework name";
+    String req =
+            "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty "
+                    + "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
+    Map<String, Object> params =
+            Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", name);
+
+    neo4jAL.executeQuery(req, params);
+  }
+
+
+  /**
    * Apply a description to the node
    *
    * @param n Node to process
@@ -52,7 +71,7 @@ public class DetectorUtil {
    */
   public static void applyDescriptionProperty(Neo4jAL neo4jAL, Node n, String description)
       throws Neo4jQueryException {
-    String propertyName = Configuration.get("artemis.sub_node.description.property");
+    String propertyName = "Framework description";
     String req =
         "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty "
             + "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";

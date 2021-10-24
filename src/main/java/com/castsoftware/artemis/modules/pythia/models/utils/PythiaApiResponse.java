@@ -11,6 +11,7 @@
 
 package com.castsoftware.artemis.modules.pythia.models.utils;
 
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import kong.unirest.HttpResponse;
@@ -25,7 +26,9 @@ public class PythiaApiResponse<T> {
 
   private final Integer status;
   private T data;
+  private String rawData = "";
   private String message = "";
+  private String rawError = "";
   private List<String> errors = new ArrayList<>();
   private Boolean success = false;
 
@@ -35,7 +38,7 @@ public class PythiaApiResponse<T> {
    * @param response Response of Unirest
    * @param type Type of object to return
    */
-  public PythiaApiResponse(HttpResponse<JsonNode> response, Class<T> type) {
+  public PythiaApiResponse(HttpResponse<JsonNode> response, Class<T> type) throws PythiaResponse {
     Gson gson = new Gson();
 
     // Get the status
@@ -43,6 +46,7 @@ public class PythiaApiResponse<T> {
 
     // Check the value of the status. Must be like 2xx code
     this.success = this.status.toString().startsWith("2");
+    this.rawData = response.getBody().toString();
 
     // Assign the message, errors and data
     JSONObject body = response.getBody().getObject();
@@ -50,16 +54,22 @@ public class PythiaApiResponse<T> {
     // Test all the field
     if (body.has("message")) {
       this.message = body.getString("message");
+      System.out.println("Detected message " + this.message);
     }
 
     // Check for data
     if (body.has("data")) {
-      this.data = gson.fromJson(body.getString("data"), type);
+      try {
+          this.data = gson.fromJson(body.get("data").toString(), type);
+      } catch (Exception err) {
+        throw new PythiaResponse(String.format("Failed to deserialize %s.", type.getName()), err);
+      }
     }
 
     // Check for errors
     if (body.has("errors")) {
       try {
+        this.rawError = body.getString("errors");
         Type typeList = new TypeToken<List<String[]>>() {}.getType();
         this.errors = gson.fromJson(body.getString("errors"), typeList);
       } catch (Exception err) {
@@ -93,6 +103,12 @@ public class PythiaApiResponse<T> {
    */
   public List<String> getErrors() {
     return errors;
+  }
+
+  public String getRawError() { return rawError ; }
+
+  public String getRawData() {
+    return rawData;
   }
 
   /**

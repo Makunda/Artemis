@@ -106,8 +106,7 @@ public class JavaOldDetector extends ADetector {
 
         // If no results create a new Framework
         if (it.getDepth() == 3) {
-          PythiaFramework pf = DetectorTypeMapper.frameworkLeafToPythia(it, this.language.toString());
-          this.savePythiaFramework(pf);
+          PythiaFramework pf = DetectorTypeMapper.frameworkLeafToPythia(it, this.pythiaLanguage);
         }
       }
 

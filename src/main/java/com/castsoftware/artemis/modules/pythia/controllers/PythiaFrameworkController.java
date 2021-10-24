@@ -12,15 +12,19 @@
 package com.castsoftware.artemis.modules.pythia.controllers;
 
 import com.castsoftware.artemis.modules.pythia.PythiaProxyCom;
+import com.castsoftware.artemis.modules.pythia.controllers.bodies.CreateFrameworkBody;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
+import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaApiResponse;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
 
-/** Class handling the communication to pythia, and the different queries */
-public class PythiaFrameworkController {
+import java.util.List;
 
-  private final PythiaProxyCom pythiaProxyCom;
+/** Class handling the communication to pythia, and the different queries */
+public class PythiaFrameworkController extends PythiaController{
 
   /**
    * Constructor
@@ -28,7 +32,7 @@ public class PythiaFrameworkController {
    * @param parameters Pythia parameters
    */
   public PythiaFrameworkController(PythiaParameters parameters) {
-    this.pythiaProxyCom = new PythiaProxyCom(parameters);
+    super(parameters);
   }
 
   /**
@@ -36,15 +40,38 @@ public class PythiaFrameworkController {
    * @param framework Framework to create
    * @return The Framework created
    */
-  public PythiaFramework createFramework(PythiaFramework framework) throws PythiaException {
+  public PythiaFramework createFramework(PythiaFramework framework, List<PythiaPattern> patterns) throws PythiaException, PythiaResponse {
+    CreateFrameworkBody body = new CreateFrameworkBody(framework, patterns);
+
     PythiaApiResponse<PythiaFramework> response =
-        this.pythiaProxyCom.post("api/framework/pythia/create", framework, PythiaFramework.class);
+        this.pythiaProxyCom.post("api/framework/pythia/create", body, PythiaFramework.class);
 
     if (response.isSuccess()) {
       // Return value if success
       return response.getData();
     }
     // Response is not a success
-    throw new PythiaException("Failed to get the status", response.getErrors().toArray(String[]::new));
+    throw new PythiaException("Failed to get the status", response.getRawError());
+  }
+
+  /**
+   * Find a framework based on its pattern and Language
+   * @param pattern Pattern to search
+   * @param language Language to query
+   * @return The Framework
+   * @throws PythiaException if nothing has been found
+   * @throws PythiaResponse If the query produced an error
+   */
+  public PythiaFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
+    String url = "api/framework/pythia/getByPattern?pattern=" + pattern + "&language=" + language;
+    PythiaApiResponse<PythiaFramework> response = this.pythiaProxyCom.get(url, PythiaFramework.class);
+
+    if (response.isSuccess()) {
+      System.out.printf("Found a framework: %s%n", response.getRawData());
+      // Return value if success
+      return response.getData();
+    }
+    // Response is not a success
+    throw new PythiaException("Failed to find the framework", response.getErrors().toArray(String[]::new));
   }
 }

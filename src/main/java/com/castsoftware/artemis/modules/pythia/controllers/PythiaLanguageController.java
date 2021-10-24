@@ -14,34 +14,36 @@ package com.castsoftware.artemis.modules.pythia.controllers;
 import com.castsoftware.artemis.modules.pythia.PythiaProxyCom;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaApiResponse;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
 
-/** Class handling the communication to pythia, and the different queries */
-public class PythiaUtilController extends PythiaController{
+public class PythiaLanguageController extends PythiaController {
 
-  /**
-   * Constructor
-   *
-   * @param parameters Pythia parameters
-   */
-  public PythiaUtilController(PythiaParameters parameters) {
-    super(parameters);
-  }
 
-  /**
-   * Get the authentication status
-   *
-   * @return
-   */
-  public String getAuthStatus() throws PythiaException, PythiaResponse {
-    PythiaApiResponse<String> response = this.pythiaProxyCom.get("status", String.class);
+	/**
+	 * Constructor
+	 *
+	 * @param parameters Pythia parameters
+	 */
+	public PythiaLanguageController(PythiaParameters parameters) {
+		super(parameters);
+	}
 
-    if (response.isSuccess()) {
-      // Return value if success
-      return response.getData();
-    }
-    // Response is not a success
-    throw new PythiaException("Failed to get the status", response.getErrors().toArray(String[]::new));
-  }
+	/**
+	 * Get the language object  of Pythia
+	 *
+	 * @return Language object on pythia
+	 */
+	public PythiaLanguage searchLanguage(String search) throws PythiaException, PythiaResponse {
+		String url = "api/language/search?search=" + search;
+		PythiaApiResponse<PythiaLanguage> response = this.pythiaProxyCom.get(url, PythiaLanguage.class);
+
+		if (response.isSuccess()) {
+			// Return value if success
+			return response.getData();
+		}
+		// Response is not a success
+		throw new PythiaException("Failed to find the language", response.getErrors().toArray(String[]::new));
+	}
 }

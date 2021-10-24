@@ -12,9 +12,17 @@
 package com.castsoftware.artemis.detector.utils;
 
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.java.utils.FrameworkTreeLeaf;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 /** Class handling the type conversion between Detector and Pythia */
 public class DetectorTypeMapper {
@@ -27,7 +35,7 @@ public class DetectorTypeMapper {
    * @return A Pythia Framework
    */
   public static PythiaFramework artemisFrameworkToPythia(
-      FrameworkNode frameworkNode, String language) {
+      FrameworkNode frameworkNode, PythiaLanguage language) {
     // Create pythia pattern
     PythiaPattern pattern =
         new PythiaPattern(language, frameworkNode.getPattern(), frameworkNode.getIsRegex());
@@ -36,31 +44,131 @@ public class DetectorTypeMapper {
     // Create pythia framework
     return new PythiaFramework(
         frameworkNode.getName(),
+        frameworkNode.getName(),
         frameworkNode.getDescription(),
         frameworkNode.getLocation(),
-        patterns,
         frameworkNode.getDetectionData());
   }
 
   /**
+   * Convert a Tree leaf in a Framework node
+   * @param neo4jAL Neo4j access layer
+   * @param ftl Leaf
+   * @return
+   */
+  public static FrameworkNode fromFrameworkLeafToFrameworkNode(
+      Neo4jAL neo4jAL, FrameworkTreeLeaf ftl) {
+    FrameworkNode fb =
+        new FrameworkNode(
+            neo4jAL,
+            ftl.getFullName(),
+            ftl.getFullName(),
+            true,
+            new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
+            "Local detection",
+            ftl.getFullName(),
+            1L,
+            1.,
+            new Date().getTime());
+    fb.setFrameworkType(FrameworkType.FRAMEWORK);
+    return fb;
+  }
+
+  /**
    * Convert a Framework leaf to a Pythia Framework
+   *
    * @param frameworkLeaf Framework leaf to convert
    * @param language Language
    * @return The Pythia Framework
    */
   public static PythiaFramework frameworkLeafToPythia(
-          FrameworkTreeLeaf frameworkLeaf, String language) {
+      FrameworkTreeLeaf frameworkLeaf, PythiaLanguage language) {
+
+    // Generate Imaging name
+    String imagingName = getImagingNameFromLeaf(frameworkLeaf);
+
     // Create pythia pattern
-    PythiaPattern pattern =
-            new PythiaPattern(language, frameworkLeaf.fullName + "\\.*", true);
+    PythiaPattern pattern = new PythiaPattern(language, frameworkLeaf.fullName, true);
     PythiaPattern[] patterns = {pattern};
 
     // Create pythia framework
     return new PythiaFramework(
-            frameworkLeaf.getFullName(),
-            "",
-            "Statistical detection",
-            patterns,
-            "");
+        frameworkLeaf.getFullName(), imagingName, "", "Local Artemis", "");
+  }
+
+  /**
+   * Transform a framework leaf to
+   * @param neo4jAL Neo4j Access layer
+   * @param pf Pythia Framework
+   * @return The Framework node
+   */
+  public static FrameworkNode pythiaFrameworkToFrameworkNode(
+          Neo4jAL neo4jAL, PythiaFramework pf, String pattern, Boolean isRegex) {
+    // Get date
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    Date date = Calendar.getInstance().getTime();
+    String strDate = dateFormat.format(date);
+
+    // Generate Imaging name
+    FrameworkNode fn = new FrameworkNode(neo4jAL,
+            pf.name,
+            pattern,
+            isRegex,
+            strDate,
+            pf.location,
+            pf.description,
+            0L
+            );
+    fn.setDetectionData(pf.detectionData);
+    fn.setFrameworkType(FrameworkType.FRAMEWORK);
+    return fn;
+  }
+
+  /**
+   * Estimate the imaging name from a leaf
+   *
+   * @param frameworkLeaf Leaf to create
+   * @return The name of the leaf
+   */
+  private static String getImagingNameFromLeaf(FrameworkTreeLeaf frameworkLeaf) {
+    try {
+      String imagingName = "API";
+
+      String[] split = frameworkLeaf.fullName.split("\\."); // Split on package name
+
+      if (split.length == 0 || split.length == 1)
+        return imagingName + frameworkLeaf.fullName; // Cannot split
+      if (split.length == 2)
+        return imagingName + " " + capitalizeFirstLetter(split[1]); // Only the Company name
+      return imagingName + " " + capitalizeFirstLetter(split[1]) + " " + split[2];
+    } catch (Exception ignored) {
+      return frameworkLeaf.getFullName();
+    }
+  }
+
+  /**
+   * Capitalize the first letter
+   *
+   * @param name Name to capitalize
+   * @return Capitalized name
+   */
+  private static String capitalizeFirstLetter(String name) {
+    if (name == null || name.isBlank()) return "";
+
+    try {
+      return name.substring(0, 1).toUpperCase() + name.substring(1);
+    } catch (Exception e) {
+      return name;
+    }
+  }
+
+  /**
+   * Create a pattern from a Framework leaf
+   * @param ltf Leaf to use for creation
+   * @param pl Pythia language
+   * @return The pythia pattern
+   */
+  public static PythiaPattern fromFrameworkLeafToPattern(FrameworkTreeLeaf ltf, PythiaLanguage pl) {
+    return new PythiaPattern(pl, ltf.getFullName(), true);
   }
 }
