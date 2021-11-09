@@ -11,12 +11,12 @@
 
 package com.castsoftware.artemis.modules.pythia.controllers;
 
-import com.castsoftware.artemis.modules.pythia.PythiaProxyCom;
 import com.castsoftware.artemis.modules.pythia.controllers.bodies.CreateFrameworkBody;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaImagingFramework;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaApiResponse;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
@@ -62,13 +62,24 @@ public class PythiaFrameworkController extends PythiaController{
    * @throws PythiaException if nothing has been found
    * @throws PythiaResponse If the query produced an error
    */
-  public PythiaFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
-    String url = "api/framework/pythia/getByPattern?pattern=" + pattern + "&language=" + language;
-    PythiaApiResponse<PythiaFramework> response = this.pythiaProxyCom.get(url, PythiaFramework.class);
+  public PythiaImagingFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
+    String url = "api/detection/byPatternAndLanguage?pattern=" + pattern + "&language=" + language;
+    PythiaApiResponse<PythiaImagingFramework> response = this.pythiaProxyCom.get(url, PythiaImagingFramework.class);
+    System.out.println("Payload : " + response.getRawData());
+    System.out.println("Message : " + response.getMessage());
+    System.out.println("Data : " + response.getData());
+    System.out.println("Status : " + response.getStatus());
+    // If response has error throw them
+    if(response.hasErrors()) {
+      System.out.println("findFrameworkByPattern :: Failed to find the framework: " + pattern);
+      throw new PythiaException("Failed to find the framework", response.getErrorsAsString());
+    };
 
+    // Otherwise process the data
     if (response.isSuccess()) {
       System.out.printf("Found a framework: %s%n", response.getRawData());
       // Return value if success
+      if(response.getData() == null) throw new PythiaException("Failed to find framework", "Empty Data");
       return response.getData();
     }
     // Response is not a success

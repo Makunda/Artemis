@@ -9,7 +9,10 @@
  *
  */
 
-package com.castsoftware.artemis.detector.utils;
+package com.castsoftware.artemis.detector.utils.trees;
+
+import com.castsoftware.artemis.config.detection.LanguageProp;
+import org.neo4j.graphdb.Node;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,13 +20,60 @@ import java.util.ListIterator;
 
 public abstract class ATree {
 
+  protected LanguageProp languageProp;
+
   public abstract String getDelimiterLeaves();
 
-  public ATree() {}
+  /**
+   * Initialize a tree
+   * @param languageProp Language of the tree
+   */
+  public ATree(LanguageProp languageProp) {
+    this.languageProp = languageProp;
+  }
 
   public abstract ALeaf getRoot();
 
   public abstract void print();
+
+  /**
+   * Insert recursively a list of node in the tree
+   * @param nodeList List of node to insert
+   */
+  public abstract void recursiveObjectsInsert(List<Node> nodeList);
+
+  /**
+   * Get a slice of the tree for a specific depth
+   * @param depth Depth of the slice
+   * @return The list of Framework Leaf
+   */
+  public List<ALeaf> getSliceByDepth(int depth) {
+    List<ALeaf> returnList = new ArrayList<>();
+
+    // Verify the validity of the tree
+    ALeaf root = this.getRoot();
+    if(root == null ) return returnList; // Null root if tree not initialized, return
+    if(root.getChildren().size() == 0) return returnList; // If empty tree, return
+
+    // Iterate through the tree
+    List<ALeaf> iterationList = new ArrayList<>(root.getChildren());
+    ALeaf element;
+    while(!iterationList.isEmpty()) {
+      element = iterationList.remove(0);
+      int elementDepth = element.getDepth();
+
+      if(elementDepth == depth) {
+        // Check depth, if correct add to functional module
+        returnList.add(element);
+      } else if(elementDepth > depth) {
+        // If depth superior continue the investigation
+        iterationList.addAll(element.getChildren());
+      }
+      // Otherwise if depth lower than, continue
+    }
+
+    return returnList;
+  }
 
   /**
    * Flatten a tree in a list of ALeaf with a reference on their parents

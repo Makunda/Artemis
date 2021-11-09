@@ -9,20 +9,25 @@
  *
  */
 
-package com.castsoftware.artemis.results;
+package com.castsoftware.artemis.detector.statisticalAnalyzers;
 
+import com.castsoftware.artemis.detector.statisticalAnalyzers.java.JavaStatisticalAnalyzer;
 import com.castsoftware.artemis.global.SupportedLanguage;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+public class StatisticalFactory {
 
-public class DetectionCandidateResult {
-  public String application;
-  public List<String> languages;
-
-  public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
-    this.application = application;
-    this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
-  }
+	/**
+	 * Get a new instance of specific analyzer by language
+	 * @param language Language to process
+	 * @return
+	 */
+	public static AStatisticalAnalyzer getAnalyzer(Neo4jAL neo4jAL, String application, SupportedLanguage language) throws Exception {
+		switch (language) {
+			case JAVA:
+				return new JavaStatisticalAnalyzer(neo4jAL, application, language);
+			default:
+				throw new Exception(String.format("No analyzer found for language %s.", language.toString()));
+		}
+	}
 }

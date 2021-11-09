@@ -9,20 +9,15 @@
  *
  */
 
-package com.castsoftware.artemis.results;
+package com.castsoftware.artemis.detector.utils.functionalMaps.java;
 
-import com.castsoftware.artemis.global.SupportedLanguage;
+import com.castsoftware.artemis.detector.utils.functionalMaps.AFunctionalModule;
+import org.neo4j.graphdb.Node;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-public class DetectionCandidateResult {
-  public String application;
-  public List<String> languages;
-
-  public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
-    this.application = application;
-    this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
-  }
+public class JavaFunctionalModule extends AFunctionalModule {
+	public JavaFunctionalModule(String identifier, List<Long> nodeIdList) {
+		super(identifier, nodeIdList);
+	}
 }

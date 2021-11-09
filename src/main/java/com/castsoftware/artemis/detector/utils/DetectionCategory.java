@@ -9,20 +9,25 @@
  *
  */
 
-package com.castsoftware.artemis.results;
+package com.castsoftware.artemis.detector.utils;
 
-import com.castsoftware.artemis.global.SupportedLanguage;
+public enum DetectionCategory {
+  KNOWN_UTILITY("Known utility"),
+  KNOWN_NOT_UTILITY("Known not utility"),
+  UNKNOWN_UTILITY("Unknown utility"),
+  UNKNOWN_NOT_UTILITY("Unknown not utility"),
+  UNKNOWN("Unknown"),
+  IN_OTHERS_APPLICATIONS("In others applications"),
+  MISSING_CODE("Potentially missing code");
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+  private final String value;
 
-public class DetectionCandidateResult {
-  public String application;
-  public List<String> languages;
+  DetectionCategory(String value) {
+    this.value = value;
+  }
 
-  public DetectionCandidateResult(String application, List<SupportedLanguage> languages) {
-    this.application = application;
-    this.languages = languages.stream().map(Objects::toString).collect(Collectors.toList());
+  @Override
+  public String toString() {
+    return this.value;
   }
 }

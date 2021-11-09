@@ -9,10 +9,13 @@
  *
  */
 
-package com.castsoftware.artemis.detector.cobol.utils;
+package com.castsoftware.artemis.detector.utils.trees.cobol;
 
-import com.castsoftware.artemis.detector.utils.ATree;
+import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
 import org.neo4j.graphdb.Node;
+
+import java.util.List;
 
 public class CobolFrameworkTree extends ATree {
 
@@ -20,7 +23,8 @@ public class CobolFrameworkTree extends ATree {
 
   private final CobolFrameworkTreeLeaf root;
 
-  public CobolFrameworkTree() {
+  public CobolFrameworkTree(LanguageProp languageProp) {
+    super(languageProp);
     this.root = new CobolFrameworkTreeLeaf("", "");
   }
 
@@ -56,7 +60,6 @@ public class CobolFrameworkTree extends ATree {
       }
 
       matchingLeaf.setDepth(depth);
-      matchingLeaf.addOneChild();
       matchingLeaf.addNode(n);
 
       recInsert(matchingLeaf, fullName, n, depth + 1);
@@ -89,6 +92,11 @@ public class CobolFrameworkTree extends ATree {
 
   /** Print the tree */
   public void print() {}
+
+  @Override
+  public void recursiveObjectsInsert(List<Node> nodeList) {
+
+  }
 
   /**
    * Recursive tree print

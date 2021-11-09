@@ -13,7 +13,7 @@ package com.castsoftware.artemis.config.detection;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import kong.unirest.json.JSONObject;

@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.datasets;
 
-import com.castsoftware.artemis.detector.DetectionCategory;
+import com.castsoftware.artemis.detector.utils.DetectionCategory;
 
 public enum FrameworkType {
   FRAMEWORK("Framework"),

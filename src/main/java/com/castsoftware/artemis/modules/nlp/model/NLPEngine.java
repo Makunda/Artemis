@@ -17,7 +17,7 @@ import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
 import com.castsoftware.artemis.exceptions.nlp.NLPIncorrectConfigurationException;
 import com.castsoftware.artemis.modules.nlp.KeywordsManager;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.utils.Workspace;
 import opennlp.tools.doccat.*;
@@ -33,7 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
 
-import static com.castsoftware.artemis.modules.nlp.SupportedLanguage.ALL;
+import static com.castsoftware.artemis.global.SupportedLanguage.ALL;
 
 public class NLPEngine {
   private static final String TOKENIZER_FILE_NAME = Configuration.get("nlp.tokenizer_file.name");

@@ -12,7 +12,6 @@
 package com.castsoftware.artemis.detector.utils;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.detector.DetectionCategory;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
@@ -20,8 +19,16 @@ import org.neo4j.graphdb.Node;
 import java.util.Map;
 
 /** Utils function for the detector */
-public class DetectorUtil {
+public class DetectorPropertyUtil {
 
+  /**
+   * Get the default taxonomy in cast imaging
+   * @return
+   */
+  public static String getDefaultTaxonomy() {
+    String defaultTaxonomy = Configuration.get("artemis.node.default.taxonomy");
+    return defaultTaxonomy;
+  }
   /**
    * Apply a the Artemis detection property on a node
    *
@@ -31,6 +38,16 @@ public class DetectorUtil {
   public static void applyNodeProperty(Node n, DetectionCategory detectedAs) {
     String artemisProperty = Configuration.get("artemis.node.detection");
     n.setProperty(artemisProperty, detectedAs.toString());
+  }
+
+  /**
+   * Apply the taxonomy property on a node
+   * @param n Node
+   * @param taxonomy Taxonomy to apply
+   */
+  public static void applyTaxonomyProperty(Node n, String taxonomy) {
+    String artemisProperty = Configuration.get("artemis.node.taxonomy");
+    n.setProperty(artemisProperty, taxonomy);
   }
 
   /**
@@ -52,7 +69,7 @@ public class DetectorUtil {
    * @throws Neo4jQueryException
    */
   public static void applyFrameworkName(Neo4jAL neo4jAL, Node n, String name) throws Neo4jQueryException {
-    String propertyName = "Framework name";
+    String propertyName = Configuration.get("artemis.node.name");
     String req =
             "MERGE (o:ObjectProperty { Description : $DescName }) WITH o as subProperty "
                     + "MATCH (n) WHERE ID(n)=$IdNode MERGE (subProperty)<-[r:Property]-(n) SET r.value=$DescValue";
@@ -79,5 +96,23 @@ public class DetectorUtil {
         Map.of("DescName", propertyName, "IdNode", n.getId(), "DescValue", description);
 
     neo4jAL.executeQuery(req, params);
+  }
+
+  /**
+   * Apply properties on a node
+   * @param n Node to flag
+   * @param cat Category
+   * @param taxonomy Taxonomy
+   * @param name Name
+   * @param description Description
+   */
+  public static void applyArtemisProperties(Neo4jAL neo4jAL, Node n, DetectionCategory cat, String taxonomy, String name, String description) throws Neo4jQueryException {
+
+
+    // Apply properties
+    DetectorPropertyUtil.applyNodeProperty(n, cat);
+    DetectorPropertyUtil.applyTaxonomyProperty(n, taxonomy);
+    DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, name);
+    DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, description);
   }
 }

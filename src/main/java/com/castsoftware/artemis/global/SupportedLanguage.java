@@ -9,13 +9,14 @@
  *
  */
 
-package com.castsoftware.artemis.modules.nlp;
+package com.castsoftware.artemis.global;
 
 public enum SupportedLanguage {
   COBOL("Cobol"),
   JAVA("Java"),
   NET("Net"),
-  ALL("All");
+  ALL("All"),
+  UNKNOWN("Unknown");
 
   private final String value;
 
@@ -36,7 +37,7 @@ public enum SupportedLanguage {
   /**
    * Get the Language based on the String provided
    *
-   * @param type
+   * @param type The language to convert
    * @return
    */
   public static SupportedLanguage getLanguage(String type) {
@@ -45,7 +46,7 @@ public enum SupportedLanguage {
         return ft;
       }
     }
-    return ALL;
+    return UNKNOWN;
   }
 
   @Override

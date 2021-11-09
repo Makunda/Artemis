@@ -11,9 +11,13 @@
 
 package com.castsoftware.artemis.config.detection;
 
+import com.castsoftware.artemis.global.SupportedLanguage;
+
 import java.util.List;
 
 public class LanguageProp {
+  SupportedLanguage referenceLanguage;
+
   String name;
   Boolean onlineSearch = false;
   Boolean interactionDetector = false;
@@ -35,6 +39,10 @@ public class LanguageProp {
       List<String> keywords,
       String modelFileName) {
     this.name = name;
+
+    // Use the name to get the reference
+    this.referenceLanguage = SupportedLanguage.getLanguage(name);
+
     this.onlineSearch = onlineSearch;
     this.interactionDetector = interactionDetector;
     this.packageDelimiter = packageDelimiter;
@@ -42,6 +50,11 @@ public class LanguageProp {
     this.objectsInternalType = objectsInternalType;
     this.keywords = keywords;
     this.modelFileName = modelFileName;
+  }
+
+
+  public SupportedLanguage getReferenceLanguage() {
+    return this.referenceLanguage;
   }
 
   public String getName() {

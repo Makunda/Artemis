@@ -34,11 +34,7 @@ public class PythiaFramework extends PythiaObject implements JsonDeserializer<Py
   public String detectionData;
 
   public PythiaFramework(
-      String name,
-      String imagingName,
-      String description,
-      String location,
-      String detectionData) {
+      String name, String imagingName, String description, String location, String detectionData) {
     this.name = name;
     this.imagingName = imagingName;
     this.description = description;
@@ -76,13 +72,13 @@ public class PythiaFramework extends PythiaObject implements JsonDeserializer<Py
     return isRoot;
   }
 
-
   public String getDetectionData() {
     return detectionData;
   }
 
   /**
    * Return the framework as a JSON
+   *
    * @return JSON formatted framework
    */
   @Override
@@ -97,7 +93,9 @@ public class PythiaFramework extends PythiaObject implements JsonDeserializer<Py
   }
 
   @Override
-  public PythiaFramework deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+  public PythiaFramework deserialize(
+      JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
+      throws JsonParseException {
 
     JsonObject root = jsonElement.getAsJsonObject();
 
@@ -109,16 +107,11 @@ public class PythiaFramework extends PythiaObject implements JsonDeserializer<Py
     String detectionData = root.get("detectionData").getAsString();
     Boolean isRoot = root.get("isRoot").getAsBoolean();
 
-
-
     // Create the framework an assign the variables
-    PythiaFramework pf = new PythiaFramework(name,
-            imagingName,
-            description,
-            location,
-            detectionData);
+    PythiaFramework pf =
+        new PythiaFramework(name, imagingName, description, location, detectionData);
     pf.setIsRoot(isRoot);
 
     return pf;
   }
-}
+	}

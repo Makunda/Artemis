@@ -19,7 +19,7 @@ import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import java.io.IOException;

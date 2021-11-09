@@ -9,27 +9,28 @@
  *
  */
 
-package com.castsoftware.artemis.detector.java.utils;
+package com.castsoftware.artemis.detector.utils.trees.java;
 
-import com.castsoftware.artemis.detector.utils.ALeaf;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class FrameworkTreeLeaf extends ALeaf {
+/**
+ * Leaf to be inserted into a java tree
+ */
+public class JavaFrameworkTreeLeaf extends ALeaf {
 
-  private final List<FrameworkTreeLeaf> children;
+  private final List<JavaFrameworkTreeLeaf> children;
   private double[] detectionResults;
-  private Integer depth;
   private boolean framework;
 
-  public FrameworkTreeLeaf(String name, String fullName) {
+  public JavaFrameworkTreeLeaf(String name, String fullName) {
     super(fullName, name);
     this.children = Collections.synchronizedList(new ArrayList<>());
     this.framework = false;
     this.detectionResults = new double[0];
-    this.depth = 0;
   }
 
   public double[] getDetectionResults() {
@@ -44,10 +45,6 @@ public class FrameworkTreeLeaf extends ALeaf {
     return depth;
   }
 
-  public void setDepth(Integer depth) {
-    this.depth = depth;
-  }
-
   public boolean isFramework() {
     return framework;
   }
@@ -60,11 +57,11 @@ public class FrameworkTreeLeaf extends ALeaf {
     return name;
   }
 
-  public List<FrameworkTreeLeaf> getChildren() {
+  public List<JavaFrameworkTreeLeaf> getChildren() {
     return children;
   }
 
-  public void addLeaf(FrameworkTreeLeaf leaf) {
+  public void addLeaf(JavaFrameworkTreeLeaf leaf) {
     this.children.add(leaf);
   }
 }

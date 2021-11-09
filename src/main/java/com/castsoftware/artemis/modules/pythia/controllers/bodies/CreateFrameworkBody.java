@@ -12,12 +12,12 @@
 package com.castsoftware.artemis.modules.pythia.controllers.bodies;
 
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaObject;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import kong.unirest.json.JSONObject;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class CreateFrameworkBody  extends PythiaObject {
 	public String name;

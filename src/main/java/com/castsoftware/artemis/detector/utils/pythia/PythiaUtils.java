@@ -9,10 +9,17 @@
  *
  */
 
-package com.castsoftware.artemis.detector;
+package com.castsoftware.artemis.detector.utils.pythia;
 
-public enum PythiaSituation {
-	FOUND,
-	FOUND_IS_ROOT,
-	NOT_FOUND
+import com.castsoftware.artemis.detector.utils.DetectorNodesUtil;
+import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaImagingFramework;
+import com.castsoftware.artemis.neo4j.Neo4jAL;
+import org.neo4j.graphdb.Node;
+
+import java.util.List;
+
+public class PythiaUtils {
+
+
 }

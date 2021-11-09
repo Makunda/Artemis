@@ -9,20 +9,22 @@
  *
  */
 
-package com.castsoftware.artemis.detector.java.utils;
+package com.castsoftware.artemis.detector.utils.trees.java;
 
-import com.castsoftware.artemis.detector.utils.ATree;
+import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
 import org.neo4j.graphdb.Node;
 
-public class FrameworkTree extends ATree {
+import java.util.List;
 
-  private static final String PACKAGE_DELIMITER = "\\.";
+public class JavaFrameworkTree extends ATree {
 
-  private final FrameworkTreeLeaf root;
 
-  public FrameworkTree() {
-    super();
-    this.root = new FrameworkTreeLeaf("", "");
+  private final JavaFrameworkTreeLeaf root;
+
+  public JavaFrameworkTree(LanguageProp languageProp) {
+    super(languageProp);
+    this.root = new JavaFrameworkTreeLeaf("", "");
   }
 
   /**
@@ -32,9 +34,9 @@ public class FrameworkTree extends ATree {
    * @param remainingPackage Name of the package to insert
    */
   private void recInsert(
-      FrameworkTreeLeaf leaf, String remainingPackage, String fullName, Node n, Integer depth) {
+          JavaFrameworkTreeLeaf leaf, String remainingPackage, String fullName, Node n, Integer depth) {
 
-    String[] splitPackageName = remainingPackage.split(PACKAGE_DELIMITER, 2);
+    String[] splitPackageName = remainingPackage.split("\\.", 2);
 
     // If the split contains for than one element continue
     String name = splitPackageName[0];
@@ -45,10 +47,10 @@ public class FrameworkTree extends ATree {
       fullName = String.join(".", fullName, name);
     }
 
-    FrameworkTreeLeaf matchingLeaf = null;
+    JavaFrameworkTreeLeaf matchingLeaf = null;
 
     // Check if a package already exist or create it
-    for (FrameworkTreeLeaf clf : leaf.getChildren()) {
+    for (JavaFrameworkTreeLeaf clf : leaf.getChildren()) {
       if (clf.getName().equals(name)) {
         matchingLeaf = clf; // Matching package found
         break;
@@ -57,13 +59,12 @@ public class FrameworkTree extends ATree {
 
     // If a matching leaf wasn't found, create a new one
     if (matchingLeaf == null) {
-      matchingLeaf = new FrameworkTreeLeaf(name, fullName);
+      matchingLeaf = new JavaFrameworkTreeLeaf(name, fullName);
       // Add the leaf to the tree
       leaf.addLeaf(matchingLeaf);
     }
 
     matchingLeaf.setDepth(depth);
-    matchingLeaf.addOneChild();
     matchingLeaf.addNode(n);
 
     if (splitPackageName.length > 1) {
@@ -77,19 +78,19 @@ public class FrameworkTree extends ATree {
    * @param packageName Full name of the package to insert
    */
   public void insert(String packageName, Node node) {
-    this.recInsert(root, packageName, "", node, 1);
+    this.recInsert(root, packageName, "", node, 0);
   }
 
   public String getDelimiterLeaves() {
-    return ".";
+    return "\\.";
   }
 
   /**
    * Get the root of the tree
    *
-   * @return
+   * @return Get the root
    */
-  public FrameworkTreeLeaf getRoot() {
+  public JavaFrameworkTreeLeaf getRoot() {
     return root;
   }
 
@@ -99,12 +100,34 @@ public class FrameworkTree extends ATree {
   }
 
   /**
+   * Insert the nodes in the tree recursively 
+   * @param nodeList List of node to insert
+   */
+  @Override
+  public void recursiveObjectsInsert(List<Node> nodeList) {
+
+    // Filter nodes based to make sure :
+    nodeList.removeIf(n -> !n.hasProperty("FullName")); // They have a name
+    nodeList.removeIf(
+            n ->
+                    !n.hasProperty("Level")
+                            || !n.getProperty("Level").toString().equals("Java Class")); // They have a level
+
+    // Create a framework tree
+    String fullName;
+    for (Node n : nodeList) {
+      fullName = n.getProperty("FullName").toString();
+      this.insert(fullName, n);
+    }
+  }
+
+  /**
    * Recursive tree print
    *
-   * @param fl
-   * @param level
+   * @param fl Leaf to display
+   * @param level Level to use for shifting
    */
-  private void printTree(FrameworkTreeLeaf fl, int level) {
+  private void printTree(JavaFrameworkTreeLeaf fl, int level) {
     System.out.print(
         "|"
             + "__".repeat(level)
@@ -115,7 +138,7 @@ public class FrameworkTree extends ATree {
             + " :: Num children "
             + fl.getCount()
             + "\n");
-    for (FrameworkTreeLeaf clf : fl.getChildren()) {
+    for (JavaFrameworkTreeLeaf clf : fl.getChildren()) {
       printTree(clf, level + 1);
     }
   }

@@ -13,11 +13,11 @@ package com.castsoftware.artemis.controllers;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.datasets.FrameworkNode;
-import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.DetectorFactory;
+import com.castsoftware.artemis.detector.plainAnalyzers.ADetector;
+import com.castsoftware.artemis.detector.plainAnalyzers.DetectorFactory;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.nlp.model.NLPEngine;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.FrameworkResult;

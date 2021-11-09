@@ -9,23 +9,23 @@
  *
  */
 
-package com.castsoftware.artemis.detector.java;
+package com.castsoftware.artemis.detector.plainAnalyzers.java;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.java.utils.FrameworkTree;
-import com.castsoftware.artemis.detector.java.utils.FrameworkTreeLeaf;
-import com.castsoftware.artemis.detector.java.utils.FunctionalModule;
-import com.castsoftware.artemis.detector.utils.ATree;
+import com.castsoftware.artemis.detector.plainAnalyzers.ADetector;
+import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTree;
+import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
+import com.castsoftware.artemis.detector.utils.functionalMaps.java.OldJavaFunctionalModule;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
 import com.castsoftware.artemis.detector.utils.DetectorTypeMapper;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.nlp.model.NLPResults;
 import com.castsoftware.artemis.modules.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
@@ -43,8 +43,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /** Java Framework detector */
 public class JavaOldDetector extends ADetector {
 
-  private FrameworkTree externalTree;
-  private FrameworkTree internalTree;
+  private JavaFrameworkTree externalTree;
+  private JavaFrameworkTree internalTree;
   private String corePrefix;
 
   /**
@@ -64,14 +64,14 @@ public class JavaOldDetector extends ADetector {
   }
 
   @Override
-  public FrameworkTree getExternalBreakdown() throws Neo4jQueryException {
+  public JavaFrameworkTree getExternalBreakdown() throws Neo4jQueryException {
     // Filter nodes for java
     // Get node in Java Classes
     List<Node> nodeList = getNodesByExternality(true);
 
     nodeList.removeIf(n -> !n.hasProperty("Level") || !n.getProperty("Level").equals("Java Class"));
     neo4jAL.logInfo("Java breakdown on : " + nodeList.size());
-    externalTree = new FrameworkTree();
+    externalTree = new JavaFrameworkTree(languageProperties);
     return externalTree;
   }
 
@@ -87,15 +87,15 @@ public class JavaOldDetector extends ADetector {
    * @param type Type of investigation ( internal / external )
    * @return The list of Framework found
    */
-  private List<FrameworkNode> analyzeFrameworkTree(FrameworkTree tree, String type) {
+  private List<FrameworkNode> analyzeFrameworkTree(JavaFrameworkTree tree, String type) {
     // Initialize the list
-    Queue<FrameworkTreeLeaf> queue = new ConcurrentLinkedQueue<>();
+    Queue<JavaFrameworkTreeLeaf> queue = new ConcurrentLinkedQueue<>();
     queue.add(tree.getRoot());
 
     // Iterate over the Tree
-    FrameworkTreeLeaf it;
-    List<FrameworkTreeLeaf> frameworkList = new ArrayList<>();
-    Iterator<FrameworkTreeLeaf> iterator = queue.iterator();
+    JavaFrameworkTreeLeaf it;
+    List<JavaFrameworkTreeLeaf> frameworkList = new ArrayList<>();
+    Iterator<JavaFrameworkTreeLeaf> iterator = queue.iterator();
     while(iterator.hasNext()){
       it = iterator.next();
       neo4jAL.logInfo(String.format("Exploring leaf: %s ", it.getName()));
@@ -123,11 +123,11 @@ public class JavaOldDetector extends ADetector {
 
     neo4jAL.logInfo("Extract External utilities");
     // Build a tree based on the nodes to investigate
-    FrameworkTree externals = this.getExternalBreakdown();
+    JavaFrameworkTree externals = this.getExternalBreakdown();
     listFramework.addAll(analyzeFrameworkTree(externals, "external"));
 
     // Internal match for java
-    FrameworkTree internalTree = getInternalBreakDown();
+    JavaFrameworkTree internalTree = getInternalBreakDown();
     listFramework.addAll(getInternalCandidates(internalTree));
 
     return listFramework;
@@ -139,22 +139,22 @@ public class JavaOldDetector extends ADetector {
    * @param tree
    * @return
    */
-  public List<FrameworkNode> getInternalCandidates(FrameworkTree tree) {
+  public List<FrameworkNode> getInternalCandidates(JavaFrameworkTree tree) {
     neo4jAL.logInfo("Extract Internal utilities");
     String bestMatch = "";
     Integer biggestBranch = 0;
-    List<FunctionalModule> functionalModules = new ArrayList<>();
+    List<OldJavaFunctionalModule> functionalModules = new ArrayList<>();
 
-    List<FrameworkTreeLeaf> toVisit = new ArrayList<>();
-    for (FrameworkTreeLeaf ftl : tree.getRoot().getChildren()) {
+    List<JavaFrameworkTreeLeaf> toVisit = new ArrayList<>();
+    for (JavaFrameworkTreeLeaf ftl : tree.getRoot().getChildren()) {
       toVisit.addAll(ftl.getChildren());
     }
 
     // Todo review the logic
-    for (FrameworkTreeLeaf treeLeaf : toVisit) {
+    for (JavaFrameworkTreeLeaf treeLeaf : toVisit) {
       try {
-        FunctionalModule fm =
-            new FunctionalModule(
+        OldJavaFunctionalModule fm =
+            new OldJavaFunctionalModule(
                 neo4jAL,
                 application,
                 treeLeaf.getFullName(),
@@ -184,7 +184,7 @@ public class JavaOldDetector extends ADetector {
 
     // Convert the functional modules found to FrameworkNodes
     List<FrameworkNode> frameworkNodes = new ArrayList<>();
-    for (FunctionalModule fm : functionalModules) {
+    for (OldJavaFunctionalModule fm : functionalModules) {
       String pattern = fm.getIdentifier() + "\\.*";
       Boolean isRegex = true;
 
@@ -358,19 +358,19 @@ public class JavaOldDetector extends ADetector {
     List<Node> createdNodes = new ArrayList<>();
 
     // Build new tree with remaining nodes
-    FrameworkTree frameworkTree = new FrameworkTree();
+    JavaFrameworkTree frameworkTree = new JavaFrameworkTree(languageProperties);
 
-    List<FrameworkTreeLeaf> toVisit =
+    List<JavaFrameworkTreeLeaf> toVisit =
         Collections.synchronizedList(frameworkTree.getRoot().getChildren());
     Map<String, Set<String>> mapPackageApp = new HashMap<>();
 
-    for (ListIterator<FrameworkTreeLeaf> itRel = toVisit.listIterator(); itRel.hasNext(); ) {
+    for (ListIterator<JavaFrameworkTreeLeaf> itRel = toVisit.listIterator(); itRel.hasNext(); ) {
       try {
-        FrameworkTreeLeaf ftl = itRel.next();
+        JavaFrameworkTreeLeaf ftl = itRel.next();
 
         if (ftl.getDepth() < 3) {
           // Add the children
-          for (FrameworkTreeLeaf l : ftl.getChildren()) itRel.add(l);
+          for (JavaFrameworkTreeLeaf l : ftl.getChildren()) itRel.add(l);
         }
 
         // Skip for a depth  inferior to the company name package
@@ -458,9 +458,9 @@ public class JavaOldDetector extends ADetector {
    * @return The Framework tree containing only internal objects
    * @throws Neo4jQueryException If the Neo4j Cypher request fails
    */
-  public FrameworkTree getInternalBreakDown() throws Neo4jQueryException {
+  public JavaFrameworkTree getInternalBreakDown() throws Neo4jQueryException {
     List<Node> nodeList = getNodesByExternality(false);
-    this.internalTree = new FrameworkTree();
+    this.internalTree = new JavaFrameworkTree(languageProperties);
 
     String fullName;
 

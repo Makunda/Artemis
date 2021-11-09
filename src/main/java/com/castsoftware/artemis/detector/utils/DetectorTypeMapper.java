@@ -13,10 +13,9 @@ package com.castsoftware.artemis.detector.utils;
 
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.detector.java.utils.FrameworkTreeLeaf;
+import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
+import com.castsoftware.artemis.modules.pythia.models.api.*;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import java.text.DateFormat;
@@ -57,7 +56,7 @@ public class DetectorTypeMapper {
    * @return
    */
   public static FrameworkNode fromFrameworkLeafToFrameworkNode(
-      Neo4jAL neo4jAL, FrameworkTreeLeaf ftl) {
+      Neo4jAL neo4jAL, JavaFrameworkTreeLeaf ftl) {
     FrameworkNode fb =
         new FrameworkNode(
             neo4jAL,
@@ -82,19 +81,20 @@ public class DetectorTypeMapper {
    * @return The Pythia Framework
    */
   public static PythiaFramework frameworkLeafToPythia(
-      FrameworkTreeLeaf frameworkLeaf, PythiaLanguage language) {
+          JavaFrameworkTreeLeaf frameworkLeaf, PythiaLanguage language) {
 
     // Generate Imaging name
     String imagingName = getImagingNameFromLeaf(frameworkLeaf);
 
     // Create pythia pattern
-    PythiaPattern pattern = new PythiaPattern(language, frameworkLeaf.fullName, true);
+    PythiaPattern pattern = new PythiaPattern(language, frameworkLeaf.getFullName(), true);
     PythiaPattern[] patterns = {pattern};
 
     // Create pythia framework
     return new PythiaFramework(
         frameworkLeaf.getFullName(), imagingName, "", "Local Artemis", "");
   }
+  
 
   /**
    * Transform a framework leaf to
@@ -111,15 +111,44 @@ public class DetectorTypeMapper {
 
     // Generate Imaging name
     FrameworkNode fn = new FrameworkNode(neo4jAL,
-            pf.name,
+            pf.getName(),
             pattern,
             isRegex,
             strDate,
-            pf.location,
-            pf.description,
+            pf.getLocation(),
+            pf.getDescription(),
             0L
             );
-    fn.setDetectionData(pf.detectionData);
+    fn.setDetectionData(pf.getDetectionData());
+    fn.setFrameworkType(FrameworkType.FRAMEWORK);
+    return fn;
+  }
+
+  /**
+   * Convert an Imaging Framework to a Framework node
+   * @param neo4jAL Neo4j Access Layer
+   * @param pf Imaging Framework from pythia
+   * @param isRegex
+   * @return
+   */
+  public static FrameworkNode imagingFrameworkToFrameworkNode(
+          Neo4jAL neo4jAL, PythiaImagingFramework pf, Boolean isRegex) {
+    // Get date
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    Date date = Calendar.getInstance().getTime();
+    String strDate = dateFormat.format(date);
+
+    // Generate Imaging name
+    FrameworkNode fn = new FrameworkNode(neo4jAL,
+            pf.getName(),
+            pf.getPattern(),
+            isRegex,
+            strDate,
+            pf.getLocation(),
+            pf.getDescription(),
+            0L
+    );
+    fn.setDetectionData("");
     fn.setFrameworkType(FrameworkType.FRAMEWORK);
     return fn;
   }
@@ -130,14 +159,14 @@ public class DetectorTypeMapper {
    * @param frameworkLeaf Leaf to create
    * @return The name of the leaf
    */
-  private static String getImagingNameFromLeaf(FrameworkTreeLeaf frameworkLeaf) {
+  private static String getImagingNameFromLeaf(JavaFrameworkTreeLeaf frameworkLeaf) {
     try {
       String imagingName = "API";
 
-      String[] split = frameworkLeaf.fullName.split("\\."); // Split on package name
+      String[] split = frameworkLeaf.getFullName().split("\\."); // Split on package name
 
       if (split.length == 0 || split.length == 1)
-        return imagingName + frameworkLeaf.fullName; // Cannot split
+        return imagingName + frameworkLeaf.getFullName(); // Cannot split
       if (split.length == 2)
         return imagingName + " " + capitalizeFirstLetter(split[1]); // Only the Company name
       return imagingName + " " + capitalizeFirstLetter(split[1]) + " " + split[2];
@@ -168,7 +197,7 @@ public class DetectorTypeMapper {
    * @param pl Pythia language
    * @return The pythia pattern
    */
-  public static PythiaPattern fromFrameworkLeafToPattern(FrameworkTreeLeaf ltf, PythiaLanguage pl) {
+  public static PythiaPattern fromFrameworkLeafToPattern(JavaFrameworkTreeLeaf ltf, PythiaLanguage pl) {
     return new PythiaPattern(pl, ltf.getFullName(), true);
   }
 }

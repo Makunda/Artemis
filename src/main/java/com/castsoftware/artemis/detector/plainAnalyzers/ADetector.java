@@ -9,22 +9,23 @@
  *
  */
 
-package com.castsoftware.artemis.detector;
+package com.castsoftware.artemis.detector.plainAnalyzers;
 
 import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.ApplicationController;
-import com.castsoftware.artemis.controllers.UtilsController;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.detector.utils.ATree;
-import com.castsoftware.artemis.detector.utils.DetectorUtil;
+import com.castsoftware.artemis.detector.utils.DetectionCategory;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
+import com.castsoftware.artemis.detector.utils.DetectorNodesUtil;
+import com.castsoftware.artemis.detector.utils.DetectorPropertyUtil;
 import com.castsoftware.artemis.exceptions.dataset.InvalidDatasetException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.nlp.model.NLPCategory;
 import com.castsoftware.artemis.modules.nlp.model.NLPConfidence;
 import com.castsoftware.artemis.modules.nlp.model.NLPEngine;
@@ -34,13 +35,10 @@ import com.castsoftware.artemis.modules.nlp.saver.NLPSaver;
 import com.castsoftware.artemis.modules.pythia.Pythia;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
+import com.castsoftware.artemis.modules.pythia.models.api.*;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.reports.ReportGenerator;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Result;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,6 +58,7 @@ public abstract class ADetector {
       Configuration.get("imaging.application.label");
   protected static final String IMAGING_INTERNAL_TYPE =
       Configuration.get("imaging.application.InternalType");
+  protected  static final String IMAGING_DEFAULT_FRAMEWORK_CAT =  "Business Logic";
 
   // Detector parameters
   protected Neo4jAL neo4jAL;
@@ -225,20 +224,7 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public void getNodes() throws Neo4jQueryException {
-    List<String> categories = languageProperties.getObjectsInternalType();
-    Result res;
-    String forgedRequest =
-        String.format(
-            "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=true RETURN obj as node",
-            application);
-    Map<String, Object> params = Map.of("internalTypes", categories);
-    res = neo4jAL.executeQuery(forgedRequest, params);
-
-    while (res.hasNext()) {
-      Map<String, Object> resMap = res.next();
-      Node node = (Node) resMap.get("node");
-      toInvestigateNodes.add(node);
-    }
+    toInvestigateNodes = DetectorNodesUtil.getExternalObjects(neo4jAL, languageProperties, application);
   }
 
   /**
@@ -248,23 +234,7 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public List<Node> getInternalNodes() throws Neo4jQueryException {
-    List<String> categories = languageProperties.getObjectsInternalType();
-    List<Node> internalNodes = new ArrayList<>();
-
-    String forgedRequest =
-        String.format(
-            "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
-            application);
-    Map<String, Object> params = Map.of("internalTypes", categories);
-    Result res = neo4jAL.executeQuery(forgedRequest, params);
-
-    while (res.hasNext()) {
-      Map<String, Object> resMap = res.next();
-      Node node = (Node) resMap.get("node");
-      internalNodes.add(node);
-    }
-
-    return internalNodes;
+    return DetectorNodesUtil.getInternalObjects(neo4jAL, languageProperties, application);
   }
 
   public abstract ATree getExternalBreakdown() throws Neo4jQueryException;
@@ -291,10 +261,12 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public void tagNodeWithFramework(Node n, FrameworkNode frameworkNode) throws Neo4jQueryException {
-    DetectorUtil.applyNodeProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
-    DetectorUtil.applyCategory(n, frameworkNode.getCategory());
-    DetectorUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
-    DetectorUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
+    String category = IMAGING_DEFAULT_FRAMEWORK_CAT;
+
+    DetectorPropertyUtil.applyNodeProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
+    DetectorPropertyUtil.applyCategory(n, category);
+    DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
+    DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
   }
 
   /**
@@ -305,55 +277,25 @@ public abstract class ADetector {
    * @throws Neo4jQueryException
    */
   public void tagNodeWithPythia(Node n, PythiaFramework frameworkNode) throws Neo4jQueryException {
-    DetectorUtil.applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
-    DetectorUtil.applyCategory(n, frameworkNode.getImagingName());
-    DetectorUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
-    DetectorUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
+    // Verify Category
+
+    String defaultTaxonomy = Configuration.get("artemis.node.default.taxonomy");
+    String taxonomy = String.format("%1$s##%2$s##%2$s", defaultTaxonomy, frameworkNode.getImagingName());
+
+    // Apply properties
+    DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
+    DetectorPropertyUtil.applyTaxonomyProperty(n, taxonomy);
+    DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
+    DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
   }
+
+
 
   /**
-   * Apply tag based on the configuration
-   *
-   * @param n Node to flag
-   * @param groupName Name of the group to extract
-   * @param arrangementParameters Parameters of the arrangement ( containing the destinations of the
-   *     grouping )
+   * Check if the name of the framework has been exlcuded
+   * @param n Node to investigate
+   * @return
    */
-  public void applyDemeterTags(Node n, String groupName, List<String> arrangementParameters) {
-    if (arrangementParameters.contains("level")) {
-      try {
-        UtilsController.applyDemeterLevelTag(neo4jAL, n, groupName);
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-            String.format("Failed to apply demeter level tag on node with Id: %s", n.getId()), e);
-      }
-    }
-
-    if (arrangementParameters.contains("view")) {
-      // Not implemented yet
-    }
-
-    if (arrangementParameters.contains("architecture")) {
-      try {
-        UtilsController.applyDemeterArchitectureTag(neo4jAL, n, groupName);
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-            String.format(
-                "Failed to apply demeter architecture tag on node with Id: %s", n.getId()),
-            e);
-      }
-    }
-
-    if (arrangementParameters.contains("module")) {
-      try {
-        UtilsController.applyDemeterModuleTag(neo4jAL, n, groupName);
-      } catch (Neo4jQueryException e) {
-        neo4jAL.logError(
-            String.format("Failed to apply demeter module tag on node with Id: %s", n.getId()), e);
-      }
-    }
-  }
-
   protected boolean isNameExcluded(Node n) {
     if (detectionParameters == null) return false;
 
@@ -377,6 +319,13 @@ public abstract class ADetector {
   }
 
   /**
+   * Pre launch actions
+   */
+  protected void preLaunch() {};
+
+  protected void postLaunch() {};
+
+  /**
    * Launch the detection in the Application
    *
    * @return The list of detected frameworks
@@ -386,27 +335,30 @@ public abstract class ADetector {
    */
   public final List<FrameworkNode> launch()
       throws IOException, Neo4jQueryException, Neo4jBadRequestException {
-    // Print the configuration
+
+    // Launch before
+    this.preLaunch();
+
+    // Print the configuration of the analysis
     printConfig();
 
     // Detection flow
     List<FrameworkNode> frameworkNodes = extractUtilities();
 
-    neo4jAL.logInfo("Fetching the nodes to treat.");
-    extractUnknownApp();
-
-    // extractOtherApps(); // Search in internal classes
-    neo4jAL.logInfo("Extracting Unknown non utilities.");
-    extractUnknownNonUtilities();
 
     // Add the language detected to the application
     neo4jAL.logInfo("Add the language to the Application controller.");
     ApplicationController.addLanguage(neo4jAL, application, languageProperties.getName());
 
+
     neo4jAL.logInfo(
         String.format(
             "%d entries (valid detection and not valid ones) were found during the analysis of application %s",
             frameworkNodes.size(), application));
+
+    // Launch after
+    this.postLaunch();
+
     return frameworkNodes;
   }
 
@@ -456,12 +408,6 @@ public abstract class ADetector {
    */
   public abstract List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException;
 
-  /** Extract unknown non utilities */
-  public abstract void extractUnknownApp();
-
-  /** Extract unknown non utilities */
-  public abstract void extractUnknownNonUtilities();
-
   /**
    * Get pythia Mode
    *
@@ -498,7 +444,7 @@ public abstract class ADetector {
   }
 
   /** Extract unknown non utilities */
-  public abstract void extractOtherApps();
+  public void extractOtherApps() {};
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the
@@ -568,7 +514,7 @@ public abstract class ADetector {
       try {
         this.pythiaController.createFramework(pf, patterns);
       } catch (PythiaException | PythiaResponse e) {
-        neo4jAL.logError(String.format("Failed to upload framework %s to pythia.", pf.name), e);
+        neo4jAL.logError(String.format("Failed to upload framework %s to pythia.", pf.name));
       }
     }
   }
@@ -579,11 +525,11 @@ public abstract class ADetector {
    * @param pattern Pattern to search
    * @return Optional returning the pattern
    */
-  protected final Optional<PythiaFramework> findFrameworkOnPythia(String pattern) {
+  protected final Optional<PythiaImagingFramework> findFrameworkOnPythia(String pattern) {
     // If Pythia activated
     if (activatedPythia) {
       try {
-        PythiaFramework pf =
+        PythiaImagingFramework pf =
             this.pythiaController.findFrameworkByPattern(pattern, this.pythiaLanguage.name);
 
         if (pf == null) return Optional.empty();
@@ -591,6 +537,7 @@ public abstract class ADetector {
       } catch (PythiaException | PythiaResponse e) {
         neo4jAL.logError(
             String.format("Failed to find a framework using pattern '%s' on pythia. Error: %s", pattern, e));
+        return Optional.empty();
       }
     } else {
       // Not activated or error

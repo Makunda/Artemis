@@ -12,7 +12,7 @@
 package com.castsoftware.artemis.controllers.api;
 
 import com.castsoftware.artemis.config.Configuration;
-import com.castsoftware.artemis.detector.DetectionCategory;
+import com.castsoftware.artemis.detector.utils.DetectionCategory;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 
 import java.util.Arrays;
@@ -31,6 +31,27 @@ public class ConfigurationController {
   public static String getNodeDetectionProperty() throws MissingFileException {
     return Configuration.get("artemis.node.detection");
   }
+
+  /**
+   * Get the property storing the CAST Taxonomy
+   * @return
+   * @throws MissingFileException
+   */
+  public static String getNodeTaxonomyProperty() throws MissingFileException {
+    return Configuration.get("artemis.node.taxonomy");
+  }
+
+
+  /**
+   * Get the property of the node detection
+   *
+   * @return
+   * @throws MissingFileException
+   */
+  public static String getNodeNameProperty() throws MissingFileException {
+    return Configuration.get("artemis.node.detection");
+  }
+
 
   /**
    * Get the name of category property applied on the nodes

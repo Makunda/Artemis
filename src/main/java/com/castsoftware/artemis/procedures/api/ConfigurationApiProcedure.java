@@ -47,6 +47,20 @@ public class ConfigurationApiProcedure {
     }
   }
 
+  @Procedure(value = "artemis.api.configuration.get.taxonomy.property", mode = Mode.WRITE)
+  @Description(
+      "artemis.api.configuration.get.taxonomy.property - Get the name of taxonomy property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeTaxonomyProperty() throws ProcedureException {
+    try {
+      String detectionProperty = ConfigurationController.getNodeTaxonomyProperty();
+      return Stream.of(new OutputMessage(detectionProperty));
+    } catch (Exception | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
   @Procedure(value = "artemis.api.configuration.get.category.property", mode = Mode.WRITE)
   @Description(
       "artemis.api.configuration.get.category.property - Get the name of category property applied on the nodes during the detection")
@@ -54,6 +68,21 @@ public class ConfigurationApiProcedure {
 
     try {
       String detectionProperty = ConfigurationController.getNodeCategoryProperty();
+      return Stream.of(new OutputMessage(detectionProperty));
+    } catch (Exception | MissingFileException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "artemis.api.configuration.get.name.property", mode = Mode.WRITE)
+  @Description(
+          "artemis.api.configuration.get.name.property - Get the name of the name property applied on the nodes during the detection")
+  public Stream<OutputMessage> getNodeNameProperty() throws ProcedureException {
+
+    try {
+      String detectionProperty = ConfigurationController.getNodeNameProperty();
       return Stream.of(new OutputMessage(detectionProperty));
     } catch (Exception | MissingFileException e) {
       ProcedureException ex = new ProcedureException(e);

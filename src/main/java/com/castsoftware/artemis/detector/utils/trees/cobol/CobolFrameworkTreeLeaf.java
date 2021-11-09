@@ -9,9 +9,9 @@
  *
  */
 
-package com.castsoftware.artemis.detector.cobol.utils;
+package com.castsoftware.artemis.detector.utils.trees.cobol;
 
-import com.castsoftware.artemis.detector.utils.ALeaf;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 
 import java.util.ArrayList;
 import java.util.Collections;

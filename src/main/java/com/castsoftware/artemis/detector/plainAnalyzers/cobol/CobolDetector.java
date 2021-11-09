@@ -9,26 +9,27 @@
  *
  */
 
-package com.castsoftware.artemis.detector.cobol;
+package com.castsoftware.artemis.detector.plainAnalyzers.cobol;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
-import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.DetectionCategory;
-import com.castsoftware.artemis.detector.cobol.utils.CobolFrameworkTree;
-import com.castsoftware.artemis.detector.utils.ATree;
+import com.castsoftware.artemis.detector.plainAnalyzers.ADetector;
+import com.castsoftware.artemis.detector.utils.DetectionCategory;
+import com.castsoftware.artemis.detector.utils.trees.cobol.CobolFrameworkTree;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
 import com.castsoftware.artemis.detector.utils.DetectorTypeMapper;
-import com.castsoftware.artemis.detector.utils.DetectorUtil;
+import com.castsoftware.artemis.detector.utils.DetectorPropertyUtil;
 import com.castsoftware.artemis.exceptions.google.GoogleBadResponseCodeException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.exceptions.nlp.NLPBlankInputException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.nlp.model.NLPResults;
 import com.castsoftware.artemis.modules.nlp.parser.GoogleParser;
 import com.castsoftware.artemis.modules.nlp.parser.GoogleResult;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
+import com.castsoftware.artemis.modules.pythia.models.api.PythiaImagingFramework;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.modules.sof.SystemOfFramework;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
@@ -55,7 +56,7 @@ public class CobolDetector extends ADetector {
    * @return
    */
   public CobolFrameworkTree createTree(List<Node> nodeList) {
-    CobolFrameworkTree frameworkTree = new CobolFrameworkTree();
+    CobolFrameworkTree frameworkTree = new CobolFrameworkTree(languageProperties);
 
     // Top Bottom approach
     String fullName;
@@ -97,13 +98,13 @@ public class CobolDetector extends ADetector {
     // If not activated, return not found
     if (!activatedPythia) return Optional.empty();
 
-    Optional<PythiaFramework> framework =
+    Optional<PythiaImagingFramework> framework =
             this.findFrameworkOnPythia(name); // Find the framework
 
     if(framework.isEmpty()) return Optional.empty(); // Framework not found
 
     // Framework found, return framework node
-    FrameworkNode fn = DetectorTypeMapper.pythiaFrameworkToFrameworkNode(neo4jAL, framework.get(), name, false);
+    FrameworkNode fn = DetectorTypeMapper.imagingFrameworkToFrameworkNode(neo4jAL, framework.get(), false);
     return Optional.of(fn);
   }
 
@@ -299,7 +300,7 @@ public class CobolDetector extends ADetector {
 
         // The name match the nGram
         if (name.startsWith(corePrefix)) {
-          DetectorUtil.applyNodeProperty(n, DetectionCategory.MISSING_CODE);
+          DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.MISSING_CODE);
           // applyDemeterTags(n, "Missing code", detectionProp.getPotentiallyMissing());
           itNode.remove();
         }
@@ -350,7 +351,7 @@ public class CobolDetector extends ADetector {
     for (Map.Entry<Node, List<String>> en : nodeListMap.entrySet()) {
       String groupName = String.format("[%s]", String.join(", ", en.getValue()));
       try {
-        DetectorUtil.applyNodeProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
+        DetectorPropertyUtil.applyNodeProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
         applyOtherApplicationsProperty(en.getKey(), groupName);
         // applyDemeterTags(
         //    en.getKey(), "In applications " + groupName, detectionProp.getInOtherApplication());
@@ -365,7 +366,7 @@ public class CobolDetector extends ADetector {
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
     while (itNode.hasNext()) {
       Node n = itNode.next();
-      DetectorUtil.applyNodeProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
+      DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
       // applyDemeterTags(n, "Unknown not utility ", detectionProp.getUnknownNonUtilities());
       itNode.remove();
     }

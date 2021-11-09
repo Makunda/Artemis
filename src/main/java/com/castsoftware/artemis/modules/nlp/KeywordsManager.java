@@ -12,6 +12,7 @@
 package com.castsoftware.artemis.modules.nlp;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.global.SupportedLanguage;
 
 import java.util.Arrays;
 import java.util.List;

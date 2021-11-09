@@ -9,9 +9,10 @@
  *
  */
 
-package com.castsoftware.artemis.detector.utils;
+package com.castsoftware.artemis.detector.utils.trees;
 
 import com.castsoftware.artemis.config.Configuration;
+import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.neo4j.Neo4jTypeManager;
 import org.neo4j.graphdb.Node;
 
@@ -42,9 +43,12 @@ public abstract class ALeaf {
   protected Long id;
   protected Long parentId;
 
-  protected Long count;
   protected String name;
   protected String fullName;
+
+  protected LanguageProp languageProp;
+
+  protected Integer depth;
 
   /** Imaging properties * */
   protected Set<String> objectTypes = new HashSet<>();
@@ -52,17 +56,19 @@ public abstract class ALeaf {
   protected Set<String> levels = new HashSet<>();
   protected Set<String> modules = new HashSet<>();
   protected Set<String> subset = new HashSet<>();
+  protected Set<Long> idNodes = new HashSet<>();
 
+  /**
+   * Create a leaf to be inserted
+   * @param fullName FullName of the leaf ( complete path from the top )
+   * @param name Name of the leaf ( specific to the leaf )
+   */
   public ALeaf(String fullName, String name) {
     this.id = -1L;
     this.parentId = -1L;
     this.name = name;
     this.fullName = fullName;
-    this.count = 0L;
-  }
-
-  public void addOneChild() {
-    this.count += 1;
+    this.depth = 0;
   }
 
   public void addObjectType(String objectType) {
@@ -93,6 +99,13 @@ public abstract class ALeaf {
     return new ArrayList<>(this.subset);
   }
 
+  public Integer getDepth() {
+    return this.depth;
+  }
+
+  public void setDepth(Integer depth) {
+    this.depth = depth;
+  }
   /**
    * Process the node in the leaf
    *
@@ -119,6 +132,8 @@ public abstract class ALeaf {
       List<String> subset = Neo4jTypeManager.getAsStringList(n, IMAGING_MODULE_PROP);
       this.addSubset(subset);
     }
+
+    this.idNodes.add(n.getId());
   }
 
   /**
@@ -135,12 +150,13 @@ public abstract class ALeaf {
   }
 
   public Long getCount() {
-    return count;
+    return (long) idNodes.size();
   }
 
-  public void setCount(Long count) {
-    this.count = count;
+  public Set<Long> getIdNodes() {
+    return idNodes;
   }
+
 
   public String getName() {
     return name;

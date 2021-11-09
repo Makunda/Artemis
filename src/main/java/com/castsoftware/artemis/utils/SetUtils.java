@@ -9,25 +9,27 @@
  *
  */
 
-package com.castsoftware.artemis.detector;
+package com.castsoftware.artemis.utils;
 
-public enum DetectionCategory {
-  KNOWN_UTILITY("Known utility"),
-  KNOWN_NOT_UTILITY("Known not utility"),
-  UNKNOWN_UTILITY("Unknown utility"),
-  UNKNOWN_NOT_UTILITY("Unknown not utility"),
-  UNKNOWN("Unknown"),
-  IN_OTHERS_APPLICATIONS("In others applications"),
-  MISSING_CODE("Potentially missing code");
+import java.util.HashSet;
+import java.util.Set;
 
-  private final String value;
+public class SetUtils {
 
-  DetectionCategory(String value) {
-    this.value = value;
-  }
+	// Function merging two sets using addAll()
+	public static <T> Set<T> mergeSet(Set<T> a, Set<T> b)
+	{
 
-  @Override
-  public String toString() {
-    return this.value;
-  }
+		// Creating an empty set
+		Set<T> mergedSet = new HashSet<T>();
+
+		// add the two sets to be merged
+		// into the new set
+		mergedSet.addAll(a);
+		mergedSet.addAll(b);
+
+		// returning the merged set
+		return mergedSet;
+	}
+
 }

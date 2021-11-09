@@ -11,7 +11,7 @@
 
 package com.castsoftware.artemis.results;
 
-import com.castsoftware.artemis.detector.utils.ALeaf;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 
 import java.util.List;
 

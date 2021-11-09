@@ -9,14 +9,14 @@
  *
  */
 
-package com.castsoftware.artemis.detector;
+package com.castsoftware.artemis.detector.plainAnalyzers;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
-import com.castsoftware.artemis.detector.cobol.CobolDetector;
-import com.castsoftware.artemis.detector.java.JavaDetector;
-import com.castsoftware.artemis.detector.net.NetDetector;
+import com.castsoftware.artemis.detector.plainAnalyzers.cobol.CobolDetector;
+import com.castsoftware.artemis.detector.plainAnalyzers.java.JavaDetector;
+import com.castsoftware.artemis.detector.plainAnalyzers.net.NetDetector;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 
 import java.io.IOException;

@@ -17,7 +17,7 @@ import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.api.BreakdownController;
 import com.castsoftware.artemis.exceptions.file.MissingFileException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.sof.famililes.FamiliesFinder;
 import com.castsoftware.artemis.modules.sof.famililes.FamilyGroup;
 import com.castsoftware.artemis.neo4j.Neo4jAL;

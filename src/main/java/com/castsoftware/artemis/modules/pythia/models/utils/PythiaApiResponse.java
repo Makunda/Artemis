@@ -60,9 +60,11 @@ public class PythiaApiResponse<T> {
     // Check for data
     if (body.has("data")) {
       try {
-          this.data = gson.fromJson(body.get("data").toString(), type);
+        if(!body.isNull("data")) this.data = gson.fromJson(body.get("data").toString(), type);
+        else this.data = null;
       } catch (Exception err) {
-        throw new PythiaResponse(String.format("Failed to deserialize %s.", type.getName()), err);
+        this.errors.add(String.format("Failed to deserialize %s. Error: %s", type.getName(), err.getMessage()));
+        this.data = null;
       }
     }
 
@@ -96,6 +98,7 @@ public class PythiaApiResponse<T> {
     return message;
   }
 
+  public Boolean hasErrors() { return !errors.isEmpty(); }
   /**
    * Get the list of errors
    *
@@ -103,6 +106,14 @@ public class PythiaApiResponse<T> {
    */
   public List<String> getErrors() {
     return errors;
+  }
+
+  /**
+   * Return the list of error as a string
+   * @return List of errors as string
+   */
+  public String getErrorsAsString() {
+    return String.join(" - ", errors);
   }
 
   public String getRawError() { return rawError ; }

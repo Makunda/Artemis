@@ -16,9 +16,8 @@ import com.castsoftware.artemis.modules.pythia.controllers.PythiaLanguageControl
 import com.castsoftware.artemis.modules.pythia.controllers.PythiaUtilController;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaException;
 import com.castsoftware.artemis.modules.pythia.exceptions.PythiaResponse;
+import com.castsoftware.artemis.modules.pythia.models.api.*;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaLanguage;
-import com.castsoftware.artemis.modules.pythia.models.api.PythiaPattern;
 import com.castsoftware.artemis.modules.pythia.models.utils.PythiaParameters;
 
 import java.util.List;
@@ -59,7 +58,7 @@ public class Pythia {
    * @throws PythiaException if nothing has been found
    * @throws PythiaResponse If the query produced an error
    */
-  public PythiaFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
+  public PythiaImagingFramework findFrameworkByPattern(String pattern, String language) throws PythiaException, PythiaResponse {
     return frameworkController.findFrameworkByPattern(pattern, language);
   }
 

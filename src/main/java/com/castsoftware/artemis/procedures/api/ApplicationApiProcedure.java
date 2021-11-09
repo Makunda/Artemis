@@ -15,7 +15,7 @@ import com.castsoftware.artemis.controllers.ApplicationController;
 import com.castsoftware.artemis.exceptions.ProcedureException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import com.castsoftware.artemis.results.DetectionCandidateResult;
 import org.neo4j.graphdb.GraphDatabaseService;

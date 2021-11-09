@@ -9,7 +9,7 @@
  *
  */
 
-package com.castsoftware.artemis.detector.java.utils;
+package com.castsoftware.artemis.detector.utils.functionalMaps.java;
 
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.controllers.UtilsController;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Module to represent the different connection with other identified packages */
-public class FunctionalModule {
+public class OldJavaFunctionalModule {
 
   private final String application;
   private final String identifier;
@@ -33,7 +33,7 @@ public class FunctionalModule {
   private final List<String> toOtherModules;
   private final List<String> fromOtherModules;
 
-  public FunctionalModule(
+  public OldJavaFunctionalModule(
       Neo4jAL neo4jAL,
       String application,
       String identifier,

@@ -39,7 +39,8 @@
       "JV_GENERIC_INTERFACE",
       "JV_ENUM",
       "JV_INTERFACE",
-      "JV_EJB_GROUP"
+      "JV_EJB_GROUP",
+      "UnknownJavaClass"
     ],
     "online_search": true,
     "interaction_detector": false,

@@ -9,17 +9,17 @@
  *
  */
 
-package com.castsoftware.artemis.detector.net;
+package com.castsoftware.artemis.detector.plainAnalyzers.net;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.controllers.api.FrameworkController;
 import com.castsoftware.artemis.datasets.FrameworkNode;
-import com.castsoftware.artemis.detector.ADetector;
-import com.castsoftware.artemis.detector.java.utils.FrameworkTree;
-import com.castsoftware.artemis.detector.utils.ATree;
+import com.castsoftware.artemis.detector.plainAnalyzers.ADetector;
+import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTree;
+import com.castsoftware.artemis.detector.utils.trees.ATree;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.artemis.modules.nlp.SupportedLanguage;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
 
@@ -30,8 +30,8 @@ import java.util.ListIterator;
 
 public class NetDetector extends ADetector {
 
-  private FrameworkTree externalTree;
-  private FrameworkTree internalTree;
+  private JavaFrameworkTree externalTree;
+  private JavaFrameworkTree internalTree;
 
   /**
    * Detector constructor
@@ -48,7 +48,7 @@ public class NetDetector extends ADetector {
 
   @Override
   public ATree getExternalBreakdown() {
-    FrameworkTree frameworkTree = new FrameworkTree();
+    JavaFrameworkTree frameworkTree = new JavaFrameworkTree(languageProperties);
 
     // Top Bottom approach
     ListIterator<Node> listIterator = toInvestigateNodes.listIterator();
@@ -71,7 +71,7 @@ public class NetDetector extends ADetector {
 
   @Override
   public ATree getInternalBreakdown() throws Neo4jQueryException {
-    FrameworkTree frameworkTree = new FrameworkTree();
+    JavaFrameworkTree frameworkTree = new JavaFrameworkTree(languageProperties);
 
     // Top Bottom approach
     ListIterator<Node> listIterator = getInternalNodes().listIterator();
