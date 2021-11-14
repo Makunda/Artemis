@@ -116,7 +116,7 @@ public class JavaOldDetector extends ADetector {
   }
 
   @Override
-  public List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException {
+  public void  extractFrameworks() throws IOException, Neo4jQueryException {
     neo4jAL.logInfo("Now extract known utilities for Java");
     // Init properties
     List<FrameworkNode> listFramework = new ArrayList<>();
@@ -130,7 +130,7 @@ public class JavaOldDetector extends ADetector {
     JavaFrameworkTree internalTree = getInternalBreakDown();
     listFramework.addAll(getInternalCandidates(internalTree));
 
-    return listFramework;
+    listFramework.forEach(this::addFrameworkToResults);
   }
 
   /**
@@ -322,7 +322,6 @@ public class JavaOldDetector extends ADetector {
     return fb;
   }
 
-  @Override
   public void extractUnknownApp() {
     try {
       if (corePrefix.isBlank()) return;
@@ -437,7 +436,6 @@ public class JavaOldDetector extends ADetector {
     }
   }
 
-  @Override
   public void extractUnknownNonUtilities() {
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
     while (itNode.hasNext()) {

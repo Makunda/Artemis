@@ -21,7 +21,11 @@ import java.util.List;
 
 public class CreateFrameworkBody  extends PythiaObject {
 	public String name;
-	public String imagingName;
+	public String level5;
+	public String level4;
+	public String level3;
+	public String level2;
+	public String level1;
 	public String description;
 	public String location;
 	public List<String> tags;
@@ -30,13 +34,28 @@ public class CreateFrameworkBody  extends PythiaObject {
 
 	public List<PythiaPattern> patterns;
 
+	/**
+	 * Create a body to be sent to pythia for a Framework generation
+	 * @param pf Pythia Framework to create
+	 * @param pp List of patterns to bind
+	 */
 	public CreateFrameworkBody(PythiaFramework pf, List<PythiaPattern> pp) {
 		this.name = pf.name;
-		this.imagingName = pf.imagingName;
+
+		// Taxonomy
+		this.level5 = pf.level5;
+		this.level4 = pf.level4;
+		this.level3 = pf.level3;
+		this.level2 = pf.level2;
+		this.level1 = pf.level1;
+
+		// Properties
 		this.description = pf.description;
 		this.location = pf.location;
 		this.tags  = pf.tags;
 		this.isRoot = pf.isRoot;
+
+		// Detection pattern
 		this.detectionData = pf.detectionData;
 		this.patterns = pp;
 	}
@@ -46,7 +65,13 @@ public class CreateFrameworkBody  extends PythiaObject {
 	public JSONObject toJson() {
 		JSONObject object = new JSONObject();
 		object.put("name", name);
-		object.put("imagingName", imagingName);
+
+		object.put("level5", level5);
+		if(level4 == null) object.put("level4", level4);
+		if(level3 == null) object.put("level3", level3);
+		if(level2 == null) object.put("level2", level2);
+		if(level1 == null) object.put("level1", level1);
+
 		object.put("description", description);
 		object.put("location", location);
 		object.put("detectionData", detectionData);

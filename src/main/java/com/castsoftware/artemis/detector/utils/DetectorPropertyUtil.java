@@ -16,6 +16,7 @@ import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 import org.neo4j.graphdb.Node;
 
+import java.util.List;
 import java.util.Map;
 
 /** Utils function for the detector */
@@ -26,8 +27,15 @@ public class DetectorPropertyUtil {
    * @return
    */
   public static String getDefaultTaxonomy() {
-    String defaultTaxonomy = Configuration.get("artemis.node.default.taxonomy");
-    return defaultTaxonomy;
+    return Configuration.get("artemis.node.default.taxonomy");
+  }
+
+  /**
+   * Get the detection property
+   * @return
+   */
+  public static String getDetectionProperty() {
+    return Configuration.get("artemis.node.detection");
   }
   /**
    * Apply a the Artemis detection property on a node
@@ -35,7 +43,7 @@ public class DetectorPropertyUtil {
    * @param n Node to process
    * @param detectedAs Category of the detection
    */
-  public static void applyNodeProperty(Node n, DetectionCategory detectedAs) {
+  public static void applyDetectionProperty(Node n, DetectionCategory detectedAs) {
     String artemisProperty = Configuration.get("artemis.node.detection");
     n.setProperty(artemisProperty, detectedAs.toString());
   }
@@ -99,6 +107,16 @@ public class DetectorPropertyUtil {
   }
 
   /**
+   * Build the default taxonomy
+   * @param level4 Level 4
+   * @param level5 Level 5
+   */
+  public static String getDefaultTaxonomy(String level4, String level5) {
+    String defaultTaxonomy = Configuration.get("artemis.node.default.taxonomy");
+    return String.format("%s##%s##%s", defaultTaxonomy, level4, level5);
+  }
+
+  /**
    * Apply properties on a node
    * @param n Node to flag
    * @param cat Category
@@ -107,10 +125,8 @@ public class DetectorPropertyUtil {
    * @param description Description
    */
   public static void applyArtemisProperties(Neo4jAL neo4jAL, Node n, DetectionCategory cat, String taxonomy, String name, String description) throws Neo4jQueryException {
-
-
     // Apply properties
-    DetectorPropertyUtil.applyNodeProperty(n, cat);
+    DetectorPropertyUtil.applyDetectionProperty(n, cat);
     DetectorPropertyUtil.applyTaxonomyProperty(n, taxonomy);
     DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, name);
     DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, description);

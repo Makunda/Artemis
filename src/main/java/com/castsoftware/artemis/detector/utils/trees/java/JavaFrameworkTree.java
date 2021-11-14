@@ -105,14 +105,6 @@ public class JavaFrameworkTree extends ATree {
    */
   @Override
   public void recursiveObjectsInsert(List<Node> nodeList) {
-
-    // Filter nodes based to make sure :
-    nodeList.removeIf(n -> !n.hasProperty("FullName")); // They have a name
-    nodeList.removeIf(
-            n ->
-                    !n.hasProperty("Level")
-                            || !n.getProperty("Level").toString().equals("Java Class")); // They have a level
-
     // Create a framework tree
     String fullName;
     for (Node n : nodeList) {

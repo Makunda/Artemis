@@ -11,6 +11,7 @@
 
 package com.castsoftware.artemis.detector.utils;
 
+import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaImagingFramework;
@@ -38,7 +39,7 @@ public class DetectorNodesUtil {
 
 		String forgedRequest =
 				String.format(
-						"MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
+						"MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
 						application);
 		Map<String, Object> params = Map.of("internalTypes", categories);
 		Result res = neo4jAL.executeQuery(forgedRequest, params);
@@ -137,9 +138,34 @@ public class DetectorNodesUtil {
 	 * @param imagingFramework Imaging framework detected
 	 */
 	public static void tagNodeWithImagingFramework(Neo4jAL neo4jAL, Node n, PythiaImagingFramework imagingFramework) throws Neo4jQueryException {
-		DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
+		DetectorPropertyUtil.applyDetectionProperty(n, DetectionCategory.KNOWN_UTILITY);
 		DetectorPropertyUtil.applyTaxonomyProperty(n, imagingFramework.getFormattedTaxonomy());
 		DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, imagingFramework.getName());
 		DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, imagingFramework.getDescription());
+	}
+
+
+	/**
+	 * Apply all the properties on the node
+	 * @param neo4jAL Neo4j Access Layer
+	 * @param n Node
+	 * @param category Category of the detection
+	 * @param level4 Level 4
+	 * @param level5 Level 5
+	 * @param name Name
+	 * @param description Description
+	 * @throws Neo4jQueryException
+	 */
+	public static void tagNodeWithFramework(Neo4jAL neo4jAL, Node n,
+											DetectionCategory category,
+											String level4,
+											String level5,
+											String name,
+											String description) throws Neo4jQueryException {
+		String defaultTaxonomy = DetectorPropertyUtil.getDefaultTaxonomy(level4, level5);
+		DetectorPropertyUtil.applyDetectionProperty(n, category);
+		DetectorPropertyUtil.applyTaxonomyProperty(n, defaultTaxonomy);
+		DetectorPropertyUtil.applyFrameworkName(neo4jAL, n,  name);
+		DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, description);
 	}
 }

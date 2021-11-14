@@ -13,9 +13,13 @@ package com.castsoftware.artemis.detector.statisticalAnalyzers;
 
 import com.castsoftware.artemis.config.detection.LanguageConfiguration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract Analyzer handling the statistical research in the app
@@ -27,6 +31,8 @@ public abstract class AStatisticalAnalyzer {
 	protected SupportedLanguage language;
 	protected String applicationName;
 	protected Neo4jAL neo4jAL;
+
+	private List<FrameworkNode> nodeList = new ArrayList<>();
 
 	/**
 	 * Get and flag the supposed core of the application
@@ -69,6 +75,22 @@ public abstract class AStatisticalAnalyzer {
 	 */
 	protected void logError(String toLog) {
 		this.neo4jAL.logError(String.format("%s %s", PREFIX, toLog));
+	}
+
+	/**
+	 * Get the list of framework detected after a scan
+	 * @return List of Framework
+	 */
+	public List<FrameworkNode> getResults() {
+		return nodeList;
+	}
+
+	/**
+	 * Add Framework to the list of the results
+	 * @param fn Framework node to add to the results
+	 */
+	protected void addFrameworkNode(FrameworkNode fn) {
+		this.nodeList.add(fn);
 	}
 
 	/**

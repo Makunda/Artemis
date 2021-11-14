@@ -13,6 +13,7 @@ package com.castsoftware.artemis.detector.utils;
 
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
 import com.castsoftware.artemis.modules.pythia.models.api.*;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
@@ -56,12 +57,16 @@ public class DetectorTypeMapper {
    * @return
    */
   public static FrameworkNode fromFrameworkLeafToFrameworkNode(
-      Neo4jAL neo4jAL, JavaFrameworkTreeLeaf ftl) {
+      Neo4jAL neo4jAL, ALeaf ftl) {
+
+    String sanitizedFullName = ftl.getFullName();
+    sanitizedFullName = sanitizedFullName.endsWith(".") ? sanitizedFullName.substring(0, sanitizedFullName.length() - 1) : sanitizedFullName;
+
     FrameworkNode fb =
         new FrameworkNode(
             neo4jAL,
-            ftl.getFullName(),
-            ftl.getFullName(),
+            ftl.getName(),
+            sanitizedFullName,
             true,
             new SimpleDateFormat("dd-MM-yyyy").format(new Date()),
             "Local detection",
@@ -69,7 +74,6 @@ public class DetectorTypeMapper {
             1L,
             1.,
             new Date().getTime());
-    fb.setFrameworkType(FrameworkType.FRAMEWORK);
     return fb;
   }
 
@@ -81,18 +85,14 @@ public class DetectorTypeMapper {
    * @return The Pythia Framework
    */
   public static PythiaFramework frameworkLeafToPythia(
-          JavaFrameworkTreeLeaf frameworkLeaf, PythiaLanguage language) {
+          ALeaf frameworkLeaf, PythiaLanguage language) {
 
     // Generate Imaging name
-    String imagingName = getImagingNameFromLeaf(frameworkLeaf);
-
-    // Create pythia pattern
-    PythiaPattern pattern = new PythiaPattern(language, frameworkLeaf.getFullName(), true);
-    PythiaPattern[] patterns = {pattern};
+    String level5 = getImagingNameFromLeaf(frameworkLeaf);
 
     // Create pythia framework
     return new PythiaFramework(
-        frameworkLeaf.getFullName(), imagingName, "", "Local Artemis", "");
+        frameworkLeaf.getFullName(), level5, "", "Local Artemis", "");
   }
   
 
@@ -159,7 +159,7 @@ public class DetectorTypeMapper {
    * @param frameworkLeaf Leaf to create
    * @return The name of the leaf
    */
-  private static String getImagingNameFromLeaf(JavaFrameworkTreeLeaf frameworkLeaf) {
+  private static String getImagingNameFromLeaf(ALeaf frameworkLeaf) {
     try {
       String imagingName = "API";
 

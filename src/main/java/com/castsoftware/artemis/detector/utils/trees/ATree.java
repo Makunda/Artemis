@@ -52,8 +52,9 @@ public abstract class ATree {
 
     // Verify the validity of the tree
     ALeaf root = this.getRoot();
-    if(root == null ) return returnList; // Null root if tree not initialized, return
-    if(root.getChildren().size() == 0) return returnList; // If empty tree, return
+    if(root == null ) {
+      return returnList; // Null root if tree not initialized, return
+    }
 
     // Iterate through the tree
     List<ALeaf> iterationList = new ArrayList<>(root.getChildren());
@@ -65,7 +66,7 @@ public abstract class ATree {
       if(elementDepth == depth) {
         // Check depth, if correct add to functional module
         returnList.add(element);
-      } else if(elementDepth > depth) {
+      } else if(elementDepth < depth) {
         // If depth superior continue the investigation
         iterationList.addAll(element.getChildren());
       }

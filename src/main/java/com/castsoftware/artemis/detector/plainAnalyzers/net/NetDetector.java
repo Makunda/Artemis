@@ -102,7 +102,7 @@ public class NetDetector extends ADetector {
    * @throws Neo4jQueryException
    */
   @Override
-  public List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException {
+  public void extractFrameworks() throws IOException, Neo4jQueryException {
 
     List<String> detectedFrameworkPattern = new ArrayList<>();
     List<FrameworkNode> frameworkNodeList = new ArrayList<>();
@@ -148,7 +148,7 @@ public class NetDetector extends ADetector {
       }
     }
 
-    return frameworkNodeList;
+    frameworkNodeList.forEach(this::addFrameworkToResults);
   }
 
   /**
@@ -163,12 +163,4 @@ public class NetDetector extends ADetector {
     return FrameworkController.findMatchingFrameworkByType(neo4jAL, fullName, internalType);
   }
 
-  @Override
-  public void extractUnknownApp() {}
-
-  @Override
-  public void extractOtherApps() {}
-
-  @Override
-  public void extractUnknownNonUtilities() {}
 }

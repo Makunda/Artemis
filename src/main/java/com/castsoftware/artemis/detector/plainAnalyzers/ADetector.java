@@ -69,7 +69,7 @@ public abstract class ADetector {
   //
   protected List<Node> toInvestigateNodes;
   protected ReportGenerator reportGenerator;
-  protected List<FrameworkNode> frameworkNodeList;
+  private List<FrameworkNode> frameworkNodeList = new ArrayList<>();;
 
   // NLP
   protected NLPEngine nlpEngine;
@@ -263,7 +263,7 @@ public abstract class ADetector {
   public void tagNodeWithFramework(Node n, FrameworkNode frameworkNode) throws Neo4jQueryException {
     String category = IMAGING_DEFAULT_FRAMEWORK_CAT;
 
-    DetectorPropertyUtil.applyNodeProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
+    DetectorPropertyUtil.applyDetectionProperty(n, frameworkNode.getFrameworkType().toDetectionCategory());
     DetectorPropertyUtil.applyCategory(n, category);
     DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
     DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
@@ -280,10 +280,10 @@ public abstract class ADetector {
     // Verify Category
 
     String defaultTaxonomy = Configuration.get("artemis.node.default.taxonomy");
-    String taxonomy = String.format("%1$s##%2$s##%2$s", defaultTaxonomy, frameworkNode.getImagingName());
+    String taxonomy = String.format("%1$s##%2$s##%2$s", defaultTaxonomy, frameworkNode.getLevel5());
 
     // Apply properties
-    DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.KNOWN_UTILITY);
+    DetectorPropertyUtil.applyDetectionProperty(n, DetectionCategory.KNOWN_UTILITY);
     DetectorPropertyUtil.applyTaxonomyProperty(n, taxonomy);
     DetectorPropertyUtil.applyFrameworkName(neo4jAL, n, frameworkNode.getName());
     DetectorPropertyUtil.applyDescriptionProperty(neo4jAL, n, frameworkNode.getDescription());
@@ -318,12 +318,20 @@ public abstract class ADetector {
     return false;
   }
 
+  /***
+   * Add a Framework to result list
+   * @param fn Framework to add
+   */
+  protected void addFrameworkToResults(FrameworkNode fn) {
+    this.frameworkNodeList.add(fn);
+  }
+
   /**
    * Pre launch actions
    */
-  protected void preLaunch() {};
+  protected void preLaunch() {}
 
-  protected void postLaunch() {};
+  protected void postLaunch() {}
 
   /**
    * Launch the detection in the Application
@@ -335,31 +343,37 @@ public abstract class ADetector {
    */
   public final List<FrameworkNode> launch()
       throws IOException, Neo4jQueryException, Neo4jBadRequestException {
+    // Initialize the Framework list
+    this.frameworkNodeList = new ArrayList<>();
 
     // Launch before
-    this.preLaunch();
+    preLaunch();
 
     // Print the configuration of the analysis
     printConfig();
 
     // Detection flow
-    List<FrameworkNode> frameworkNodes = extractUtilities();
+    extractFrameworks();
 
 
     // Add the language detected to the application
     neo4jAL.logInfo("Add the language to the Application controller.");
     ApplicationController.addLanguage(neo4jAL, application, languageProperties.getName());
 
-
     neo4jAL.logInfo(
         String.format(
             "%d entries (valid detection and not valid ones) were found during the analysis of application %s",
-            frameworkNodes.size(), application));
+            this.frameworkNodeList.size(), application));
 
     // Launch after
-    this.postLaunch();
+    try {
+      postLaunch();
+    } catch (Exception e) {
+      neo4jAL.logError("Failed to launched the post analysis operations.");
+      neo4jAL.logError("Post launch methods failed and threw an exception.", e);
+    }
 
-    return frameworkNodes;
+    return this.frameworkNodeList;
   }
 
   /** Print the configuration of the current detection */
@@ -406,7 +420,7 @@ public abstract class ADetector {
    *
    * @return List of findings
    */
-  public abstract List<FrameworkNode> extractUtilities() throws IOException, Neo4jQueryException;
+  public abstract void extractFrameworks() throws IOException, Neo4jQueryException;
 
   /**
    * Get pythia Mode
@@ -414,7 +428,7 @@ public abstract class ADetector {
    * @return
    */
   public boolean getPythiaMode() {
-    return detectionParameters.getPythiaMode();
+    return this.activatedPythia;
   }
 
   /**
@@ -444,7 +458,7 @@ public abstract class ADetector {
   }
 
   /** Extract unknown non utilities */
-  public void extractOtherApps() {};
+  public void extractOtherApps() {}
 
   /**
    * Save NLP Results to the Artemis Database. The target database will be decided depending on the

@@ -44,6 +44,7 @@ import java.util.*;
 public class CobolDetector extends ADetector {
 
 
+
   public CobolDetector(Neo4jAL neo4jAL, String application, DetectionParameters detectionParameters)
       throws IOException, Neo4jQueryException {
     super(neo4jAL, application, SupportedLanguage.COBOL, detectionParameters);
@@ -158,7 +159,7 @@ public class CobolDetector extends ADetector {
     }
 
     // Increment the number of detection and add it to the result lists
-    frameworkNodeList.add(fn);
+    this.addFrameworkToResults(fn);
     this.reportGenerator.addFrameworkBean(fn);
     return Optional.of(fn.getFrameworkType());
   }
@@ -237,7 +238,7 @@ public class CobolDetector extends ADetector {
    * @throws IOException
    */
   @Override
-  public List<FrameworkNode> extractUtilities() throws IOException {
+  public void extractFrameworks() throws IOException {
     filterNodes();
 
     int numTreated = 0;
@@ -271,10 +272,8 @@ public class CobolDetector extends ADetector {
       nlpSaver.close();
     }
 
-    return frameworkNodeList;
   }
 
-  @Override
   public void extractUnknownApp() {
     try {
       String corePrefix = getCoreApplication();
@@ -300,7 +299,7 @@ public class CobolDetector extends ADetector {
 
         // The name match the nGram
         if (name.startsWith(corePrefix)) {
-          DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.MISSING_CODE);
+          DetectorPropertyUtil.applyDetectionProperty(n, DetectionCategory.MISSING_CODE);
           // applyDemeterTags(n, "Missing code", detectionProp.getPotentiallyMissing());
           itNode.remove();
         }
@@ -311,7 +310,6 @@ public class CobolDetector extends ADetector {
     }
   }
 
-  @Override
   public void extractOtherApps() {
 
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
@@ -351,7 +349,7 @@ public class CobolDetector extends ADetector {
     for (Map.Entry<Node, List<String>> en : nodeListMap.entrySet()) {
       String groupName = String.format("[%s]", String.join(", ", en.getValue()));
       try {
-        DetectorPropertyUtil.applyNodeProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
+        DetectorPropertyUtil.applyDetectionProperty(en.getKey(), DetectionCategory.IN_OTHERS_APPLICATIONS);
         applyOtherApplicationsProperty(en.getKey(), groupName);
         // applyDemeterTags(
         //    en.getKey(), "In applications " + groupName, detectionProp.getInOtherApplication());
@@ -361,15 +359,22 @@ public class CobolDetector extends ADetector {
     }
   }
 
-  @Override
   public void extractUnknownNonUtilities() {
     ListIterator<Node> itNode = toInvestigateNodes.listIterator();
     while (itNode.hasNext()) {
       Node n = itNode.next();
-      DetectorPropertyUtil.applyNodeProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
+      DetectorPropertyUtil.applyDetectionProperty(n, DetectionCategory.UNKNOWN_NOT_UTILITY);
       // applyDemeterTags(n, "Unknown not utility ", detectionProp.getUnknownNonUtilities());
       itNode.remove();
     }
+  }
+
+  @Override
+  protected void postLaunch() {
+    super.postLaunch();
+    this.extractUnknownApp();
+    this.extractOtherApps();
+    this.extractUnknownNonUtilities();
   }
 
   /** Get the name of the core of the application */

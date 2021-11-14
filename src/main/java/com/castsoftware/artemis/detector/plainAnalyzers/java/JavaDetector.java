@@ -13,9 +13,14 @@ package com.castsoftware.artemis.detector.plainAnalyzers.java;
 
 import com.castsoftware.artemis.config.detection.DetectionParameters;
 import com.castsoftware.artemis.datasets.FrameworkNode;
+import com.castsoftware.artemis.datasets.FrameworkType;
 import com.castsoftware.artemis.detector.plainAnalyzers.ADetector;
 import com.castsoftware.artemis.detector.statisticalAnalyzers.java.JavaStatisticalAnalyzer;
+import com.castsoftware.artemis.detector.utils.DetectionCategory;
 import com.castsoftware.artemis.detector.utils.DetectorNodesUtil;
+import com.castsoftware.artemis.detector.utils.DetectorPropertyUtil;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
+import com.castsoftware.artemis.detector.utils.trees.TreeFactory;
 import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTree;
 import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
 import com.castsoftware.artemis.detector.utils.DetectorTypeMapper;
@@ -50,6 +55,25 @@ public class JavaDetector extends ADetector {
   }
 
   /**
+   * Filter nodes for the java technology ( specific technologies, levels, etc.. )
+   * @param nodeList List of nodes to filter
+   * @return The list filtered
+   */
+  private List<Node> filterJavaNodes(List<Node> nodeList) {
+    List<String> acceptedLevels = List.of("Java Class", "Missing Java Class");
+    String property = DetectorPropertyUtil.getDetectionProperty();
+
+    // Filter nodes based to make sure :
+    nodeList.removeIf(n -> !n.hasProperty("FullName")); // Node must have a full name
+
+    nodeList.removeIf(
+            n -> !acceptedLevels.contains(n.getProperty("Level").toString()) || n.hasProperty(property)
+    ); // They have a level
+
+    return nodeList;
+  }
+
+  /**
    * Create Framework tree based on External Classes
    *
    * @return The framework tree
@@ -58,24 +82,11 @@ public class JavaDetector extends ADetector {
   @Override
   public JavaFrameworkTree getExternalBreakdown() throws Neo4jQueryException {
     List<Node> nodeList = this.getNodesByExternality(true);
-    List<String> acceptedLevels = List.of("Java Class", "Missing Java Class");
-
-    // Filter nodes based to make sure :
-    nodeList.removeIf(n -> !n.hasProperty("FullName")); // Node must have a full name
-
-    nodeList.removeIf(
-        n ->
-            !n.hasProperty("Level")
-                || !acceptedLevels.contains(n.getProperty("Level").toString())
-    ); // They have a level
+    //this.filterJavaNodes(nodeList);
 
     // Create a framework tree
-    String fullName;
     JavaFrameworkTree ft = new JavaFrameworkTree(languageProperties);
-    for (Node n : nodeList) {
-      fullName = (String) n.getProperty("FullName").toString();
-      ft.insert(fullName, n);
-    }
+    ft.recursiveObjectsInsert(nodeList);
 
     return ft;
   }
@@ -91,19 +102,11 @@ public class JavaDetector extends ADetector {
     List<Node> nodeList = this.getNodesByExternality(false);
 
     // Filter nodes based to make sure :
-    nodeList.removeIf(n -> !n.hasProperty("FullName")); // They have a name
-    nodeList.removeIf(
-        n ->
-            !n.hasProperty("Level")
-                || !n.getProperty("Level").toString().equals("Java Class")); // They have a level
+    //this.filterJavaNodes(nodeList);
 
     // Create a framework tree
-    String fullName;
     JavaFrameworkTree ft = new JavaFrameworkTree(languageProperties);
-    for (Node n : nodeList) {
-      fullName = (String) n.getProperty("FullName").toString();
-      ft.insert(fullName, n);
-    }
+    ft.recursiveObjectsInsert(nodeList);
 
     return ft;
   }
@@ -115,7 +118,7 @@ public class JavaDetector extends ADetector {
    * @throws Neo4jQueryException
    */
   @Override
-  public List<FrameworkNode> extractUtilities() throws Neo4jQueryException {
+  public void extractFrameworks() throws Neo4jQueryException {
     neo4jAL.logInfo("Now extract known utilities for Java");
     // Init properties
 
@@ -124,7 +127,8 @@ public class JavaDetector extends ADetector {
     JavaFrameworkTree externals = this.getExternalBreakdown();
     externals.print();
 
-    return analyzeFrameworkTree(externals, true);
+    List<FrameworkNode> frameworkNodes =  analyzeFrameworkTree(externals, true);
+    frameworkNodes.forEach(this::addFrameworkToResults); // Add to final results
   }
 
   /**
@@ -141,7 +145,6 @@ public class JavaDetector extends ADetector {
       // If not framework found on  pythia, take parent otherwise save it
 
       // Flag with parent
-      neo4jAL.logInfo("In loop wth present parent ");
       if(parentFramework.getRoot()) {
         // Flag as independent framework and save on pythia
         this.saveFrameworkLeafOnPythia(frameworkTreeLeaf);
@@ -156,10 +159,9 @@ public class JavaDetector extends ADetector {
         returnSet.add(fn);
 
       }
+
       // Flag nodes
       this.flagNodesWithImagingFramework(parentFramework, external);
-
-      //this.saveFrameworkLeafOnPythia(frameworkTreeLeaf);
 
     } catch (Exception err) {
       // Ignore
@@ -229,7 +231,7 @@ public class JavaDetector extends ADetector {
       frameworkNodeList.addAll(recursiveParsing(ftl, external,  1,  null));
     }
 
-    // New list
+
     return new ArrayList<>(frameworkNodeList);
   }
 
@@ -260,12 +262,86 @@ public class JavaDetector extends ADetector {
 
   @Override
   public void postLaunch() {
+    neo4jAL.logInfo(String.format("Starting post launch operations in application '%s'.", application));
     // Launch statistical detector for Java
     try {
+      neo4jAL.logInfo("Starting the statistical engine.");
       JavaStatisticalAnalyzer statisticalAnalyzer = new JavaStatisticalAnalyzer(neo4jAL, this.application, language);
       statisticalAnalyzer.flagCore();
+      List<FrameworkNode> results = statisticalAnalyzer.getResults();
+      results.forEach(this::addFrameworkToResults);
     } catch (Neo4jQueryException e) {
       neo4jAL.logError("Failed to extract the external core of the application.", e);
+    }
+
+    // Investigate missing items
+    neo4jAL.logInfo("Starting the extraction of missed items.");
+    this.extractFlaggedExternalJava();
+  }
+
+  /**
+   * Extract all the nodes that were not discovered by the extension. Return and flag them
+   */
+  public void extractFlaggedExternalJava() {
+    try {
+      neo4jAL.logInfo("Missed item extraction launched.");
+      // Get the list of nodes that were missed during the 1st analysis
+      String detectionProperty = DetectorPropertyUtil.getDetectionProperty();
+      List<String> categories = languageProperties.getObjectsInternalType();
+      String selectMissed  =
+              String.format(
+                      "MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes  " +
+                              "AND obj.External=true  " +
+                              "AND obj.Level='Java Class' AND NOT EXISTS(obj.%s) " +
+                              "RETURN DISTINCT obj as node",
+                      application, detectionProperty);
+      Map<String, Object>  params = Map.of("internalTypes", categories);;
+      Result res  = neo4jAL.executeQuery(selectMissed, params);
+      List<Node> nodeList = new ArrayList<>();
+
+      while (res.hasNext()) {
+        Map<String, Object> resMap = res.next();
+        Node node = (Node) resMap.get("node");
+        nodeList.add(node);
+      }
+
+      neo4jAL.logInfo(String.format("%d nodes will be investigated.", nodeList.size()));
+
+      int numberDetected = 0;
+
+      // Create a tree and slice the leve 2 to get the name of the missing packages
+      JavaFrameworkTree frameworkTreeLeaf = TreeFactory.createJavaTree(this.languageProperties, nodeList);
+      List<ALeaf> leafList =  frameworkTreeLeaf.getSliceByDepth(1); // Get the 2 package list
+
+      // Convert leaf to Framework Node and push to results as to Investigate
+      for(ALeaf x : leafList) {
+        // Create Framework fro {m the leaf and set the default paramters
+        FrameworkNode fn = DetectorTypeMapper.fromFrameworkLeafToFrameworkNode(neo4jAL, x);
+        fn.setFrameworkType(FrameworkType.TO_INVESTIGATE);
+        String level4 = x.getName();
+        String level5 = String.format("API %s", level4);
+
+        try {
+          // Get nodes under the leaf, and flag them as missing code
+          List<Node> nodes = DetectorNodesUtil.getNodesByPatternAndExternality(neo4jAL, application, x.getFullName(), true);
+          for (Node n : nodes) {
+            DetectorNodesUtil.tagNodeWithFramework(neo4jAL, n, DetectionCategory.MISSING_CODE, level4, level5, x.getName(), "");
+          }
+
+          // Send to list of framework
+          this.addFrameworkToResults(fn);
+          numberDetected ++;
+
+          neo4jAL.logInfo(String.format("Flagged the branch [%s]. %d nodes has been extracted as 'missing code'", x.getFullName(), nodes.size()));
+        } catch (Neo4jQueryException e) {
+          neo4jAL.logError(String.format("Failed to flag branch with pattern [%s].", x.getFullName()));
+        }
+      }
+
+      neo4jAL.logInfo(String.format("%d branches missed during the analysis have been extracted.", numberDetected));
+
+    } catch (Exception | Neo4jQueryException err) {
+      neo4jAL.logError("Failed to extract missed items.", err);
     }
   }
 
@@ -278,30 +354,18 @@ public class JavaDetector extends ADetector {
    */
   public List<Node> getNodesByExternality(Boolean externality) throws Neo4jQueryException {
     try {
+      String detectionProperty = DetectorPropertyUtil.getDetectionProperty();
       List<String> categories = languageProperties.getObjectsInternalType();
       List<Node> nodeList = new ArrayList<>();
-      String forgedRequest;
-      Map<String, Object> params;
-      Result res;
-
-      // Check if the categories are empty or not
-      if (categories.isEmpty()) {
-        forgedRequest =
-            String.format(
-                "MATCH (obj:Object:`%s`) WHERE obj.Level='Java Class' "
-                    + "AND obj.External=$externality RETURN obj as node",
-                application);
-        params = Map.of("externality", externality);
-
-      } else {
-        forgedRequest =
-            String.format(
-                "MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes  "
-                    + "AND obj.External=$externality  RETURN obj as node",
-                application);
-        params = Map.of("internalTypes", categories, "externality", externality);
-      }
-      res = neo4jAL.executeQuery(forgedRequest, params);
+      String forgedRequest  =
+              String.format(
+                      "MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes  "
+                              + "AND obj.External=$externality  " +
+                              "AND ( obj.Level='Java Class' OR EXISTS(obj.%s)) " +
+                              "RETURN DISTINCT obj as node",
+                      application, detectionProperty);
+      Map<String, Object>  params = Map.of("internalTypes", categories, "externality", externality);;
+      Result res  = neo4jAL.executeQuery(forgedRequest, params);
 
       while (res.hasNext()) {
         Map<String, Object> resMap = res.next();
@@ -309,10 +373,11 @@ public class JavaDetector extends ADetector {
         nodeList.add(node);
       }
 
+      String categoriesToPrint = String.join(", ", categories);
       neo4jAL.logInfo(
           String.format(
-              "%d Java nodes were found with external property on '%s'",
-              nodeList.size(), externality));
+              "%d Java nodes were found with external property on '%s' for categories [ %s ].",
+              nodeList.size(), externality, categoriesToPrint));
 
       return nodeList;
     } catch (Neo4jQueryException err) {
