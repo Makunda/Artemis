@@ -14,6 +14,7 @@ package com.castsoftware.artemis.detector.utils.trees;
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.detector.utils.trees.cobol.CobolFrameworkTree;
 import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTree;
+import com.castsoftware.artemis.detector.utils.trees.net.NetFrameworkTree;
 import com.castsoftware.artemis.global.SupportedLanguage;
 import org.neo4j.graphdb.Node;
 
@@ -28,6 +29,18 @@ public class TreeFactory {
 	 */
 	public static JavaFrameworkTree createJavaTree(LanguageProp languageProp, List<Node> nodeList) {
 		JavaFrameworkTree fmt = new JavaFrameworkTree(languageProp);
+		fmt.recursiveObjectsInsert(nodeList);
+		return fmt;
+	}
+
+	/**
+	 * Create .Net Tree
+	 * @param languageProp Language Properties for .NET
+	 * @param nodeList List of nodes
+	 * @return A .Net tree
+	 */
+	public static NetFrameworkTree createNetTree(LanguageProp languageProp, List<Node> nodeList) {
+		NetFrameworkTree fmt = new NetFrameworkTree(languageProp);
 		fmt.recursiveObjectsInsert(nodeList);
 		return fmt;
 	}

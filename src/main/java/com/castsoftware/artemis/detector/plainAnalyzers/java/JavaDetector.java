@@ -87,6 +87,7 @@ public class JavaDetector extends ADetector {
     // Create a framework tree
     JavaFrameworkTree ft = new JavaFrameworkTree(languageProperties);
     ft.recursiveObjectsInsert(nodeList);
+    ft.print();
 
     return ft;
   }
@@ -243,7 +244,7 @@ public class JavaDetector extends ADetector {
    * @param ftl Framework Tree leaf to save
    */
   private PythiaFramework saveFrameworkLeafOnPythia(JavaFrameworkTreeLeaf ftl) {
-    PythiaFramework pf = DetectorTypeMapper.frameworkLeafToPythia(ftl, this.pythiaLanguage);
+    PythiaFramework pf = DetectorTypeMapper.frameworkLeafToPythia(ftl, this.language);
     PythiaPattern pp = DetectorTypeMapper.fromFrameworkLeafToPattern(ftl, this.pythiaLanguage);
     this.saveFrameworkOnPythia(pf, Collections.singletonList(pp));
     return pf;
@@ -313,6 +314,7 @@ public class JavaDetector extends ADetector {
       JavaFrameworkTree frameworkTreeLeaf = TreeFactory.createJavaTree(this.languageProperties, nodeList);
       List<ALeaf> leafList =  frameworkTreeLeaf.getSliceByDepth(1); // Get the 2 package list
 
+
       // Convert leaf to Framework Node and push to results as to Investigate
       for(ALeaf x : leafList) {
         // Create Framework fro {m the leaf and set the default paramters
@@ -361,7 +363,7 @@ public class JavaDetector extends ADetector {
               String.format(
                       "MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes  "
                               + "AND obj.External=$externality  " +
-                              "AND ( obj.Level='Java Class' OR EXISTS(obj.%s)) " +
+                              "AND ( obj.Level='Java Class' OR obj.Level='Missing Java Class' OR EXISTS(obj.%s)) " +
                               "RETURN DISTINCT obj as node",
                       application, detectionProperty);
       Map<String, Object>  params = Map.of("internalTypes", categories, "externality", externality);;

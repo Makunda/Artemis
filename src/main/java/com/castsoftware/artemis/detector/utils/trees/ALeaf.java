@@ -170,6 +170,11 @@ public abstract class ALeaf {
     this.name = name;
   }
 
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
+
+
   public Long getParentId() {
     return parentId;
   }
@@ -189,6 +194,14 @@ public abstract class ALeaf {
   }
 
   public abstract List<? extends ALeaf> getChildren();
+
+  /**
+   * Has children
+   * @return True if the leaf contains children
+   */
+  public boolean hasChildren() {
+    return this.getChildren().size() > 0;
+  };
 
   public Long getId() {
     return id;

@@ -12,7 +12,9 @@
 package com.castsoftware.artemis.detector.utils.trees.cobol;
 
 import com.castsoftware.artemis.config.detection.LanguageProp;
+import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 import com.castsoftware.artemis.detector.utils.trees.ATree;
+import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
 import org.neo4j.graphdb.Node;
 
 import java.util.List;
@@ -29,42 +31,82 @@ public class CobolFrameworkTree extends ATree {
   }
 
   /**
+   * Get the greatest common prefix between two string
+   * @param a String A
+   * @param b String B
+   * @return the longest prefix found
+   */
+  private String greatestCommonPrefix(String a, String b) {
+    int minLength = Math.min(a.length(), b.length());
+    for (int i = 0; i < minLength; i++) {
+      if (a.charAt(i) != b.charAt(i)) {
+        return a.substring(0, i);
+      }
+    }
+    return a.substring(0, minLength);
+  }
+
+  /**
    * Recursively insert the package in the tree
    *
    * @param leaf Leaf to insert the package
    * @param fullName Name of the program to be inserted
    */
   private void recInsert(CobolFrameworkTreeLeaf leaf, String fullName, Node n, Integer depth) {
-
     try {
-      // Ignore fullName under 3
-      if (fullName.length() < 2 + depth) return;
-      // If the split contains for than one element continue
-
-      String name = fullName.substring(0, 2 + depth);
-      CobolFrameworkTreeLeaf matchingLeaf = null;
 
       // Check if a package already exist or create it
+      int longestPrefix = 0;
+      String longestCommonPrefix = "";
+
+      String commonPrefix = "";
+      CobolFrameworkTreeLeaf matchingLeaf = null;
+
+      // Get best match
       for (CobolFrameworkTreeLeaf clf : leaf.getChildren()) {
-        if (clf.getName().equals(name)) {
-          matchingLeaf = clf; // Matching package found
-          break;
+        commonPrefix = this.greatestCommonPrefix(clf.getFullName(), fullName);
+        if(longestPrefix < commonPrefix.length() ) {
+          matchingLeaf = clf;
+          longestPrefix = commonPrefix.length();
+          longestCommonPrefix = commonPrefix;
         }
       }
 
+      CobolFrameworkTreeLeaf newLeaf = new CobolFrameworkTreeLeaf(fullName, fullName);
+      newLeaf.addNode(n);
+      newLeaf.setDepth(depth + 1);
+
+      // If no match add it to the current leaf
       // If a matching leaf wasn't found, create a new one
       if (matchingLeaf == null) {
-        matchingLeaf = new CobolFrameworkTreeLeaf(name, name);
         // Add the leaf to the tree
-        leaf.addLeaf(matchingLeaf);
+        leaf.addNode(n);
+        leaf.addLeaf(newLeaf);
+      } else if ( matchingLeaf.getName().equals(fullName) || leaf.getName().equals(longestCommonPrefix)) {
+        matchingLeaf.addNode(n);
+      } else if( matchingLeaf.getName().equals(longestCommonPrefix)) {
+        matchingLeaf.addNode(n);
+        recInsert(matchingLeaf, fullName, n, depth + 1); // Continue to insert
+      } else {
+        // Update leaf
+        matchingLeaf.setDepth(depth + 1);
+
+        // Split the leaf in 2 part and create new node
+        CobolFrameworkTreeLeaf toInsert = new CobolFrameworkTreeLeaf(longestCommonPrefix, longestCommonPrefix);
+        toInsert.setDepth(depth);
+        toInsert.addLeaf(newLeaf);
+        toInsert.addLeaf(matchingLeaf);
+
+        // Merge properties
+        toInsert.mergeNodes(matchingLeaf);
+        toInsert.mergeNodes(newLeaf);
+
+        // Modify the leaf
+        leaf.removeChildLeafByName(matchingLeaf.getFullName());
+        leaf.addLeaf(toInsert);
       }
-
-      matchingLeaf.setDepth(depth);
-      matchingLeaf.addNode(n);
-
-      recInsert(matchingLeaf, fullName, n, depth + 1);
     } catch (Exception e) {
-      // Ignore
+      // Failed
     }
   }
 
@@ -95,7 +137,12 @@ public class CobolFrameworkTree extends ATree {
 
   @Override
   public void recursiveObjectsInsert(List<Node> nodeList) {
-
+    // Create a framework tree
+    String fullName;
+    for (Node n : nodeList) {
+      fullName = n.getProperty("Name").toString();
+      this.insert(fullName, n); // Insert name
+    }
   }
 
   /**
@@ -104,5 +151,20 @@ public class CobolFrameworkTree extends ATree {
    * @param fl
    * @param level
    */
-  private void printTree(CobolFrameworkTreeLeaf fl, int level) {}
+  private void printTree(CobolFrameworkTreeLeaf fl, int level) {
+    System.out.print(
+            "|"
+                    + "__".repeat(level)
+                    + " : "
+                    + fl.getName()
+                    + "  ::  "
+                    + fl.getDepth()
+                    + " :: Num children "
+                    + fl.getCount()
+                    + "\n");
+    for (CobolFrameworkTreeLeaf clf : fl.getChildren()) {
+      printTree(clf, level + 1);
+    }
+  }
+
 }

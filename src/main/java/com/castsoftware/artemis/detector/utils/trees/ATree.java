@@ -15,6 +15,7 @@ import com.castsoftware.artemis.config.detection.LanguageProp;
 import org.neo4j.graphdb.Node;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -118,5 +119,13 @@ public abstract class ATree {
     }
 
     return leafList;
+  }
+
+  /**
+   * Get an iterator on a tree with a BFS search
+   * @return Iterable list of node
+   */
+  public Iterator<ALeaf> getBFSIterator () {
+    return new BFSIterator(this);
   }
 }

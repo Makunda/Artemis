@@ -11,7 +11,6 @@
 
 package com.castsoftware.artemis.detector.utils;
 
-import com.castsoftware.artemis.config.Configuration;
 import com.castsoftware.artemis.config.detection.LanguageProp;
 import com.castsoftware.artemis.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaImagingFramework;
@@ -39,7 +38,8 @@ public class DetectorNodesUtil {
 
 		String forgedRequest =
 				String.format(
-						"MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
+						"MATCH (obj:Object:`%s`) WHERE obj.InternalType in $internalTypes AND obj.External=false " +
+								"RETURN obj as node ORDER BY obj.FullName DESC",
 						application);
 		Map<String, Object> params = Map.of("internalTypes", categories);
 		Result res = neo4jAL.executeQuery(forgedRequest, params);
@@ -66,7 +66,9 @@ public class DetectorNodesUtil {
 
 		String forgedRequest =
 				String.format(
-						"MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes AND obj.External=false RETURN obj as node",
+						"MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes " +
+								"AND obj.External=false " +
+								"RETURN obj as node ORDER BY obj.FullName DESC",
 						application);
 		Map<String, Object> params = Map.of("internalTypes", categories);
 		Result res = neo4jAL.executeQuery(forgedRequest, params);
@@ -76,6 +78,41 @@ public class DetectorNodesUtil {
 			Node node = (Node) resMap.get("node");
 			externalNodes.add(node);
 		}
+
+		return externalNodes;
+	}
+
+	/**
+	 * Get external nodes with the additional filters ( obj must be filtered )
+	 * @param neo4jAL Neo4j Access Layer
+	 * @param languageProp Language Property
+	 * @param application Name of the application
+	 * @param additionalFilters Additional filters as a string ( MUST START WITH AND/OR AND FILTER ON "obj" )
+	 * @return The list of node
+	 * @throws Neo4jQueryException
+	 */
+	public static List<Node> getExternalObjects(Neo4jAL neo4jAL, LanguageProp languageProp, String application, String additionalFilters) throws Neo4jQueryException {
+		List<String> categories = languageProp.getObjectsInternalType();
+		List<Node> externalNodes = new ArrayList<>();
+
+		String forgedRequest =
+				String.format(
+						"MATCH (obj:Object:`%s`) WHERE  obj.InternalType in $internalTypes " +
+								"AND obj.External=true " +
+								additionalFilters +
+								" RETURN obj as node ORDER BY obj.FullName DESC",
+						application);
+		neo4jAL.logInfo(String.format("Getting the list of Cobol external programs: \n %s", forgedRequest));
+		Map<String, Object> params = Map.of("internalTypes", categories);
+		Result res = neo4jAL.executeQuery(forgedRequest, params);
+
+		while (res.hasNext()) {
+			Map<String, Object> resMap = res.next();
+			Node node = (Node) resMap.get("node");
+			externalNodes.add(node);
+		}
+
+		neo4jAL.logInfo(String.format("Found %d External cobol objects.", externalNodes.size()));
 
 		return externalNodes;
 	}
@@ -94,7 +131,7 @@ public class DetectorNodesUtil {
 				String.format(
 						"MATCH (o:Object:`%s`) "
 								+ "WHERE o.External=$external AND o.FullName STARTS WITH $pattern "
-								+ "RETURN DISTINCT  o as node",
+								+ "RETURN DISTINCT o as node ORDER BY o.FullName DESC",
 						application);
 		Map<String, Object> params = Map.of("external", external, "pattern", pattern);
 		try {

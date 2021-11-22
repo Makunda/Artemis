@@ -13,8 +13,10 @@ package com.castsoftware.artemis.detector.utils;
 
 import com.castsoftware.artemis.datasets.FrameworkNode;
 import com.castsoftware.artemis.datasets.FrameworkType;
+import com.castsoftware.artemis.detector.utils.naming.PackageNamer;
 import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 import com.castsoftware.artemis.detector.utils.trees.java.JavaFrameworkTreeLeaf;
+import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.modules.pythia.models.api.*;
 import com.castsoftware.artemis.modules.pythia.models.api.PythiaFramework;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
@@ -85,10 +87,10 @@ public class DetectorTypeMapper {
    * @return The Pythia Framework
    */
   public static PythiaFramework frameworkLeafToPythia(
-          ALeaf frameworkLeaf, PythiaLanguage language) {
+          ALeaf frameworkLeaf, SupportedLanguage language) {
 
     // Generate Imaging name
-    String level5 = getImagingNameFromLeaf(frameworkLeaf);
+    String level5 = getImagingNameFromLeaf(frameworkLeaf, language);
 
     // Create pythia framework
     return new PythiaFramework(
@@ -159,36 +161,8 @@ public class DetectorTypeMapper {
    * @param frameworkLeaf Leaf to create
    * @return The name of the leaf
    */
-  private static String getImagingNameFromLeaf(ALeaf frameworkLeaf) {
-    try {
-      String imagingName = "API";
-
-      String[] split = frameworkLeaf.getFullName().split("\\."); // Split on package name
-
-      if (split.length == 0 || split.length == 1)
-        return imagingName + frameworkLeaf.getFullName(); // Cannot split
-      if (split.length == 2)
-        return imagingName + " " + capitalizeFirstLetter(split[1]); // Only the Company name
-      return imagingName + " " + capitalizeFirstLetter(split[1]) + " " + split[2];
-    } catch (Exception ignored) {
-      return frameworkLeaf.getFullName();
-    }
-  }
-
-  /**
-   * Capitalize the first letter
-   *
-   * @param name Name to capitalize
-   * @return Capitalized name
-   */
-  private static String capitalizeFirstLetter(String name) {
-    if (name == null || name.isBlank()) return "";
-
-    try {
-      return name.substring(0, 1).toUpperCase() + name.substring(1);
-    } catch (Exception e) {
-      return name;
-    }
+  private static String getImagingNameFromLeaf(ALeaf frameworkLeaf, SupportedLanguage language) {
+    return PackageNamer.getNameByLanguage(frameworkLeaf, language);
   }
 
   /**
@@ -197,7 +171,7 @@ public class DetectorTypeMapper {
    * @param pl Pythia language
    * @return The pythia pattern
    */
-  public static PythiaPattern fromFrameworkLeafToPattern(JavaFrameworkTreeLeaf ltf, PythiaLanguage pl) {
+  public static PythiaPattern fromFrameworkLeafToPattern(ALeaf ltf, PythiaLanguage pl) {
     return new PythiaPattern(pl, ltf.getFullName(), true);
   }
 }

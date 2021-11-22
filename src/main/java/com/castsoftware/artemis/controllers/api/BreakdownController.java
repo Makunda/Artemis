@@ -69,13 +69,10 @@ public class BreakdownController {
     DetectionParameters dp = DetectionParameters.getDefault();
     ADetector aDetector = DetectorFactory.getDetector(neo4jAL, application, sl, dp);
 
-    ATree tree = null;
     if (externality) {
-      tree = aDetector.getExternalBreakdown();
+      return aDetector.getExternalBreakdown();
     } else {
-      tree = aDetector.getInternalBreakdown();
+      return aDetector.getInternalBreakdown();
     }
-
-    return tree;
   }
 }

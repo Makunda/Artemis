@@ -11,7 +11,9 @@
 
 package com.castsoftware.artemis.detector.statisticalAnalyzers;
 
+import com.castsoftware.artemis.detector.statisticalAnalyzers.cobol.CobolStatisticalAnalyzer;
 import com.castsoftware.artemis.detector.statisticalAnalyzers.java.JavaStatisticalAnalyzer;
+import com.castsoftware.artemis.detector.statisticalAnalyzers.net.NetStatisticalAnalyzer;
 import com.castsoftware.artemis.global.SupportedLanguage;
 import com.castsoftware.artemis.neo4j.Neo4jAL;
 
@@ -26,6 +28,10 @@ public class StatisticalFactory {
 		switch (language) {
 			case JAVA:
 				return new JavaStatisticalAnalyzer(neo4jAL, application, language);
+			case NET:
+				return new NetStatisticalAnalyzer(neo4jAL, application, language);
+			case COBOL:
+				return new CobolStatisticalAnalyzer(neo4jAL, application, language);
 			default:
 				throw new Exception(String.format("No analyzer found for language %s.", language.toString()));
 		}

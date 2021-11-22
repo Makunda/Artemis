@@ -9,36 +9,28 @@
  *
  */
 
-package com.castsoftware.artemis.detector.utils.trees.cobol;
+package com.castsoftware.artemis.detector.utils.trees.net;
 
 import com.castsoftware.artemis.detector.utils.trees.ALeaf;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class CobolFrameworkTreeLeaf extends ALeaf {
+/**
+ * Leaf to be inserted into a java tree
+ */
+public class NetFrameworkTreeLeaf extends ALeaf {
 
-  private List<CobolFrameworkTreeLeaf> children;
+  private final List<NetFrameworkTreeLeaf> children;
   private double[] detectionResults;
-  private Integer depth;
   private boolean framework;
 
-  public CobolFrameworkTreeLeaf(String name, String fullName) {
+  public NetFrameworkTreeLeaf(String name, String fullName) {
     super(fullName, name);
     this.children = Collections.synchronizedList(new ArrayList<>());
     this.framework = false;
     this.detectionResults = new double[0];
-    this.depth = 0;
-  }
-
-  public CobolFrameworkTreeLeaf(CobolFrameworkTreeLeaf clone) {
-    super(clone.fullName, clone.name);
-    this.children = clone.getChildren();
-    this.framework = clone.framework;
-    this.detectionResults = clone.getDetectionResults();
-    this.depth = clone.getDepth();
   }
 
   public double[] getDetectionResults() {
@@ -53,10 +45,6 @@ public class CobolFrameworkTreeLeaf extends ALeaf {
     return depth;
   }
 
-  public void setDepth(Integer depth) {
-    this.depth = depth;
-  }
-
   public boolean isFramework() {
     return framework;
   }
@@ -69,37 +57,11 @@ public class CobolFrameworkTreeLeaf extends ALeaf {
     return name;
   }
 
-  public List<CobolFrameworkTreeLeaf> getChildren() {
+  public List<NetFrameworkTreeLeaf> getChildren() {
     return children;
   }
 
-  public void addLeaf(CobolFrameworkTreeLeaf leaf) {
+  public void addLeaf(NetFrameworkTreeLeaf leaf) {
     this.children.add(leaf);
-  }
-
-  public void removeChildLeafByName(String toRemove) {
-    List<CobolFrameworkTreeLeaf> newChildren = new ArrayList<>();
-
-    for(CobolFrameworkTreeLeaf l : this.children) {
-      if(!l.getFullName().equals(toRemove)) newChildren.add(l);
-    }
-
-    this.children = newChildren;
-  }
-
-  /**
-   * Merge the list of nodes between two leaf
-   * @param leaf Leaf to merge
-   */
-  public void mergeNodes(CobolFrameworkTreeLeaf leaf) {
-    this.idNodes.addAll(leaf.getIdNodes());
-  }
-
-  public String getChildrenAsString() {
-    return this.children.stream().map(ALeaf::getFullName).collect(Collectors.joining(", "));
-  }
-
-  public void resetChildren() {
-    this.children = new ArrayList<>();
   }
 }
