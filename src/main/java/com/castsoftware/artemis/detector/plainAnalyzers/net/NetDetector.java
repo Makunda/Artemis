@@ -268,7 +268,7 @@ public class NetDetector extends ADetector {
 
       // Get the list of nodes that were missed during the 1st analysis
       // Initialize the parameters
-      List<String> levels = List.of("VB.NET Class", "C# Class", ".NET Class");
+      List<String> levels = List.of("VB.NET Class", "C# Class", ".NET Class", "Missing DotNet Class");
       String filterLevel = DetectorUtil.buildLevelFilter("obj", levels);
 
       String detectionProperty = DetectorPropertyUtil.getDetectionProperty();
